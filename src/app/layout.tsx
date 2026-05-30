@@ -7,7 +7,7 @@ import theme from '@/theme';
 
 export const metadata: Metadata = {
   title: 'enmaru',
-  description: 'Next.js + Prisma + MySQL starter',
+  description: 'Next.js + Prisma + Neon starter',
 };
 
 export default function RootLayout({
