@@ -5,6 +5,8 @@
     "@playwright/test": "1.60.0"
   },
   "scripts": {
-    "test": "playwright test"
+    "setup": "playwright install --with-deps chromium",
+    "test": "playwright test",
+    "report": "playwright show-report"
   }
 }

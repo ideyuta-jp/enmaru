@@ -6,8 +6,6 @@ import {describe, expect, it} from 'vitest';
 describe('test harness', () => {
   it('renders into jsdom', () => {
     render(<h1>enmaru</h1>);
-    expect(
-      screen.getByRole('heading', {name: 'enmaru'}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'enmaru'})).toBeInTheDocument();
   });
 });

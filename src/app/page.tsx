@@ -8,7 +8,7 @@ export default function Home() {
         enmaru
       </Typography>
       <Typography color="text.secondary">
-        Next.js + Prisma + MySQL starter. Edit <code>src/app/page.tsx</code> to
+        Next.js + Prisma + Neon starter. Edit <code>src/app/page.tsx</code> to
         get started.
       </Typography>
     </Container>

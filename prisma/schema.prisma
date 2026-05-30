@@ -1,7 +1,9 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Database is Neon (serverless PostgreSQL). The connection string is supplied
+// at runtime via the driver adapter (see src/lib/prisma.ts) and to the Prisma
+// CLI via prisma.config.ts (DATABASE_URL).
 
 generator client {
   provider = "prisma-client"
@@ -9,5 +11,5 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
