@@ -1,7 +1,16 @@
 # E2E Tests
 
-Playwright-based end-to-end tests. Tests run inside a Docker container using the official
-Playwright image — no host-side Node.js or browser installation is required.
+Playwright-based end-to-end tests. They run on the host: Playwright starts the app via its
+`webServer` config (no Docker). `e2e/` is a standalone npm package so the heavy Playwright
+browser deps stay isolated from the pnpm-managed app.
+
+## Setup (one-time)
+
+Install the e2e deps and the Playwright browser:
+
+```bash
+./cmd test e2e-setup
+```
 
 ## Running Tests
 
@@ -11,12 +20,11 @@ Run from the repository root:
 ./cmd test e2e
 ```
 
-This command:
+Playwright launches the app (`pnpm dev`) and waits for it, then runs the specs against it.
+If a dev server is already running on the base URL it is reused (locally). A trace is
+recorded for every test case (screenshots, DOM snapshots, network logs).
 
-1. Builds and starts the `db` and `app` containers
-2. Runs Playwright tests inside the official Playwright Docker container against the app
-3. Records a trace for every test case (screenshots, DOM snapshots, network logs)
-4. Tears down the containers and volumes on exit
+The base URL defaults to `http://localhost:3000`; override it with `E2E_BASE_URL`.
 
 ## Viewing Reports
 
@@ -24,8 +32,7 @@ This command:
 ./cmd test e2e-report
 ```
 
-Opens the HTML report at `http://localhost:52001` with a trace viewer for each test.
-Press Ctrl+C to stop the report server.
+Opens the HTML report with a trace viewer for each test.
 
 ## File Structure
 
@@ -38,17 +45,16 @@ e2e/
 ├── specs/
 │   └── smoke.spec.ts      # Test scenarios
 ├── package.json
-├── playwright.config.ts
-├── report.sh
-└── test.sh
+└── playwright.config.ts
 ```
 
 ### `playwright.config.ts`
 
 - **`testDir`**: `./specs`
-- **`use.baseURL`**: app URL under test (from `E2E_BASE_URL`), so specs can use `page.goto('/')`
+- **`use.baseURL`**: app URL under test (`E2E_BASE_URL`, default `http://localhost:3000`), so specs can use `page.goto('/')`
 - **`use.trace`**: records a trace for every test
 - **`reporter`**: `list` (terminal) + `html` (browser report)
+- **`webServer`**: starts the root app (`pnpm dev`) and waits for `baseURL`; reuses an existing server locally
 
 ### `pages/` — Page Object Model (POM)
 

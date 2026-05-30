@@ -9,6 +9,9 @@ usage() {
 Usage: ./cmd <command>
 
   test unit          Run Vitest unit tests
+  test e2e           Run Playwright e2e tests (starts the app via webServer)
+  test e2e-setup     Install Playwright browsers (one-time)
+  test e2e-report    Open the last Playwright HTML report
   lint               Run ESLint
   format             Run Prettier (write)
 EOF
@@ -19,6 +22,15 @@ case "${1:-}" in
     case "${2:-}" in
       unit)
         pnpm test:unit
+        ;;
+      e2e)
+        (cd e2e && npm test)
+        ;;
+      e2e-setup)
+        (cd e2e && npm ci && npm run setup)
+        ;;
+      e2e-report)
+        (cd e2e && npm run report)
         ;;
       *)
         usage
