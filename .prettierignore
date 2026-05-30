@@ -1,0 +1,7 @@
+.next
+node_modules
+pnpm-lock.yaml
+src/generated
+e2e/node_modules
+e2e/playwright-report
+e2e/test-results
