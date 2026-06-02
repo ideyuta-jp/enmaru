@@ -1,8 +1,10 @@
 # enmaru
 
-Full-stack starter for LAplust web apps: **Next.js (App Router) + Prisma + Neon**, deployed
-on **Vercel**, with MUI, Cloudflare R2 storage, Logto Cloud auth, ESLint/Prettier, Vitest
-unit tests, and Playwright e2e tests.
+<!-- The overview below is intentionally in Japanese (exception to the English-docs policy): it describes the service for its Japanese-speaking stakeholders. -->
+
+**えんまーる**は、保育士資格を持ちながら現場を離れている「潜在保育士」と、人手不足に悩む保育園を、いきなり就職ではなく**段階的につなぐ**マッチングプラットフォームです。応募 → 業務 → 相互評価までを一つの流れとして設計することで、ミスマッチを防ぎ、双方が安心して関係を築ける仕組みを提供します。
+
+えんまーるは[合同会社KASUMIN](https://kasumin.biz/)が運営しており、現在は[Notion 上に構築されたページ](https://laplust.notion.site/2dec08e5f34c80dd90c9e62a74946408)として試験運用されています。このリポジトリは、現・えんまーるの Web アプリ化を実現するものです。
 
 ## Stack
 
