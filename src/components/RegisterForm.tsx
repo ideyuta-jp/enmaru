@@ -14,11 +14,19 @@ import Typography from '@mui/material/Typography';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import NextLink from 'next/link';
+import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import type {UserRole} from '@/types/User';
 
+const ROLE_LANDING: Record<UserRole, string> = {
+  SEEKER: '/mypage',
+  NURSERY: '/nursery/mypage',
+  ADMIN: '/admin/matches',
+};
+
 export default function RegisterForm() {
+  const router = useRouter();
   const [role, setRole] = useState<UserRole | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,8 +46,10 @@ export default function RegisterForm() {
     }
     setError(null);
     setLoading(true);
-    // TODO(#7 follow-up): create the account, then sign in and redirect to the
-    // role-specific landing page. UI only for now.
+    // TODO(#7 follow-up): create the account and sign in via the auth backend.
+    // The redirect below is frontend-only so the role areas are reachable by
+    // navigation without a backend.
+    router.push(ROLE_LANDING[role]);
   }
 
   return (
