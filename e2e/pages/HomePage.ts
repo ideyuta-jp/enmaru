@@ -8,8 +8,10 @@ export class HomePage {
   }
 
   async expectLoaded() {
+    // Hero h1 ("保育士と保育園を / やさしくつなぐ"); matched loosely because the
+    // line break makes the accessible name whitespace-sensitive.
     await expect(
-      this.page.getByRole('heading', {name: 'enmaru'}),
+      this.page.getByRole('heading', {name: /やさしくつなぐ/}),
     ).toBeVisible();
   }
 }
