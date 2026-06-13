@@ -13,3 +13,307 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// The data model for the MVP. Shapes follow docs/requirements.md (the What);
+// see docs/design.md for where the code that uses these models lives. Naming:
+// PascalCase models, camelCase fields, cuid() ids.
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SEEKER
+  NURSERY
+  ADMIN
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+// Match lifecycle. Matching is immediate and first-come, so a match is born at
+// MATCHED — there is no applied/screening step. Review progress is tracked
+// separately (see ReviewStatus), not as extra match states.
+enum MatchStatus {
+  MATCHED
+  WORKING
+  COMPLETED
+}
+
+// How far the mutual review has progressed for a completed match.
+enum ReviewStatus {
+  NONE
+  PARTIAL
+  DONE
+}
+
+// Which of the two parties an action came from. Excludes ADMIN by design, so it
+// is a distinct enum from Role rather than a reuse.
+enum Party {
+  SEEKER
+  NURSERY
+}
+
+// Documents a seeker submits for admin verification (the application gate).
+enum DocumentType {
+  RESUME // 履歴書相当情報
+  LICENSE // 保育士証
+  HEALTH_CHECK // 健康診断書
+  STOOL_TEST // 検便結果（一部の募集のみ必須）
+}
+
+enum DocumentStatus {
+  PENDING // 確認中
+  APPROVED // 認証済み
+  REJECTED // 差し戻し
+}
+
+// ---------------------------------------------------------------------------
+// Account
+// ---------------------------------------------------------------------------
+
+model User {
+  id         String    @id @default(cuid())
+  // Logto subject (OIDC `sub`). Auth lives in Logto; no password is stored here.
+  // Named generically so swapping the auth provider touches lib/ + this field
+  // only, not the rest of the model.
+  authId     String    @unique
+  email      String    @unique
+  role       Role
+  isActive   Boolean   @default(true)
+  // Terms agreement (required for seeker and nursery at registration).
+  agreedAt   DateTime?
+  // LINE Messaging API user id, obtained from the required friend-add at
+  // registration. Null until the friend-add completes.
+  lineUserId String?   @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  seekerProfile  SeekerProfile?
+  nurseryProfile NurseryProfile?
+  notifications  Notification[]
+  messages       Message[]
+}
+
+model SeekerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  // Non-public: visible to admin only (personal-info boundary).
+  realName       String
+  displayName    String
+  license        Boolean  @default(false)
+  blankYears     String?
+  preferredArea  String?
+  preferredStyle String[] @default([])
+  bio            String?
+  experience     String?
+  skills         String?
+  ngConditions   String?
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  applications    Application[]
+  matches         Match[]                 @relation("SeekerMatches")
+  documents       Document[]
+  reviewsGiven    ReviewSeekerToNursery[]
+  reviewsReceived ReviewNurseryToSeeker[]
+}
+
+model NurseryProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  nurseryName String
+  area        String
+  // Non-public: visible to admin only (personal-info boundary).
+  address     String?
+  contactName String
+  phone       String?
+  concept     String?
+  policy      String?
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobPostings     JobPosting[]
+  matches         Match[]                 @relation("NurseryMatches")
+  reviewsGiven    ReviewNurseryToSeeker[]
+  reviewsReceived ReviewSeekerToNursery[]
+}
+
+// ---------------------------------------------------------------------------
+// Posting → application → match
+// ---------------------------------------------------------------------------
+
+model JobPosting {
+  id                String         @id @default(cuid())
+  nurseryId         String
+  nursery           NurseryProfile @relation(fields: [nurseryId], references: [id])
+  title             String
+  workContent       String
+  workDate          DateTime
+  workTimeStart     String // 'HH:mm'
+  workTimeEnd       String // 'HH:mm'
+  hourlyWage        Int? // null = undecided
+  targetPerson      String?
+  remarks           String?
+  // Documents this posting requires to be verified before a seeker may apply.
+  requiredDocuments DocumentType[] @default([])
+  status            JobStatus      @default(OPEN)
+  postedAt          DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  applications Application[]
+  matches      Match[]
+}
+
+model Application {
+  id            String        @id @default(cuid())
+  jobId         String
+  job           JobPosting    @relation(fields: [jobId], references: [id])
+  seekerId      String
+  seeker        SeekerProfile @relation(fields: [seekerId], references: [id])
+  applyMessage  String?
+  lineContactOk Boolean       @default(false)
+  appliedAt     DateTime      @default(now())
+  match         Match?
+
+  // A seeker can apply to a given posting only once.
+  @@unique([jobId, seekerId])
+}
+
+// nurseryId/seekerId are denormalized from the application chain so the admin
+// console, review queries, and notifications can filter without multi-hop joins.
+model Match {
+  id            String         @id @default(cuid())
+  applicationId String         @unique
+  application   Application    @relation(fields: [applicationId], references: [id])
+  jobId         String
+  job           JobPosting     @relation(fields: [jobId], references: [id])
+  nurseryId     String
+  nursery       NurseryProfile @relation("NurseryMatches", fields: [nurseryId], references: [id])
+  seekerId      String
+  seeker        SeekerProfile  @relation("SeekerMatches", fields: [seekerId], references: [id])
+  status        MatchStatus    @default(MATCHED)
+  workDate      DateTime?
+  completedAt   DateTime?
+  reviewStatus  ReviewStatus   @default(NONE)
+  // Admin-only operating note.
+  adminMemo     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  workReports           WorkReport[]
+  messages              Message[]
+  reviewNurseryToSeeker ReviewNurseryToSeeker?
+  reviewSeekerToNursery ReviewSeekerToNursery?
+}
+
+// Both parties confirm the shift happened; the match becomes COMPLETED once both
+// reports are in. (Whether the nursery must also report is an open question in
+// docs/requirements.md — current behavior follows the spec: both report.)
+model WorkReport {
+  id         String   @id @default(cuid())
+  matchId    String
+  match      Match    @relation(fields: [matchId], references: [id])
+  reporter   Party
+  completed  Boolean
+  comment    String?
+  reportedAt DateTime @default(now())
+
+  // Each party reports at most once per match.
+  @@unique([matchId, reporter])
+}
+
+// ---------------------------------------------------------------------------
+// Chat, documents, notifications
+// ---------------------------------------------------------------------------
+
+// Chat is available from when the match forms until 24h after completion; the
+// time-window rule is enforced in server/, not the schema.
+model Message {
+  id        String   @id @default(cuid())
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// A submitted document. fileKey is the R2 object key (a signed URL is produced
+// via src/lib/storage.ts); it is null when RESUME is filled in as an in-app form
+// rather than uploaded. Admin verifies each by eye — no auto-verification.
+model Document {
+  id              String         @id @default(cuid())
+  seekerId        String
+  seeker          SeekerProfile  @relation(fields: [seekerId], references: [id])
+  documentType    DocumentType
+  fileKey         String?
+  status          DocumentStatus @default(PENDING)
+  rejectionReason String?
+  uploadedAt      DateTime       @default(now())
+  verifiedAt      DateTime?
+
+  // One current document per type per seeker.
+  @@unique([seekerId, documentType])
+}
+
+// In-app notification. `type` is a string rather than an enum so new kinds do
+// not each require a migration; the known values are a union in the TS layer.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Mutual review (one row per direction per match; both gated on COMPLETED).
+// seekerId/nurseryId are denormalized for aggregate-rating queries.
+// isPublished is false by default: reviews start private until admin publishes.
+// ---------------------------------------------------------------------------
+
+model ReviewNurseryToSeeker {
+  id            String         @id @default(cuid())
+  matchId       String         @unique
+  match         Match          @relation(fields: [matchId], references: [id])
+  nurseryId     String
+  nursery       NurseryProfile @relation(fields: [nurseryId], references: [id])
+  seekerId      String
+  seeker        SeekerProfile  @relation(fields: [seekerId], references: [id])
+  attitude      Int // 勤務態度 1-5
+  communication Int // コミュニケーション 1-5
+  skill         Int // 業務への姿勢 1-5
+  comment       String?
+  wouldRehire   Boolean
+  isPublished   Boolean        @default(false)
+  reviewedAt    DateTime       @default(now())
+}
+
+model ReviewSeekerToNursery {
+  id             String         @id @default(cuid())
+  matchId        String         @unique
+  match          Match          @relation(fields: [matchId], references: [id])
+  seekerId       String
+  seeker         SeekerProfile  @relation(fields: [seekerId], references: [id])
+  nurseryId      String
+  nursery        NurseryProfile @relation(fields: [nurseryId], references: [id])
+  explanation    Int // 受け入れ説明の丁寧さ 1-5
+  atmosphere     Int // 現場の雰囲気 1-5
+  support        Int // サポート体制 1-5
+  clarity        Int // 業務内容の明確さ 1-5
+  comment        String?
+  wouldWorkAgain Boolean
+  isPublished    Boolean        @default(false)
+  reviewedAt     DateTime       @default(now())
+}
