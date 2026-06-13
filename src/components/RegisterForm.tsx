@@ -15,12 +15,10 @@ import NextLink from 'next/link';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {registerCurrentUser} from '@/server/user';
+import type {RegisterRole} from '@/types/User';
 
 // The credential step already happened on Logto; here a signed-in user only
-// picks their role and agrees to the terms. SEEKER / NURSERY only — ADMIN is
-// provisioned by the operator, not self-registered.
-type RegisterRole = 'SEEKER' | 'NURSERY';
-
+// picks their role (RegisterRole — SEEKER / NURSERY) and agrees to the terms.
 export default function RegisterForm() {
   const [role, setRole] = useState<RegisterRole | null>(null);
   const [agreed, setAgreed] = useState(false);
