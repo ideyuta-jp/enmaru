@@ -17,6 +17,15 @@ datasource db {
 // The data model for the MVP. Shapes follow docs/requirements.md (the What);
 // see docs/design.md for where the code that uses these models lives. Naming:
 // PascalCase models, camelCase fields, cuid() ids.
+//
+// Core shape of the flow:
+//   JobPosting (1) ──< Engagement (N)   — one posting, many seekers (future)
+// A JobPosting is a nursery's offer. An Engagement is one seeker's whole
+// involvement with that posting: it is created when the seeker applies (matching
+// is immediate), then runs MATCHED -> WORKING -> COMPLETED and carries the mutual
+// review. "Applying" is the birth of an Engagement, not a separate entity. The
+// posting's own open/closed life is JobPosting.status, kept apart from each
+// seeker's lifecycle.
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -33,16 +42,16 @@ enum JobStatus {
   CLOSED
 }
 
-// Match lifecycle. Matching is immediate and first-come, so a match is born at
-// MATCHED — there is no applied/screening step. Review progress is tracked
-// separately (see ReviewStatus), not as extra match states.
-enum MatchStatus {
+// Lifecycle of one Engagement. Matching is immediate and first-come, so an
+// Engagement is born at MATCHED. Review progress is tracked separately (see
+// ReviewStatus), not as extra states here.
+enum EngagementStatus {
   MATCHED
   WORKING
   COMPLETED
 }
 
-// How far the mutual review has progressed for a completed match.
+// How far the mutual review has progressed for a completed Engagement.
 enum ReviewStatus {
   NONE
   PARTIAL
@@ -116,11 +125,8 @@ model SeekerProfile {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  applications    Application[]
-  matches         Match[]                 @relation("SeekerMatches")
-  documents       Document[]
-  reviewsGiven    ReviewSeekerToNursery[]
-  reviewsReceived ReviewNurseryToSeeker[]
+  engagements Engagement[]
+  documents   Document[]
 }
 
 model NurseryProfile {
@@ -139,14 +145,14 @@ model NurseryProfile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  jobPostings     JobPosting[]
-  matches         Match[]                 @relation("NurseryMatches")
-  reviewsGiven    ReviewNurseryToSeeker[]
-  reviewsReceived ReviewSeekerToNursery[]
+  // Engagements and reviews are reached through jobPostings, not stored here:
+  // an Engagement keeps only jobId + seekerId (the nursery is derived via the
+  // posting), so there is no redundant nurseryId to keep in sync.
+  jobPostings JobPosting[]
 }
 
 // ---------------------------------------------------------------------------
-// Posting → application → match
+// Posting and engagement
 // ---------------------------------------------------------------------------
 
 model JobPosting {
@@ -167,93 +173,80 @@ model JobPosting {
   postedAt          DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  applications Application[]
-  matches      Match[]
+  engagements Engagement[]
 }
 
-model Application {
-  id            String        @id @default(cuid())
+// One seeker's whole involvement with one posting, from applying through the
+// mutual review. Created when the seeker applies (immediate, first-come match),
+// so applyMessage/lineContactOk live here and createdAt is the application time.
+// Holds only jobId + seekerId; the nursery is reached via job.
+model Engagement {
+  id            String           @id @default(cuid())
   jobId         String
-  job           JobPosting    @relation(fields: [jobId], references: [id])
+  job           JobPosting       @relation(fields: [jobId], references: [id])
   seekerId      String
-  seeker        SeekerProfile @relation(fields: [seekerId], references: [id])
+  seeker        SeekerProfile    @relation(fields: [seekerId], references: [id])
   applyMessage  String?
-  lineContactOk Boolean       @default(false)
-  appliedAt     DateTime      @default(now())
-  match         Match?
-
-  // A seeker can apply to a given posting only once.
-  @@unique([jobId, seekerId])
-}
-
-// nurseryId/seekerId are denormalized from the application chain so the admin
-// console, review queries, and notifications can filter without multi-hop joins.
-model Match {
-  id            String         @id @default(cuid())
-  applicationId String         @unique
-  application   Application    @relation(fields: [applicationId], references: [id])
-  jobId         String
-  job           JobPosting     @relation(fields: [jobId], references: [id])
-  nurseryId     String
-  nursery       NurseryProfile @relation("NurseryMatches", fields: [nurseryId], references: [id])
-  seekerId      String
-  seeker        SeekerProfile  @relation("SeekerMatches", fields: [seekerId], references: [id])
-  status        MatchStatus    @default(MATCHED)
-  workDate      DateTime?
+  lineContactOk Boolean          @default(false)
+  status        EngagementStatus @default(MATCHED)
   completedAt   DateTime?
-  reviewStatus  ReviewStatus   @default(NONE)
+  reviewStatus  ReviewStatus     @default(NONE)
   // Admin-only operating note.
   adminMemo     String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   workReports           WorkReport[]
   messages              Message[]
   reviewNurseryToSeeker ReviewNurseryToSeeker?
   reviewSeekerToNursery ReviewSeekerToNursery?
+
+  // A seeker can engage a given posting only once.
+  @@unique([jobId, seekerId])
 }
 
-// Both parties confirm the shift happened; the match becomes COMPLETED once both
-// reports are in. (Whether the nursery must also report is an open question in
-// docs/requirements.md — current behavior follows the spec: both report.)
+// Both parties confirm the shift happened; the Engagement becomes COMPLETED once
+// both reports are in. (Whether the nursery must also report is an open question
+// in docs/requirements.md — current behavior follows the spec: both report.)
 model WorkReport {
-  id         String   @id @default(cuid())
-  matchId    String
-  match      Match    @relation(fields: [matchId], references: [id])
-  reporter   Party
-  completed  Boolean
-  comment    String?
-  reportedAt DateTime @default(now())
+  id           String     @id @default(cuid())
+  engagementId String
+  engagement   Engagement @relation(fields: [engagementId], references: [id])
+  reporter     Party
+  completed    Boolean
+  comment      String?
+  reportedAt   DateTime   @default(now())
 
-  // Each party reports at most once per match.
-  @@unique([matchId, reporter])
+  // Each party reports at most once per engagement.
+  @@unique([engagementId, reporter])
 }
 
 // ---------------------------------------------------------------------------
 // Chat, documents, notifications
 // ---------------------------------------------------------------------------
 
-// Chat is available from when the match forms until 24h after completion; the
-// time-window rule is enforced in server/, not the schema.
+// Chat is available from when the engagement forms until 24h after completion;
+// the time-window rule is enforced in server/, not the schema.
 model Message {
-  id        String   @id @default(cuid())
-  matchId   String
-  match     Match    @relation(fields: [matchId], references: [id])
-  senderId  String
-  sender    User     @relation(fields: [senderId], references: [id])
-  body      String
-  createdAt DateTime @default(now())
+  id           String     @id @default(cuid())
+  engagementId String
+  engagement   Engagement @relation(fields: [engagementId], references: [id])
+  senderId     String
+  sender       User       @relation(fields: [senderId], references: [id])
+  body         String
+  createdAt    DateTime   @default(now())
 }
 
 // A submitted document. fileKey is the R2 object key (a signed URL is produced
-// via src/lib/storage.ts); it is null when RESUME is filled in as an in-app form
-// rather than uploaded. Admin verifies each by eye — no auto-verification.
+// via src/lib/storage.ts). RESUME is upload-only for the MVP — the in-app résumé
+// form path (spec 06 §2.2) is intentionally NOT supported yet; whether it is
+// needed is tracked in issue #18. Admin verifies each by eye — no auto-verify.
 model Document {
   id              String         @id @default(cuid())
   seekerId        String
   seeker          SeekerProfile  @relation(fields: [seekerId], references: [id])
   documentType    DocumentType
-  fileKey         String?
+  fileKey         String
   status          DocumentStatus @default(PENDING)
   rejectionReason String?
   uploadedAt      DateTime       @default(now())
@@ -278,42 +271,34 @@ model Notification {
 }
 
 // ---------------------------------------------------------------------------
-// Mutual review (one row per direction per match; both gated on COMPLETED).
-// seekerId/nurseryId are denormalized for aggregate-rating queries.
+// Mutual review (one row per direction per engagement; both gated on COMPLETED).
+// Linked only to the engagement; seeker/nursery are derived via it.
 // isPublished is false by default: reviews start private until admin publishes.
 // ---------------------------------------------------------------------------
 
 model ReviewNurseryToSeeker {
-  id            String         @id @default(cuid())
-  matchId       String         @unique
-  match         Match          @relation(fields: [matchId], references: [id])
-  nurseryId     String
-  nursery       NurseryProfile @relation(fields: [nurseryId], references: [id])
-  seekerId      String
-  seeker        SeekerProfile  @relation(fields: [seekerId], references: [id])
+  id            String     @id @default(cuid())
+  engagementId  String     @unique
+  engagement    Engagement @relation(fields: [engagementId], references: [id])
   attitude      Int // 勤務態度 1-5
   communication Int // コミュニケーション 1-5
   skill         Int // 業務への姿勢 1-5
   comment       String?
   wouldRehire   Boolean
-  isPublished   Boolean        @default(false)
-  reviewedAt    DateTime       @default(now())
+  isPublished   Boolean    @default(false)
+  reviewedAt    DateTime   @default(now())
 }
 
 model ReviewSeekerToNursery {
-  id             String         @id @default(cuid())
-  matchId        String         @unique
-  match          Match          @relation(fields: [matchId], references: [id])
-  seekerId       String
-  seeker         SeekerProfile  @relation(fields: [seekerId], references: [id])
-  nurseryId      String
-  nursery        NurseryProfile @relation(fields: [nurseryId], references: [id])
+  id             String     @id @default(cuid())
+  engagementId   String     @unique
+  engagement     Engagement @relation(fields: [engagementId], references: [id])
   explanation    Int // 受け入れ説明の丁寧さ 1-5
   atmosphere     Int // 現場の雰囲気 1-5
   support        Int // サポート体制 1-5
   clarity        Int // 業務内容の明確さ 1-5
   comment        String?
   wouldWorkAgain Boolean
-  isPublished    Boolean        @default(false)
-  reviewedAt     DateTime       @default(now())
+  isPublished    Boolean    @default(false)
+  reviewedAt     DateTime   @default(now())
 }

@@ -5,7 +5,7 @@ CREATE TYPE "Role" AS ENUM ('SEEKER', 'NURSERY', 'ADMIN');
 CREATE TYPE "JobStatus" AS ENUM ('OPEN', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "MatchStatus" AS ENUM ('MATCHED', 'WORKING', 'COMPLETED');
+CREATE TYPE "EngagementStatus" AS ENUM ('MATCHED', 'WORKING', 'COMPLETED');
 
 -- CreateEnum
 CREATE TYPE "ReviewStatus" AS ENUM ('NONE', 'PARTIAL', 'DONE');
@@ -94,39 +94,26 @@ CREATE TABLE "JobPosting" (
 );
 
 -- CreateTable
-CREATE TABLE "Application" (
+CREATE TABLE "Engagement" (
     "id" TEXT NOT NULL,
     "jobId" TEXT NOT NULL,
     "seekerId" TEXT NOT NULL,
     "applyMessage" TEXT,
     "lineContactOk" BOOLEAN NOT NULL DEFAULT false,
-    "appliedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Application_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Match" (
-    "id" TEXT NOT NULL,
-    "applicationId" TEXT NOT NULL,
-    "jobId" TEXT NOT NULL,
-    "nurseryId" TEXT NOT NULL,
-    "seekerId" TEXT NOT NULL,
-    "status" "MatchStatus" NOT NULL DEFAULT 'MATCHED',
-    "workDate" TIMESTAMP(3),
+    "status" "EngagementStatus" NOT NULL DEFAULT 'MATCHED',
     "completedAt" TIMESTAMP(3),
     "reviewStatus" "ReviewStatus" NOT NULL DEFAULT 'NONE',
     "adminMemo" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Match_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Engagement_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "WorkReport" (
     "id" TEXT NOT NULL,
-    "matchId" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
     "reporter" "Party" NOT NULL,
     "completed" BOOLEAN NOT NULL,
     "comment" TEXT,
@@ -138,7 +125,7 @@ CREATE TABLE "WorkReport" (
 -- CreateTable
 CREATE TABLE "Message" (
     "id" TEXT NOT NULL,
-    "matchId" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
     "senderId" TEXT NOT NULL,
     "body" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -151,7 +138,7 @@ CREATE TABLE "Document" (
     "id" TEXT NOT NULL,
     "seekerId" TEXT NOT NULL,
     "documentType" "DocumentType" NOT NULL,
-    "fileKey" TEXT,
+    "fileKey" TEXT NOT NULL,
     "status" "DocumentStatus" NOT NULL DEFAULT 'PENDING',
     "rejectionReason" TEXT,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -177,9 +164,7 @@ CREATE TABLE "Notification" (
 -- CreateTable
 CREATE TABLE "ReviewNurseryToSeeker" (
     "id" TEXT NOT NULL,
-    "matchId" TEXT NOT NULL,
-    "nurseryId" TEXT NOT NULL,
-    "seekerId" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
     "attitude" INTEGER NOT NULL,
     "communication" INTEGER NOT NULL,
     "skill" INTEGER NOT NULL,
@@ -194,9 +179,7 @@ CREATE TABLE "ReviewNurseryToSeeker" (
 -- CreateTable
 CREATE TABLE "ReviewSeekerToNursery" (
     "id" TEXT NOT NULL,
-    "matchId" TEXT NOT NULL,
-    "seekerId" TEXT NOT NULL,
-    "nurseryId" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
     "explanation" INTEGER NOT NULL,
     "atmosphere" INTEGER NOT NULL,
     "support" INTEGER NOT NULL,
@@ -225,22 +208,19 @@ CREATE UNIQUE INDEX "SeekerProfile_userId_key" ON "SeekerProfile"("userId");
 CREATE UNIQUE INDEX "NurseryProfile_userId_key" ON "NurseryProfile"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Application_jobId_seekerId_key" ON "Application"("jobId", "seekerId");
+CREATE UNIQUE INDEX "Engagement_jobId_seekerId_key" ON "Engagement"("jobId", "seekerId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Match_applicationId_key" ON "Match"("applicationId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "WorkReport_matchId_reporter_key" ON "WorkReport"("matchId", "reporter");
+CREATE UNIQUE INDEX "WorkReport_engagementId_reporter_key" ON "WorkReport"("engagementId", "reporter");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Document_seekerId_documentType_key" ON "Document"("seekerId", "documentType");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ReviewNurseryToSeeker_matchId_key" ON "ReviewNurseryToSeeker"("matchId");
+CREATE UNIQUE INDEX "ReviewNurseryToSeeker_engagementId_key" ON "ReviewNurseryToSeeker"("engagementId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ReviewSeekerToNursery_matchId_key" ON "ReviewSeekerToNursery"("matchId");
+CREATE UNIQUE INDEX "ReviewSeekerToNursery_engagementId_key" ON "ReviewSeekerToNursery"("engagementId");
 
 -- AddForeignKey
 ALTER TABLE "SeekerProfile" ADD CONSTRAINT "SeekerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -252,28 +232,16 @@ ALTER TABLE "NurseryProfile" ADD CONSTRAINT "NurseryProfile_userId_fkey" FOREIGN
 ALTER TABLE "JobPosting" ADD CONSTRAINT "JobPosting_nurseryId_fkey" FOREIGN KEY ("nurseryId") REFERENCES "NurseryProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Application" ADD CONSTRAINT "Application_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Engagement" ADD CONSTRAINT "Engagement_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Application" ADD CONSTRAINT "Application_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Engagement" ADD CONSTRAINT "Engagement_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Match" ADD CONSTRAINT "Match_applicationId_fkey" FOREIGN KEY ("applicationId") REFERENCES "Application"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WorkReport" ADD CONSTRAINT "WorkReport_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "Engagement"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Match" ADD CONSTRAINT "Match_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Match" ADD CONSTRAINT "Match_nurseryId_fkey" FOREIGN KEY ("nurseryId") REFERENCES "NurseryProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Match" ADD CONSTRAINT "Match_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "WorkReport" ADD CONSTRAINT "WorkReport_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Message" ADD CONSTRAINT "Message_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "Engagement"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -285,19 +253,7 @@ ALTER TABLE "Document" ADD CONSTRAINT "Document_seekerId_fkey" FOREIGN KEY ("see
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ReviewNurseryToSeeker" ADD CONSTRAINT "ReviewNurseryToSeeker_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ReviewNurseryToSeeker" ADD CONSTRAINT "ReviewNurseryToSeeker_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "Engagement"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ReviewNurseryToSeeker" ADD CONSTRAINT "ReviewNurseryToSeeker_nurseryId_fkey" FOREIGN KEY ("nurseryId") REFERENCES "NurseryProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ReviewNurseryToSeeker" ADD CONSTRAINT "ReviewNurseryToSeeker_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ReviewSeekerToNursery" ADD CONSTRAINT "ReviewSeekerToNursery_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ReviewSeekerToNursery" ADD CONSTRAINT "ReviewSeekerToNursery_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ReviewSeekerToNursery" ADD CONSTRAINT "ReviewSeekerToNursery_nurseryId_fkey" FOREIGN KEY ("nurseryId") REFERENCES "NurseryProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ReviewSeekerToNursery" ADD CONSTRAINT "ReviewSeekerToNursery_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "Engagement"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
