@@ -16,8 +16,8 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import Link from 'next/link';
-import {useRouter} from 'next/navigation';
 
+import {signOut} from '@/server/auth-actions';
 import type {UserRole} from '@/types/User';
 
 interface NavItem {
@@ -61,13 +61,11 @@ interface Props {
 
 export default function Header({role = null}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const router = useRouter();
   const navItems = getNavItems(role);
 
   function handleLogout() {
-    // TODO(#7 follow-up): call the sign-out endpoint / Logto flow before
-    // redirecting. Here we only navigate so the UI is exercisable.
-    router.push('/login');
+    // Server Action: ends the Logto session and redirects to the base URL.
+    void signOut();
   }
 
   return (

@@ -29,12 +29,12 @@ letting both sides review each other **only after real work has happened**.
 
 ## Actors
 
-| Actor                  | Who                                        | Primary stance                              |
-| ---------------------- | ------------------------------------------ | ------------------------------------------- |
-| Seeker (潜在保育士)    | License holder, often with a career gap    | Wants flexible work, low re-entry pressure  |
-| Nursery (保育園)       | Director / hiring staff                    | Wants to fill shifts and avoid mismatches   |
-| Admin (事務局/KASUMIN) | Operator                                   | Keeps the service healthy and trustworthy   |
-| Public (未ログイン)    | Anyone browsing                            | Evaluates the service before signing up     |
+| Actor                  | Who                                     | Primary stance                             |
+| ---------------------- | --------------------------------------- | ------------------------------------------ |
+| Seeker (潜在保育士)    | License holder, often with a career gap | Wants flexible work, low re-entry pressure |
+| Nursery (保育園)       | Director / hiring staff                 | Wants to fill shifts and avoid mismatches  |
+| Admin (事務局/KASUMIN) | Operator                                | Keeps the service healthy and trustworthy  |
+| Public (未ログイン)    | Anyone browsing                         | Evaluates the service before signing up    |
 
 ## Core lifecycle — the backbone
 
@@ -55,11 +55,11 @@ separate screening or manual-approval step (per the spec's
 
 A match then moves through three statuses:
 
-| Status      | Meaning                                  | Entered when                                    |
-| ----------- | ---------------------------------------- | ----------------------------------------------- |
-| `matched`   | Seeker and nursery are paired            | Seeker applies (the posting closes, first-come) |
-| `working`   | The shift is underway                    | Seeker marks the work as started                |
-| `completed` | The shift is done and confirmed          | The work-completion report(s) are in            |
+| Status      | Meaning                         | Entered when                                    |
+| ----------- | ------------------------------- | ----------------------------------------------- |
+| `matched`   | Seeker and nursery are paired   | Seeker applies (the posting closes, first-come) |
+| `working`   | The shift is underway           | Seeker marks the work as started                |
+| `completed` | The shift is done and confirmed | The work-completion report(s) are in            |
 
 Review progress is tracked alongside the status: `none` → `partial` (one side has
 reviewed) → `done` (both sides have reviewed). A review may be submitted only once
@@ -150,13 +150,13 @@ every capability above.
 
 ## Non-functional requirements
 
-| Area            | Requirement                                                                          |
-| --------------- | ------------------------------------------------------------------------------------ |
-| Privacy         | Protect personal data; enforce the information boundary above.                       |
-| Discoverability | Public nursery and posting pages must be findable by search engines.                 |
+| Area            | Requirement                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Privacy         | Protect personal data; enforce the information boundary above.                                     |
+| Discoverability | Public nursery and posting pages must be findable by search engines.                               |
 | Usability       | Intuitive for non-technical nursery staff and seekers; keep the admin's manual operating load low. |
-| Trust           | Evaluations reflect real, completed work.                                            |
-| Region          | Initial target is Nagasaki (default area selection).                                 |
+| Trust           | Evaluations reflect real, completed work.                                                          |
+| Region          | Initial target is Nagasaki (default area selection).                                               |
 
 ## Scope and phasing
 
@@ -205,7 +205,7 @@ Do not build these; their rules do not exist yet (the spec marks them "別途
 ## Open questions — confirm with KASUMIN
 
 - **Does the nursery also file a work-completion report?** The spec and the
-  reference implementation both have *both* sides report, and gate `completed` on
+  reference implementation both have _both_ sides report, and gate `completed` on
   both. The likely rationale is mutual confirmation that the shift actually happened
   before reviews open. Confirm whether the nursery must report too, or whether the
   seeker's report (perhaps with a lightweight nursery acknowledgement) is enough.
