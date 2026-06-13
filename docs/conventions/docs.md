@@ -25,6 +25,7 @@ when none of these owns the question.
 
 | The reader's question                                               | Home                                         |
 | ------------------------------------------------------------------- | -------------------------------------------- |
+| What must the product do? Capabilities, rules, scope                | [`docs/requirements.md`](../requirements.md) |
 | How do I set this up and run it? Commands, env vars, deploys        | [`README.md`](../../README.md)               |
 | How is the system put together? What talks to what, directory roles | [`docs/architecture.md`](../architecture.md) |
 | Where does this new code go?                                        | [`docs/design.md`](../design.md)             |

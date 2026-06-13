@@ -105,6 +105,8 @@ repo; GitHub Actions only runs the quality-gate CI.
 
 Find the right document by the question you have:
 
+- **What must the product do?**
+  - [Requirements](docs/requirements.md) — capabilities and rules, tech-independent
 - **How is the system put together?**
   - [Architecture](docs/architecture.md) — system diagram, tiers, directory roles
 - **Where does this new code go?**
