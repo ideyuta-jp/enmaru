@@ -41,8 +41,12 @@ letting both sides review each other **only after real work has happened**.
 enmaru is built around one progression, from a posting to a reviewed piece of work:
 
 ```
-job posted → application → work performed → work completed → both sides review
+nursery posts a job → seeker applies → seeker works the shift
+→ both confirm completion → both review each other
 ```
+
+These are the actions that drive the flow. The match's formal statuses are in the
+table below.
 
 **Matching is immediate and first-come.** The moment a seeker applies to a posting,
 the match is formed and the posting closes to further applicants. There is no
