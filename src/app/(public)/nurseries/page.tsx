@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     '保育園・保育施設の一覧です。スポットサポートを募集している保育園を探せます。',
 };
 
+// Backed by a live DB query, so it renders per-request (still SSR'd for SEO).
+export const dynamic = 'force-dynamic';
+
 export default async function NurseriesPage() {
   const nurseries = await listPublishedNurseries();
 

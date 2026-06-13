@@ -1,6 +1,8 @@
 'use client';
 
 import {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -11,39 +13,37 @@ import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
+import {saveNurseryProfile} from '@/server/nursery-actions';
+import {EMPTY_NURSERY_PROFILE, type NurseryProfileInput} from '@/types/Nursery';
 
-interface ProfileForm {
-  nurseryName: string;
-  area: string;
-  address: string;
-  contactName: string;
-  phone: string;
-  concept: string;
-  policy: string;
-  isPublished: boolean;
+interface Props {
+  // The nursery's existing profile, or null when creating one for the first time.
+  initial: NurseryProfileInput | null;
 }
 
-const INITIAL_FORM: ProfileForm = {
-  nurseryName: '',
-  area: '',
-  address: '',
-  contactName: '',
-  phone: '',
-  concept: '',
-  policy: '',
-  isPublished: false,
-};
-
-export default function NurseryProfileForm() {
-  // TODO(#7 follow-up): load the nursery's existing profile and prefill this form.
-  const [form, setForm] = useState<ProfileForm>(INITIAL_FORM);
+export default function NurseryProfileForm({initial}: Props) {
+  const router = useRouter();
+  const [form, setForm] = useState<NurseryProfileInput>(
+    initial ?? EMPTY_NURSERY_PROFILE,
+  );
   const [saving, setSaving] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    // TODO(#7 follow-up): persist the profile, then surface a success message.
+    setError(null);
+    setSaved(false);
+    try {
+      await saveNurseryProfile(form);
+      setSaved(true);
+      router.refresh();
+    } catch {
+      setError('保存に失敗しました。入力内容を確認してください。');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -53,6 +53,11 @@ export default function NurseryProfileForm() {
       </SectionHeading>
 
       <ErrorAlert message={error} />
+      {saved && (
+        <Alert severity="success" sx={{mb: 2}}>
+          保存しました
+        </Alert>
+      )}
 
       <Box
         component="form"

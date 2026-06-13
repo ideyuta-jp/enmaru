@@ -1,107 +1,105 @@
-import type {PublicNursery, PublicNurseryDetail} from '@/types/Nursery';
+import {prisma} from '@/lib/prisma';
+import {getCurrentUser} from '@/server/auth';
+import type {
+  NurseryDashboard,
+  NurseryProfileInput,
+  PublicNursery,
+  PublicNurseryDetail,
+} from '@/types/Nursery';
 
-// NOTE: This module is a UI-only placeholder. Every function returns sample data
-// so the pages render without a database. TODO(#7 follow-up): replace each body
-// with a real Prisma query against the Neon database (this is the only layer
-// allowed to import the Prisma client).
-
-const SAMPLE_NURSERIES: PublicNursery[] = [
-  {
-    id: 'n1',
-    nurseryName: 'さくら保育園',
-    area: '長崎市',
-    concept:
-      '一人ひとりの「やってみたい」を大切に、自然に囲まれた環境でのびのびと過ごせる園です。',
-    policy: null,
-    rating: {total: 4.6, count: 12},
-  },
-  {
-    id: 'n2',
-    nurseryName: 'あおぞらこども園',
-    area: '長崎市',
-    concept:
-      '地域とのつながりを大切にし、四季の行事を通じて豊かな心を育みます。',
-    policy: null,
-    rating: {total: 4.2, count: 5},
-  },
-  {
-    id: 'n3',
-    nurseryName: 'にじいろナーサリー',
-    area: '諫早市',
-    concept:
-      '少人数制で、家庭的な雰囲気の中ひとりひとりに寄り添う保育を行っています。',
-    policy: null,
-    rating: null,
-  },
-];
-
+// Published nurseries for the public list. Maps to the public projection only —
+// address / phone / contactName are never included (personal-info boundary).
+// rating is null for now; it is computed from published reviews in the review
+// vertical.
 export async function listPublishedNurseries(): Promise<PublicNursery[]> {
-  return SAMPLE_NURSERIES;
+  const nurseries = await prisma.nurseryProfile.findMany({
+    where: {isPublished: true},
+    orderBy: {createdAt: 'desc'},
+  });
+
+  return nurseries.map((n) => ({
+    id: n.id,
+    nurseryName: n.nurseryName,
+    area: n.area,
+    concept: n.concept,
+    policy: n.policy,
+    rating: null,
+  }));
 }
 
+// One published nursery's public detail. Only the profile portion is wired here;
+// jobPostings / reviews / rating are populated by the posting and review
+// verticals and are empty until then.
 export async function getPublishedNursery(
   id: string,
 ): Promise<PublicNurseryDetail | null> {
-  const base = SAMPLE_NURSERIES.find((n) => n.id === id) ?? SAMPLE_NURSERIES[0];
+  const n = await prisma.nurseryProfile.findFirst({
+    where: {id, isPublished: true},
+  });
+  if (!n) return null;
 
   return {
-    ...base,
-    id,
-    policy:
-      '子どもの主体性を尊重し、「待つ保育」を心がけています。ブランクのある方も安心して入っていただけるよう、丁寧に引き継ぎを行います。',
-    jobPostings: [
-      {
-        id: 'j1',
-        title: '午前中サポート保育スタッフ募集',
-        workContent:
-          '0〜2歳児クラスの保育補助。朝の受け入れと午前の活動をお願いします。',
-        workDate: '2026-07-01',
-        workTimeStart: '08:30',
-        workTimeEnd: '12:30',
-        hourlyWage: 1200,
-        targetPerson: '保育士資格をお持ちの方',
-        remarks: null,
-        status: 'OPEN',
-      },
-      {
-        id: 'j2',
-        title: '行事準備サポート（単発）',
-        workContent: '夏祭りの準備・当日運営の補助をお願いします。',
-        workDate: '2026-07-20',
-        workTimeStart: '09:00',
-        workTimeEnd: '15:00',
-        hourlyWage: null,
-        targetPerson: null,
-        remarks: null,
-        status: 'OPEN',
-      },
-    ],
-    reviews: [
-      {
-        comment:
-          '受け入れの説明が丁寧で、ブランクがあっても安心して働けました。',
-        reviewedAt: '2026-05-10T00:00:00.000Z',
-      },
-      {
-        comment: '先生方が温かく、現場の雰囲気がとても良かったです。',
-        reviewedAt: '2026-04-22T00:00:00.000Z',
-      },
-    ],
+    id: n.id,
+    nurseryName: n.nurseryName,
+    area: n.area,
+    concept: n.concept,
+    policy: n.policy,
+    rating: null,
+    jobPostings: [],
+    reviews: [],
   };
 }
 
-export interface NurseryDashboard {
-  nurseryName: string | null;
-  isPublished: boolean;
-  openJobCount: number;
-  newApplicationCount: number;
+// The current nursery's profile as form-ready input, or null if none yet.
+export async function getNurseryProfileInput(): Promise<NurseryProfileInput | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const p = await prisma.nurseryProfile.findUnique({where: {userId: user.id}});
+  if (!p) return null;
+
+  return {
+    nurseryName: p.nurseryName,
+    area: p.area,
+    address: p.address ?? '',
+    contactName: p.contactName,
+    phone: p.phone ?? '',
+    concept: p.concept ?? '',
+    policy: p.policy ?? '',
+    isPublished: p.isPublished,
+  };
 }
 
+// Summary for the nursery dashboard. Job / application counts are real queries
+// that return 0 until the posting/engagement verticals create any rows.
 export async function getNurseryDashboard(): Promise<NurseryDashboard> {
+  const user = await getCurrentUser();
+  const profile = user
+    ? await prisma.nurseryProfile.findUnique({where: {userId: user.id}})
+    : null;
+
+  if (!profile) {
+    return {
+      hasProfile: false,
+      nurseryName: null,
+      isPublished: false,
+      openJobCount: 0,
+      newApplicationCount: 0,
+    };
+  }
+
+  const [openJobCount, newApplicationCount] = await Promise.all([
+    prisma.jobPosting.count({
+      where: {nurseryId: profile.id, status: 'OPEN'},
+    }),
+    prisma.engagement.count({where: {job: {nurseryId: profile.id}}}),
+  ]);
+
   return {
-    nurseryName: 'さくら保育園',
-    isPublished: true,
-    openJobCount: 2,
-    newApplicationCount: 1,
+    hasProfile: true,
+    nurseryName: profile.nurseryName,
+    isPublished: profile.isPublished,
+    openJobCount,
+    newApplicationCount,
   };
 }

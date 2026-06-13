@@ -1,19 +1,26 @@
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
+import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
+import NextLink from 'next/link';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SummaryCard from '@/components/SummaryCard';
+import {requireRole} from '@/server/auth';
 import {getSeekerDashboard} from '@/server/seeker';
+
+// Reads the session, so it renders per-request.
+export const dynamic = 'force-dynamic';
 
 // TODO(#7 follow-up): the "評価を書く" card points at a sample match for now; the
 // real destination is a list of reviewable matches (phase 2).
@@ -45,11 +52,12 @@ const NAV_CARDS = [
 ];
 
 export default async function SeekerMypagePage() {
+  const user = await requireRole(['SEEKER']);
   const dashboard = await getSeekerDashboard();
 
   return (
     <>
-      <Header role="SEEKER" />
+      <Header role={user.role} />
       <PageContainer>
         <Box sx={{mb: 3}}>
           <Typography
@@ -64,6 +72,15 @@ export default async function SeekerMypagePage() {
             えんまーるへようこそ
           </Typography>
         </Box>
+
+        {!dashboard.hasProfile && (
+          <Alert severity="info" sx={{mb: 3}}>
+            プロフィールを作成すると応募できるようになります。{' '}
+            <MuiLink component={NextLink} href="/profile" underline="hover">
+              プロフィールを作成
+            </MuiLink>
+          </Alert>
+        )}
 
         <Box
           sx={{
@@ -80,7 +97,7 @@ export default async function SeekerMypagePage() {
           />
           <SummaryCard
             label="進行中のマッチング"
-            value={dashboard.activeMatchCount}
+            value={dashboard.activeEngagementCount}
             unit="件"
           />
         </Box>
