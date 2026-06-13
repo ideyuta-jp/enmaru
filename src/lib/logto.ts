@@ -1,4 +1,4 @@
-import type {LogtoNextConfig} from '@logto/next';
+import {UserScope, type LogtoNextConfig} from '@logto/next';
 import {getLogtoContext, type LogtoContext} from '@logto/next/server-actions';
 
 // Logto Cloud configuration. Local dev points at a dev Logto tenant/app;
@@ -12,6 +12,9 @@ export const logtoConfig: LogtoNextConfig = {
   baseUrl: process.env.LOGTO_BASE_URL ?? '',
   cookieSecret: process.env.LOGTO_COOKIE_SECRET ?? '',
   cookieSecure: process.env.NODE_ENV === 'production',
+  // Request the user's email so registration can seed User.email. Without this
+  // scope Logto omits email from the ID token and userinfo response.
+  scopes: [UserScope.Email],
 };
 
 // Sign-in callback URL. Register this exact value as a redirect URI in the
