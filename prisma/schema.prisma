@@ -26,6 +26,17 @@ datasource db {
 // review. "Applying" is the birth of an Engagement, not a separate entity. The
 // posting's own open/closed life is JobPosting.status, kept apart from each
 // seeker's lifecycle.
+//
+// Vocabulary — "Job" vs "Work" are used deliberately, not interchangeably:
+//   - Job / JobPosting: the posting (the offer a nursery lists). JobStatus is the
+//     posting's open/closed state.
+//   - Work: the actual shift the posting offers. workContent / workDate /
+//     workTime* describe that shift; WorkReport confirms it was performed.
+// In short: a JobPosting advertises Work.
+//
+// Public/private boundary is NOT expressed by field-level flags here. What a
+// non-admin sees is defined structurally by the DTOs in src/types/
+// (PublicSeeker / PublicNursery) and enforced in server/ — see docs/requirements.md.
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -58,22 +69,26 @@ enum ReviewStatus {
   DONE
 }
 
-// Which of the two parties an action came from. Excludes ADMIN by design, so it
-// is a distinct enum from Role rather than a reuse.
+// The two parties to an Engagement. Deliberately separate from Role: a Role can
+// be ADMIN, but only a seeker or a nursery can be a party to an Engagement.
+// Using Party for things like WorkReport.reporter makes "admin filed a report"
+// unrepresentable rather than something to validate against at runtime.
 enum Party {
   SEEKER
   NURSERY
 }
 
-// Documents a seeker submits for admin verification (the application gate).
-enum DocumentType {
+// Kinds of document a seeker submits for admin verification (the application
+// gate). Scoped to the seeker so future nursery-side documents (audit, billing)
+// get their own type rather than overloading this one.
+enum SeekerDocumentType {
   RESUME // 履歴書相当情報
   LICENSE // 保育士証
   HEALTH_CHECK // 健康診断書
   STOOL_TEST // 検便結果（一部の募集のみ必須）
 }
 
-enum DocumentStatus {
+enum SeekerDocumentStatus {
   PENDING // 確認中
   APPROVED // 認証済み
   REJECTED // 差し戻し
@@ -103,14 +118,13 @@ model User {
   seekerProfile  SeekerProfile?
   nurseryProfile NurseryProfile?
   notifications  Notification[]
-  messages       Message[]
+  chatMessages   ChatMessage[]
 }
 
 model SeekerProfile {
   id             String   @id @default(cuid())
   userId         String   @unique
   user           User     @relation(fields: [userId], references: [id])
-  // Non-public: visible to admin only (personal-info boundary).
   realName       String
   displayName    String
   license        Boolean  @default(false)
@@ -126,7 +140,7 @@ model SeekerProfile {
   updatedAt      DateTime @updatedAt
 
   engagements Engagement[]
-  documents   Document[]
+  documents   SeekerDocument[]
 }
 
 model NurseryProfile {
@@ -135,7 +149,6 @@ model NurseryProfile {
   user        User     @relation(fields: [userId], references: [id])
   nurseryName String
   area        String
-  // Non-public: visible to admin only (personal-info boundary).
   address     String?
   contactName String
   phone       String?
@@ -156,9 +169,9 @@ model NurseryProfile {
 // ---------------------------------------------------------------------------
 
 model JobPosting {
-  id                String         @id @default(cuid())
+  id                String               @id @default(cuid())
   nurseryId         String
-  nursery           NurseryProfile @relation(fields: [nurseryId], references: [id])
+  nursery           NurseryProfile       @relation(fields: [nurseryId], references: [id])
   title             String
   workContent       String
   workDate          DateTime
@@ -168,10 +181,10 @@ model JobPosting {
   targetPerson      String?
   remarks           String?
   // Documents this posting requires to be verified before a seeker may apply.
-  requiredDocuments DocumentType[] @default([])
-  status            JobStatus      @default(OPEN)
-  postedAt          DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  requiredDocuments SeekerDocumentType[] @default([])
+  status            JobStatus            @default(OPEN)
+  postedAt          DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   engagements Engagement[]
 }
@@ -197,7 +210,7 @@ model Engagement {
   updatedAt     DateTime         @updatedAt
 
   workReports           WorkReport[]
-  messages              Message[]
+  chatMessages          ChatMessage[]
   reviewNurseryToSeeker ReviewNurseryToSeeker?
   reviewSeekerToNursery ReviewSeekerToNursery?
 
@@ -225,9 +238,11 @@ model WorkReport {
 // Chat, documents, notifications
 // ---------------------------------------------------------------------------
 
-// Chat is available from when the engagement forms until 24h after completion;
-// the time-window rule is enforced in server/, not the schema.
-model Message {
+// A chat message within an engagement. Named specifically (not "Message") to
+// leave room for other message kinds the app may grow. Chat is available from
+// when the engagement forms until 24h after completion; that time-window rule is
+// enforced in server/, not the schema.
+model ChatMessage {
   id           String     @id @default(cuid())
   engagementId String
   engagement   Engagement @relation(fields: [engagementId], references: [id])
@@ -237,19 +252,22 @@ model Message {
   createdAt    DateTime   @default(now())
 }
 
-// A submitted document. fileKey is the R2 object key (a signed URL is produced
-// via src/lib/storage.ts). RESUME is upload-only for the MVP — the in-app résumé
-// form path (spec 06 §2.2) is intentionally NOT supported yet; whether it is
-// needed is tracked in issue #18. Admin verifies each by eye — no auto-verify.
-model Document {
-  id              String         @id @default(cuid())
+// A document a seeker submits for verification. Named SeekerDocument (not
+// "Document") because the app will likely handle other document kinds later
+// (nursery audit paperwork, billing), which should be their own models.
+// fileKey is the R2 object key (a signed URL is produced via src/lib/storage.ts).
+// RESUME is upload-only for the MVP — the in-app résumé form path (spec 06 §2.2)
+// is intentionally NOT supported yet; whether it is needed is tracked in #18.
+// Admin verifies each by eye — no auto-verification.
+model SeekerDocument {
+  id              String               @id @default(cuid())
   seekerId        String
-  seeker          SeekerProfile  @relation(fields: [seekerId], references: [id])
-  documentType    DocumentType
+  seeker          SeekerProfile        @relation(fields: [seekerId], references: [id])
+  documentType    SeekerDocumentType
   fileKey         String
-  status          DocumentStatus @default(PENDING)
+  status          SeekerDocumentStatus @default(PENDING)
   rejectionReason String?
-  uploadedAt      DateTime       @default(now())
+  uploadedAt      DateTime             @default(now())
   verifiedAt      DateTime?
 
   // One current document per type per seeker.
