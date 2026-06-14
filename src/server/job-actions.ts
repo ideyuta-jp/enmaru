@@ -3,6 +3,7 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import type {ActionResult} from '@/types/ActionResult';
+import {ALL_DOCUMENT_TYPES, type SeekerDocumentType} from '@/types/Document';
 import type {JobInput, JobStatus} from '@/types/Job';
 import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
@@ -35,6 +36,11 @@ function parseJobInput(
     hourlyWage = n;
   }
 
+  // Drop any unknown values, then de-duplicate the requested document types.
+  const requiredDocuments = [...new Set(input.requiredDocuments)].filter(
+    (d): d is SeekerDocumentType => ALL_DOCUMENT_TYPES.includes(d),
+  );
+
   return {
     ok: true,
     data: {
@@ -46,6 +52,7 @@ function parseJobInput(
       hourlyWage,
       targetPerson: blankToNull(input.targetPerson),
       remarks: blankToNull(input.remarks),
+      requiredDocuments,
     },
   };
 }
@@ -59,6 +66,7 @@ interface ValidJob {
   hourlyWage: number | null;
   targetPerson: string | null;
   remarks: string | null;
+  requiredDocuments: SeekerDocumentType[];
 }
 
 // Create a posting for the signed-in nursery. Requires a nursery profile (a

@@ -1,3 +1,5 @@
+import {SeekerDocumentType} from '@/types/Document';
+
 // A spot-work posting created by a nursery.
 export type JobStatus = 'OPEN' | 'CLOSED';
 
@@ -21,6 +23,8 @@ export interface Job {
   hourlyWage: number | null;
   targetPerson: string | null;
   remarks: string | null;
+  // Document types that must be verified before a seeker may apply.
+  requiredDocuments: SeekerDocumentType[];
   status: JobStatus;
 }
 
@@ -36,6 +40,7 @@ export interface JobInput {
   hourlyWage: string;
   targetPerson: string;
   remarks: string;
+  requiredDocuments: SeekerDocumentType[];
 }
 
 export const EMPTY_JOB: JobInput = {
@@ -47,6 +52,12 @@ export const EMPTY_JOB: JobInput = {
   hourlyWage: '',
   targetPerson: '',
   remarks: '',
+  // The baseline always-required documents; the nursery can add the stool test.
+  requiredDocuments: [
+    SeekerDocumentType.RESUME,
+    SeekerDocumentType.LICENSE,
+    SeekerDocumentType.HEALTH_CHECK,
+  ],
 };
 
 // Display posting -> form input (number/null -> string/empty), for prefilling the
@@ -61,5 +72,6 @@ export function toJobInput(job: Job): JobInput {
     hourlyWage: job.hourlyWage?.toString() ?? '',
     targetPerson: job.targetPerson ?? '',
     remarks: job.remarks ?? '',
+    requiredDocuments: job.requiredDocuments,
   };
 }

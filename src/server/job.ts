@@ -16,6 +16,7 @@ function toJob(p: JobPosting): Job {
     hourlyWage: p.hourlyWage,
     targetPerson: p.targetPerson,
     remarks: p.remarks,
+    requiredDocuments: p.requiredDocuments,
     status: p.status,
   };
 }
