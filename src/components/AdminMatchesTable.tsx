@@ -4,9 +4,7 @@ import {useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
-import Select from '@mui/material/Select';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -18,10 +16,11 @@ import Typography from '@mui/material/Typography';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 
+import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
 import StatusChip from '@/components/StatusChip';
-import {MATCH_STATUS_ORDER} from '@/types/Match';
-import type {AdminMatch, MatchStatus} from '@/types/Match';
+import {setEngagementMemo} from '@/server/match-actions';
+import type {AdminMatch} from '@/types/Match';
 
 interface Props {
   initialMatches: AdminMatch[];
@@ -31,24 +30,34 @@ export default function AdminMatchesTable({initialMatches}: Props) {
   const [matches, setMatches] = useState<AdminMatch[]>(initialMatches);
   const [editingMemo, setEditingMemo] = useState<Record<string, string>>({});
   const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
-
-  function updateStatus(id: string, status: MatchStatus) {
-    // TODO(#7 follow-up): persist the status change to the backend.
-    setMatches((prev) => prev.map((m) => (m.id === id ? {...m, status} : m)));
-  }
+  const [savingMemoId, setSavingMemoId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function startEditMemo(match: AdminMatch) {
     setEditingMemoId(match.id);
     setEditingMemo((prev) => ({...prev, [match.id]: match.adminMemo ?? ''}));
   }
 
-  function saveMemo(id: string) {
-    // TODO(#7 follow-up): persist the operator memo to the backend.
+  async function saveMemo(id: string) {
     const memo = editingMemo[id] ?? '';
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? {...m, adminMemo: memo} : m)),
-    );
-    setEditingMemoId(null);
+    setSavingMemoId(id);
+    setError(null);
+    try {
+      const result = await setEngagementMemo(id, memo);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      const saved = memo.trim() || null;
+      setMatches((prev) =>
+        prev.map((m) => (m.id === id ? {...m, adminMemo: saved} : m)),
+      );
+      setEditingMemoId(null);
+    } catch {
+      setError('メモの保存に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSavingMemoId(null);
+    }
   }
 
   return (
@@ -56,6 +65,8 @@ export default function AdminMatchesTable({initialMatches}: Props) {
       <SectionHeading subtitle={`${matches.length}件`}>
         マッチング管理
       </SectionHeading>
+
+      <ErrorAlert message={error} />
 
       {matches.length === 0 ? (
         <Typography color="text.secondary" sx={{py: 4, textAlign: 'center'}}>
@@ -75,9 +86,9 @@ export default function AdminMatchesTable({initialMatches}: Props) {
               <MobileMatchCard
                 key={match.id}
                 match={match}
-                onStatusChange={updateStatus}
                 editingMemo={editingMemo[match.id]}
                 isEditingMemo={editingMemoId === match.id}
+                isSavingMemo={savingMemoId === match.id}
                 onStartEditMemo={() => startEditMemo(match)}
                 onMemoChange={(v) =>
                   setEditingMemo((prev) => ({...prev, [match.id]: v}))
@@ -135,24 +146,8 @@ export default function AdminMatchesTable({initialMatches}: Props) {
                         {new Date(match.workDate).toLocaleDateString('ja-JP')}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{minWidth: 160}}>
-                      <Select
-                        value={match.status}
-                        size="small"
-                        onChange={(e) =>
-                          updateStatus(match.id, e.target.value as MatchStatus)
-                        }
-                        sx={{fontSize: '0.8rem'}}
-                        renderValue={(val) => (
-                          <StatusChip status={val as MatchStatus} />
-                        )}
-                      >
-                        {MATCH_STATUS_ORDER.map((s) => (
-                          <MenuItem key={s} value={s}>
-                            <StatusChip status={s} />
-                          </MenuItem>
-                        ))}
-                      </Select>
+                    <TableCell sx={{minWidth: 140}}>
+                      <StatusChip status={match.status} />
                     </TableCell>
                     <TableCell sx={{minWidth: 180}}>
                       {editingMemoId === match.id ? (
@@ -173,6 +168,7 @@ export default function AdminMatchesTable({initialMatches}: Props) {
                           <IconButton
                             size="small"
                             onClick={() => saveMemo(match.id)}
+                            disabled={savingMemoId === match.id}
                           >
                             <CheckIcon fontSize="small" />
                           </IconButton>
@@ -215,9 +211,9 @@ export default function AdminMatchesTable({initialMatches}: Props) {
 
 interface MobileMatchCardProps {
   match: AdminMatch;
-  onStatusChange: (id: string, status: MatchStatus) => void;
   editingMemo?: string;
   isEditingMemo: boolean;
+  isSavingMemo: boolean;
   onStartEditMemo: () => void;
   onMemoChange: (v: string) => void;
   onSaveMemo: () => void;
@@ -225,9 +221,9 @@ interface MobileMatchCardProps {
 
 const MobileMatchCard = ({
   match,
-  onStatusChange,
   editingMemo,
   isEditingMemo,
+  isSavingMemo,
   onStartEditMemo,
   onMemoChange,
   onSaveMemo,
@@ -266,20 +262,6 @@ const MobileMatchCard = ({
       {new Date(match.workDate).toLocaleDateString('ja-JP')}
     </Typography>
 
-    <Select
-      value={match.status}
-      size="small"
-      onChange={(e) => onStatusChange(match.id, e.target.value as MatchStatus)}
-      fullWidth
-      sx={{fontSize: '0.8rem', mb: 1}}
-    >
-      {MATCH_STATUS_ORDER.map((s) => (
-        <MenuItem key={s} value={s}>
-          <StatusChip status={s} />
-        </MenuItem>
-      ))}
-    </Select>
-
     {isEditingMemo ? (
       <Box sx={{display: 'flex', gap: 0.5}}>
         <TextField
@@ -295,6 +277,7 @@ const MobileMatchCard = ({
           size="small"
           variant="contained"
           onClick={onSaveMemo}
+          disabled={isSavingMemo}
           sx={{whiteSpace: 'nowrap'}}
         >
           保存

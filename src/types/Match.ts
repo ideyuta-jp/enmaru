@@ -39,6 +39,22 @@ export const MATCH_STATUS_ORDER: MatchStatus[] = [
   'REVIEW_DONE',
 ];
 
+// Derive the display status from an Engagement's stored fields. Matching is
+// immediate, so APPLIED/SCREENING never occur — an Engagement starts at MATCHED.
+// Review progress is a separate axis (ReviewStatus) that we fold into the single
+// display status the UI shows. The parameter unions mirror the Prisma enums.
+export function toMatchStatus(
+  status: 'MATCHED' | 'WORKING' | 'COMPLETED',
+  reviewStatus: 'NONE' | 'PARTIAL' | 'DONE',
+): MatchStatus {
+  if (status === 'COMPLETED') {
+    if (reviewStatus === 'DONE') return 'REVIEW_DONE';
+    if (reviewStatus === 'PARTIAL') return 'REVIEW_OPEN';
+    return 'COMPLETED';
+  }
+  return status;
+}
+
 // A match as seen by a nursery in its application inbox. The seeker's real name
 // is intentionally absent until the match is established.
 export interface NurseryMatch {

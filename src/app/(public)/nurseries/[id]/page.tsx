@@ -146,8 +146,9 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                     >
                       {job.workContent}
                     </Typography>
-                    {/* TODO(#7 follow-up): hide / disable when the seeker has
-                        already applied to this posting. */}
+                    {/* The apply page enforces eligibility (closed / already
+                        applied / required documents) and the form blocks
+                        ineligible submissions, so the button always links out. */}
                     <Button
                       href={`/applications/new?jobId=${job.id}`}
                       variant="contained"

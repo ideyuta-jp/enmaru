@@ -1,80 +1,76 @@
+import {prisma} from '@/lib/prisma';
+import {requireRole} from '@/server/auth';
+import {toMatchStatus} from '@/types/Match';
 import type {AdminMatch, NurseryMatch} from '@/types/Match';
+import {UserRole} from '@/types/User';
 
-// UI-only placeholder. TODO(#7 follow-up): replace with real Prisma queries.
-
-const SAMPLE_NURSERY_MATCHES: NurseryMatch[] = [
-  {
-    id: 'm1',
-    status: 'APPLIED',
-    jobTitle: '午前中サポート保育スタッフ募集',
-    workDate: '2026-07-01',
-    workTimeStart: '08:30',
-    workTimeEnd: '12:30',
-    seekerDisplayName: 'みき',
-    seekerPreferredStyle: ['午前のみ', '週2〜3'],
-    applyMessage:
-      'ブランクはありますが、乳児保育の経験があります。よろしくお願いします。',
-    lineContactOk: true,
-    appliedAt: '2026-06-01T00:00:00.000Z',
-  },
-  {
-    id: 'm2',
-    status: 'MATCHED',
-    jobTitle: '行事準備サポート（単発）',
-    workDate: '2026-07-20',
-    workTimeStart: '09:00',
-    workTimeEnd: '15:00',
-    seekerDisplayName: 'はるか',
-    seekerPreferredStyle: ['単発'],
-    applyMessage: null,
-    lineContactOk: false,
-    appliedAt: '2026-05-29T00:00:00.000Z',
-  },
-];
-
+// Engagements on the signed-in nursery's postings (newest first) — its
+// application inbox. The seeker's real name is intentionally not selected here;
+// only the display name is shown to the nursery. Guarded to NURSERY; empty until
+// the nursery has a profile.
 export async function listNurseryMatches(): Promise<NurseryMatch[]> {
-  return SAMPLE_NURSERY_MATCHES;
+  const user = await requireRole([UserRole.NURSERY]);
+  const profile = await prisma.nurseryProfile.findUnique({
+    where: {userId: user.id},
+  });
+  if (!profile) return [];
+
+  const engagements = await prisma.engagement.findMany({
+    where: {job: {nurseryId: profile.id}},
+    include: {
+      job: {
+        select: {
+          title: true,
+          workDate: true,
+          workTimeStart: true,
+          workTimeEnd: true,
+        },
+      },
+      seeker: {select: {displayName: true, preferredStyle: true}},
+    },
+    orderBy: {createdAt: 'desc'},
+  });
+
+  return engagements.map((e) => ({
+    id: e.id,
+    status: toMatchStatus(e.status, e.reviewStatus),
+    jobTitle: e.job.title,
+    workDate: e.job.workDate.toISOString().slice(0, 10),
+    workTimeStart: e.job.workTimeStart,
+    workTimeEnd: e.job.workTimeEnd,
+    seekerDisplayName: e.seeker.displayName,
+    seekerPreferredStyle: e.seeker.preferredStyle,
+    applyMessage: e.applyMessage,
+    lineContactOk: e.lineContactOk,
+    appliedAt: e.createdAt.toISOString(),
+  }));
 }
 
-const SAMPLE_ADMIN_MATCHES: AdminMatch[] = [
-  {
-    id: 'm1',
-    status: 'APPLIED',
-    adminMemo: null,
-    createdAt: '2026-06-01T00:00:00.000Z',
-    jobTitle: '午前中サポート保育スタッフ募集',
-    workDate: '2026-07-01',
-    nurseryName: 'さくら保育園',
-    nurseryArea: '長崎市',
-    seekerDisplayName: 'みき',
-    seekerRealName: '佐藤 美希',
-  },
-  {
-    id: 'm2',
-    status: 'SCREENING',
-    adminMemo: '園と日程調整中',
-    createdAt: '2026-05-29T00:00:00.000Z',
-    jobTitle: '行事準備サポート（単発）',
-    workDate: '2026-07-20',
-    nurseryName: 'あおぞらこども園',
-    nurseryArea: '長崎市',
-    seekerDisplayName: 'はるか',
-    seekerRealName: '田中 春香',
-  },
-  {
-    id: 'm3',
-    status: 'REVIEW_DONE',
-    adminMemo: null,
-    createdAt: '2026-03-30T00:00:00.000Z',
-    jobTitle: '春の遠足引率サポート',
-    workDate: '2026-04-15',
-    nurseryName: 'にじいろナーサリー',
-    nurseryArea: '諫早市',
-    seekerDisplayName: 'ゆい',
-    seekerRealName: '鈴木 結衣',
-  },
-];
-
+// All engagements for the admin matching console (newest first). Admins see both
+// parties' real names and the operator memo. Guarded to ADMIN.
 export async function listAllMatches(): Promise<AdminMatch[]> {
-  return SAMPLE_ADMIN_MATCHES;
+  await requireRole([UserRole.ADMIN]);
+
+  const engagements = await prisma.engagement.findMany({
+    include: {
+      job: {
+        include: {nursery: {select: {nurseryName: true, area: true}}},
+      },
+      seeker: {select: {displayName: true, realName: true}},
+    },
+    orderBy: {createdAt: 'desc'},
+  });
+
+  return engagements.map((e) => ({
+    id: e.id,
+    status: toMatchStatus(e.status, e.reviewStatus),
+    adminMemo: e.adminMemo,
+    createdAt: e.createdAt.toISOString(),
+    jobTitle: e.job.title,
+    workDate: e.job.workDate.toISOString().slice(0, 10),
+    nurseryName: e.job.nursery.nurseryName,
+    nurseryArea: e.job.nursery.area,
+    seekerDisplayName: e.seeker.displayName,
+    seekerRealName: e.seeker.realName,
+  }));
 }
