@@ -41,8 +41,10 @@ export async function startWork(engagementId: string): Promise<ActionResult> {
     return {ok: false, message: 'この業務はすでに開始されています。'};
   }
 
-  await prisma.engagement.update({
-    where: {id: engagementId},
+  // Guard the status in the write so two concurrent starts can't race; the check
+  // above is for the friendly message.
+  await prisma.engagement.updateMany({
+    where: {id: engagementId, status: 'MATCHED'},
     data: {status: 'WORKING'},
   });
   return {ok: true};
@@ -76,6 +78,13 @@ export async function submitWorkReport(
   const trimmed = comment.trim() || null;
 
   await prisma.$transaction(async (tx) => {
+    // Lock the engagement row first so the report read-modify-write is
+    // serialized. Without this, under READ COMMITTED two concurrent reports each
+    // upsert their own (different) row and neither sees the other's uncommitted
+    // row, so both compute bothReported=false and the engagement is stuck at
+    // WORKING forever. The lock makes the second report wait, then see both.
+    await tx.$queryRaw`SELECT id FROM "Engagement" WHERE id = ${engagementId} FOR UPDATE`;
+
     await tx.workReport.upsert({
       where: {engagementId_reporter: {engagementId, reporter: party}},
       update: {completed: true, comment: trimmed},
