@@ -36,11 +36,15 @@ export default function NurseryProfileForm({initial}: Props) {
     setError(null);
     setSaved(false);
     try {
-      await saveNurseryProfile(form);
+      const result = await saveNurseryProfile(form);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
       setSaved(true);
       router.refresh();
     } catch {
-      setError('保存に失敗しました。入力内容を確認してください。');
+      setError('保存に失敗しました。時間をおいて再度お試しください。');
     } finally {
       setSaving(false);
     }
@@ -111,6 +115,7 @@ export default function NurseryProfileForm({initial}: Props) {
               value={form.contactName}
               onChange={(e) => setForm({...form, contactName: e.target.value})}
               size="small"
+              required
             />
             <TextField
               label="電話番号"

@@ -2,34 +2,32 @@
 
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
+import type {ActionResult} from '@/types/ActionResult';
 import type {NurseryProfileInput} from '@/types/Nursery';
-
-// Empty string -> null for optional text columns.
-function orNull(value: string): string | null {
-  const trimmed = value.trim();
-  return trimmed === '' ? null : trimmed;
-}
+import {blankToNull} from '@/utils/string';
 
 // Create or update the current nursery's profile. Guarded to NURSERY. Keyed by
 // userId, so the same action serves both first save and edits.
-export async function saveNurseryProfile(input: NurseryProfileInput) {
+export async function saveNurseryProfile(
+  input: NurseryProfileInput,
+): Promise<ActionResult> {
   const user = await requireRole(['NURSERY']);
 
   const nurseryName = input.nurseryName.trim();
   const area = input.area.trim();
   const contactName = input.contactName.trim();
   if (!nurseryName || !area || !contactName) {
-    throw new Error('園名・エリア・担当者名は必須です。');
+    return {ok: false, message: '園名・エリア・担当者名は必須です。'};
   }
 
   const data = {
     nurseryName,
     area,
     contactName,
-    address: orNull(input.address),
-    phone: orNull(input.phone),
-    concept: orNull(input.concept),
-    policy: orNull(input.policy),
+    address: blankToNull(input.address),
+    phone: blankToNull(input.phone),
+    concept: blankToNull(input.concept),
+    policy: blankToNull(input.policy),
     isPublished: input.isPublished,
   };
 
@@ -38,4 +36,6 @@ export async function saveNurseryProfile(input: NurseryProfileInput) {
     update: data,
     create: {userId: user.id, ...data},
   });
+
+  return {ok: true};
 }
