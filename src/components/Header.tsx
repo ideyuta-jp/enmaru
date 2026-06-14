@@ -18,7 +18,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Link from 'next/link';
 
 import {signOut} from '@/server/auth-actions';
-import type {UserRole} from '@/types/User';
+import {UserRole} from '@/types/User';
 
 interface NavItem {
   label: string;
@@ -49,9 +49,9 @@ const PUBLIC_NAV: NavItem[] = [
 ];
 
 function getNavItems(role: UserRole | null): NavItem[] {
-  if (role === 'SEEKER') return SEEKER_NAV;
-  if (role === 'NURSERY') return NURSERY_NAV;
-  if (role === 'ADMIN') return ADMIN_NAV;
+  if (role === UserRole.SEEKER) return SEEKER_NAV;
+  if (role === UserRole.NURSERY) return NURSERY_NAV;
+  if (role === UserRole.ADMIN) return ADMIN_NAV;
   return PUBLIC_NAV;
 }
 

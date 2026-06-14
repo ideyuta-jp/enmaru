@@ -4,6 +4,7 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import type {ActionResult} from '@/types/ActionResult';
 import type {SeekerProfileInput} from '@/types/Seeker';
+import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
 
 // Create or update the current seeker's profile. Guarded to SEEKER. Keyed by
@@ -11,7 +12,7 @@ import {blankToNull} from '@/utils/string';
 export async function saveSeekerProfile(
   input: SeekerProfileInput,
 ): Promise<ActionResult> {
-  const user = await requireRole(['SEEKER']);
+  const user = await requireRole([UserRole.SEEKER]);
 
   const realName = input.realName.trim();
   const displayName = input.displayName.trim();

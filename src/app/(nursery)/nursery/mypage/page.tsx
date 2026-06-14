@@ -18,6 +18,7 @@ import PageContainer from '@/components/PageContainer';
 import SummaryCard from '@/components/SummaryCard';
 import {requireRole} from '@/server/auth';
 import {getNurseryDashboard} from '@/server/nursery';
+import {UserRole} from '@/types/User';
 
 // Reads the session, so it renders per-request.
 export const dynamic = 'force-dynamic';
@@ -52,7 +53,7 @@ const NAV_CARDS = [
 ];
 
 export default async function NurseryMypagePage() {
-  const user = await requireRole(['NURSERY']);
+  const user = await requireRole([UserRole.NURSERY]);
   const dashboard = await getNurseryDashboard();
 
   return (

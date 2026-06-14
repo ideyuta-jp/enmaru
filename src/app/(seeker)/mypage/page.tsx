@@ -17,6 +17,7 @@ import PageContainer from '@/components/PageContainer';
 import SummaryCard from '@/components/SummaryCard';
 import {requireRole} from '@/server/auth';
 import {getSeekerDashboard} from '@/server/seeker';
+import {UserRole} from '@/types/User';
 
 // Reads the session, so it renders per-request.
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,7 @@ const NAV_CARDS = [
 ];
 
 export default async function SeekerMypagePage() {
-  const user = await requireRole(['SEEKER']);
+  const user = await requireRole([UserRole.SEEKER]);
   const dashboard = await getSeekerDashboard();
 
   return (

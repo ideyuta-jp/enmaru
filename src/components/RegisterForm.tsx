@@ -15,7 +15,7 @@ import NextLink from 'next/link';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {registerCurrentUser} from '@/server/user';
-import type {RegisterRole} from '@/types/User';
+import {UserRole, type RegisterRole} from '@/types/User';
 
 // The credential step already happened on Logto; here a signed-in user only
 // picks their role (RegisterRole — SEEKER / NURSERY) and agrees to the terms.
@@ -66,13 +66,13 @@ export default function RegisterForm() {
         sx={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 3}}
       >
         <RoleCard
-          selected={role === 'SEEKER'}
-          onClick={() => setRole('SEEKER')}
+          selected={role === UserRole.SEEKER}
+          onClick={() => setRole(UserRole.SEEKER)}
           icon={
             <ChildCareIcon
               sx={{
                 fontSize: 36,
-                color: role === 'SEEKER' ? '#F4A7B9' : '#AAAAAA',
+                color: role === UserRole.SEEKER ? '#F4A7B9' : '#AAAAAA',
               }}
             />
           }
@@ -80,13 +80,13 @@ export default function RegisterForm() {
           description="仕事を探している保育士・保育経験者"
         />
         <RoleCard
-          selected={role === 'NURSERY'}
-          onClick={() => setRole('NURSERY')}
+          selected={role === UserRole.NURSERY}
+          onClick={() => setRole(UserRole.NURSERY)}
           icon={
             <ApartmentIcon
               sx={{
                 fontSize: 36,
-                color: role === 'NURSERY' ? '#F4A7B9' : '#AAAAAA',
+                color: role === UserRole.NURSERY ? '#F4A7B9' : '#AAAAAA',
               }}
             />
           }

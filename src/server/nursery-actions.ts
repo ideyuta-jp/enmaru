@@ -4,6 +4,7 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import type {ActionResult} from '@/types/ActionResult';
 import type {NurseryProfileInput} from '@/types/Nursery';
+import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
 
 // Create or update the current nursery's profile. Guarded to NURSERY. Keyed by
@@ -11,7 +12,7 @@ import {blankToNull} from '@/utils/string';
 export async function saveNurseryProfile(
   input: NurseryProfileInput,
 ): Promise<ActionResult> {
-  const user = await requireRole(['NURSERY']);
+  const user = await requireRole([UserRole.NURSERY]);
 
   const nurseryName = input.nurseryName.trim();
   const area = input.area.trim();
