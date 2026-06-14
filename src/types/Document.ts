@@ -47,6 +47,13 @@ export const DOCUMENT_STATUS_LABEL: Record<SeekerDocumentStatus, string> = {
 // Upload constraints, shared by the client pre-check and the authoritative
 // server-side validation (single source of truth across tiers).
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
+// HEIC (image/heic) is deliberately omitted. iPhone photos are HEIC, but iOS
+// Safari auto-converts the picked file to JPEG when `accept` does NOT list
+// image/heic — so the common "take/pick a photo" path already arrives as a
+// previewable JPEG. Adding image/heic here would disable that conversion, and
+// raw HEIC is not broadly previewable (only Apple platforms render it), which
+// would break in-browser preview on Chrome/Firefox/Android. Do not add it
+// without also adding server-side HEIC→JPEG conversion.
 export const ALLOWED_DOCUMENT_MIME_TYPES = [
   'image/jpeg',
   'image/png',
