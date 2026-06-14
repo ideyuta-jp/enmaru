@@ -51,6 +51,11 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
 
 // All engagements for the admin matching console (newest first). Admins see both
 // parties' real names and the operator memo. Guarded to ADMIN.
+//
+// Unbounded by design for now: this loads every engagement ever, with includes,
+// on each view. Engagements are never deleted, so this is the one query that
+// grows without limit — needs a limit / pagination once the console sees real
+// volume (#41).
 export async function listAllMatches(): Promise<AdminMatch[]> {
   await requireRole([UserRole.ADMIN]);
 
