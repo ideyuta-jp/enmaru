@@ -128,16 +128,11 @@ mirrors what the reference implementation already has working.
 These are properties of the system, not features of one screen. They constrain
 every capability above.
 
-- **Personal-information boundary.** A seeker's real name is visible to admin at
-  all times, and to a nursery once a match with that nursery has formed (applying
-  forms the match, so every entry in a nursery's match inbox shows the real name).
-  Street address and phone number remain admin-only. The public / seeker / nursery
-  views of a profile are a strictly narrower shape than the stored record, and the
-  shape a nursery sees widens at match time — so the boundary must be structural
-  and driven by match state, not a per-screen reminder. (The original spec's
-  implementation guide states real name is admin-only; this disclose-to-the-matched-
-  nursery rule is a deliberate product decision that supersedes it, consistent with
-  the terms / privacy / seeker-profile wording "本名はマッチング成立後に開示".)
+- **Personal-information boundary.** A seeker's real name is shown to admin
+  always, and to a nursery once they are matched (applying forms the match, so the
+  nursery's match inbox shows it). Street address and phone number are admin-only.
+  Public, seeker, and nursery profile views are each a narrower shape than the
+  stored record.
 - **Document gate.** A seeker can apply to a posting only when every document that
   posting requires has been verified by admin. Verification is manual.
 - **Review-after-work.** Reviews cannot exist before a match is `completed`. This

@@ -1,7 +1,8 @@
-// Lifecycle of a match, from application through mutual review.
+// Display status of a match. Matching is immediate, so a match is born at MATCHED
+// (there is no pre-match APPLIED/SCREENING state); the later values fold in the
+// review axis. This flattening of EngagementStatus + ReviewStatus is to be
+// reshaped before #31/#32 build on it (tracked in #40).
 export type MatchStatus =
-  | 'APPLIED'
-  | 'SCREENING'
   | 'MATCHED'
   | 'WORKING'
   | 'COMPLETED'
@@ -18,8 +19,6 @@ export interface MatchStatusStyle {
 // (docs reference: status chip section). Keyed by every MatchStatus so a missing
 // entry is a compile error rather than a silent fallback.
 export const MATCH_STATUS_CONFIG: Record<MatchStatus, MatchStatusStyle> = {
-  APPLIED: {label: '応募中', bg: '#F9F9F9', color: '#666666'},
-  SCREENING: {label: '確認中', bg: '#FFF8E1', color: '#F9A825'},
   MATCHED: {label: 'マッチング成立', bg: '#E8F5E9', color: '#2E7D32'},
   WORKING: {label: '業務実施中', bg: '#E3F2FD', color: '#1565C0'},
   COMPLETED: {label: '業務完了', bg: '#F3E5F5', color: '#6A1B9A'},
@@ -27,22 +26,9 @@ export const MATCH_STATUS_CONFIG: Record<MatchStatus, MatchStatusStyle> = {
   REVIEW_DONE: {label: '評価完了', bg: '#F9F9F9', color: '#AAAAAA'},
 };
 
-// Status order used to populate the admin status selector and to reason about
-// progression. Matches the lifecycle diagram in the basic-design doc.
-export const MATCH_STATUS_ORDER: MatchStatus[] = [
-  'APPLIED',
-  'SCREENING',
-  'MATCHED',
-  'WORKING',
-  'COMPLETED',
-  'REVIEW_OPEN',
-  'REVIEW_DONE',
-];
-
-// Derive the display status from an Engagement's stored fields. Matching is
-// immediate, so APPLIED/SCREENING never occur — an Engagement starts at MATCHED.
-// Review progress is a separate axis (ReviewStatus) that we fold into the single
-// display status the UI shows. The parameter unions mirror the Prisma enums.
+// Derive the display status from an Engagement's stored fields. Review progress
+// is a separate axis (ReviewStatus) that we fold into the single display status
+// the UI shows. The parameter unions mirror the Prisma enums.
 export function toMatchStatus(
   status: 'MATCHED' | 'WORKING' | 'COMPLETED',
   reviewStatus: 'NONE' | 'PARTIAL' | 'DONE',
