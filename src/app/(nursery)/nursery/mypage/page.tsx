@@ -1,9 +1,11 @@
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
+import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -14,7 +16,11 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SummaryCard from '@/components/SummaryCard';
+import {requireRole} from '@/server/auth';
 import {getNurseryDashboard} from '@/server/nursery';
+
+// Reads the session, so it renders per-request.
+export const dynamic = 'force-dynamic';
 
 // TODO(#7 follow-up): the "評価を書く" card points at a sample match for now; the
 // real destination is a list of reviewable matches (phase 2).
@@ -46,11 +52,12 @@ const NAV_CARDS = [
 ];
 
 export default async function NurseryMypagePage() {
+  const user = await requireRole(['NURSERY']);
   const dashboard = await getNurseryDashboard();
 
   return (
     <>
-      <Header role="NURSERY" />
+      <Header role={user.role} />
       <PageContainer>
         <Box
           sx={{
@@ -82,6 +89,15 @@ export default async function NurseryMypagePage() {
             }}
           />
         </Box>
+
+        {!dashboard.hasProfile && (
+          <Alert severity="info" sx={{mb: 3}}>
+            園プロフィールを作成・公開すると保育士に表示されます。{' '}
+            <MuiLink href="/nursery/profile" underline="hover">
+              園プロフィールを作成
+            </MuiLink>
+          </Alert>
+        )}
 
         <Box
           sx={{
