@@ -28,6 +28,7 @@ interface NavItem {
 const SEEKER_NAV: NavItem[] = [
   {label: 'マイページ', href: '/mypage'},
   {label: 'プロフィール', href: '/profile'},
+  {label: '書類', href: '/documents'},
   {label: '保育園を探す', href: '/nurseries'},
   {label: '応募履歴', href: '/applications'},
 ];
@@ -41,6 +42,7 @@ const NURSERY_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   {label: 'マッチング管理', href: '/admin/matches'},
+  {label: '書類確認', href: '/admin/documents'},
 ];
 
 const PUBLIC_NAV: NavItem[] = [

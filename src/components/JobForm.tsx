@@ -2,8 +2,17 @@
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
+import FormLabel from '@mui/material/FormLabel';
 import TextField from '@mui/material/TextField';
 
+import {
+  ALL_DOCUMENT_TYPES,
+  DOCUMENT_TYPE_LABEL,
+  type SeekerDocumentType,
+} from '@/types/Document';
 import type {JobInput} from '@/types/Job';
 
 interface Props {
@@ -25,6 +34,16 @@ export default function JobForm({
   saving,
   submitLabel,
 }: Props) {
+  function toggleRequiredDocument(type: SeekerDocumentType) {
+    const has = form.requiredDocuments.includes(type);
+    setForm({
+      ...form,
+      requiredDocuments: has
+        ? form.requiredDocuments.filter((d) => d !== type)
+        : [...form.requiredDocuments, type],
+    });
+  }
+
   return (
     <Box
       component="form"
@@ -111,6 +130,35 @@ export default function JobForm({
         rows={2}
         placeholder="例：駐車場あり、制服貸出あり"
       />
+
+      <Box>
+        <FormLabel
+          component="legend"
+          sx={{fontSize: '0.875rem', fontWeight: 700, color: '#666666'}}
+        >
+          応募に必要な書類
+        </FormLabel>
+        <FormGroup row>
+          {ALL_DOCUMENT_TYPES.map((type) => (
+            <FormControlLabel
+              key={type}
+              control={
+                <Checkbox
+                  checked={form.requiredDocuments.includes(type)}
+                  onChange={() => toggleRequiredDocument(type)}
+                  size="small"
+                  sx={{color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}}}
+                />
+              }
+              label={
+                <span style={{fontSize: '0.875rem'}}>
+                  {DOCUMENT_TYPE_LABEL[type]}
+                </span>
+              }
+            />
+          ))}
+        </FormGroup>
+      </Box>
 
       <Box
         sx={{
