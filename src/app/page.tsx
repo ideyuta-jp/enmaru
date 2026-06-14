@@ -13,13 +13,17 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import VerifiedIcon from '@mui/icons-material/Verified';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import SiteHeader from '@/components/SiteHeader';
 
 export const metadata: Metadata = {
   title: 'えんまーる | 保育士と保育園のスポットマッチング',
   description:
     'えんまーるは保育士と保育園をやさしくつなぐスポットマッチングサービスです。ブランクがある保育士も、短時間から働けます。',
 };
+
+// Renders SiteHeader, which reads the session, so it renders per-request
+// (still SSR'd for SEO). Needed so a signed-in visitor sees their own header.
+export const dynamic = 'force-dynamic';
 
 const FEATURES = [
   {
@@ -77,7 +81,7 @@ const TRUST_POINTS = [
 export default function Home() {
   return (
     <>
-      <Header />
+      <SiteHeader />
 
       {/* 1. Hero */}
       <Box sx={{bgcolor: '#FFFFFF', pt: {xs: 6, md: 10}, pb: {xs: 6, md: 8}}}>

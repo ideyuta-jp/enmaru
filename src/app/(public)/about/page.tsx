@@ -9,15 +9,18 @@ import ChildCareIcon from '@mui/icons-material/ChildCare';
 import SecurityIcon from '@mui/icons-material/Security';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SiteHeader from '@/components/SiteHeader';
 
 export const metadata: Metadata = {
   title: 'えんまーるとは',
   description:
     'えんまーるは、保育士と保育園をつなぐスポットマッチングプラットフォームです。',
 };
+
+// Renders SiteHeader (reads the session), so it renders per-request.
+export const dynamic = 'force-dynamic';
 
 const FEATURES = [
   {
@@ -68,7 +71,7 @@ const STEPS = [
 export default function AboutPage() {
   return (
     <>
-      <Header />
+      <SiteHeader />
       <PageContainer maxWidth="md">
         <Box sx={{mb: 4}}>
           <Typography

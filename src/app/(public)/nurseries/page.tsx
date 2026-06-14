@@ -4,10 +4,10 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import NurseryCard from '@/components/NurseryCard';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SiteHeader from '@/components/SiteHeader';
 import {listPublishedNurseries} from '@/server/nursery';
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export default async function NurseriesPage() {
 
   return (
     <>
-      <Header />
+      <SiteHeader />
       <PageContainer>
         <SectionHeading subtitle="スポットサポートを募集している保育施設">
           保育園一覧
