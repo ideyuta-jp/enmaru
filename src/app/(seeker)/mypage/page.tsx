@@ -10,7 +10,6 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
-import NextLink from 'next/link';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
@@ -76,7 +75,7 @@ export default async function SeekerMypagePage() {
         {!dashboard.hasProfile && (
           <Alert severity="info" sx={{mb: 3}}>
             プロフィールを作成すると応募できるようになります。{' '}
-            <MuiLink component={NextLink} href="/profile" underline="hover">
+            <MuiLink href="/profile" underline="hover">
               プロフィールを作成
             </MuiLink>
           </Alert>

@@ -11,7 +11,6 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import BusinessIcon from '@mui/icons-material/Business';
 import StarIcon from '@mui/icons-material/Star';
 import WorkIcon from '@mui/icons-material/Work';
-import NextLink from 'next/link';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
@@ -94,11 +93,7 @@ export default async function NurseryMypagePage() {
         {!dashboard.hasProfile && (
           <Alert severity="info" sx={{mb: 3}}>
             園プロフィールを作成・公開すると保育士に表示されます。{' '}
-            <MuiLink
-              component={NextLink}
-              href="/nursery/profile"
-              underline="hover"
-            >
+            <MuiLink href="/nursery/profile" underline="hover">
               園プロフィールを作成
             </MuiLink>
           </Alert>
