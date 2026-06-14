@@ -147,7 +147,10 @@ export default function AdminMatchesTable({initialMatches}: Props) {
                       </Typography>
                     </TableCell>
                     <TableCell sx={{minWidth: 140}}>
-                      <StatusChip status={match.status} />
+                      <StatusChip
+                        engagementStatus={match.engagementStatus}
+                        reviewStatus={match.reviewStatus}
+                      />
                     </TableCell>
                     <TableCell sx={{minWidth: 180}}>
                       {editingMemoId === match.id ? (
@@ -245,7 +248,10 @@ const MobileMatchCard = ({
           </Typography>
         )}
       </Box>
-      <StatusChip status={match.status} />
+      <StatusChip
+        engagementStatus={match.engagementStatus}
+        reviewStatus={match.reviewStatus}
+      />
     </Box>
     <Typography
       variant="caption"

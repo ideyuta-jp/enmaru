@@ -9,14 +9,19 @@ import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import StatusChip from '@/components/StatusChip';
 import {listNurseryMatches} from '@/server/match';
+import {EngagementStatus} from '@/types/Engagement';
 import type {NurseryMatch} from '@/types/Match';
 
 export default async function NurseryApplicationsPage() {
   const matches = await listNurseryMatches();
   // Matching is immediate, so a fresh application arrives at MATCHED; anything
-  // past that (working / completed / reviewed) goes under "その他".
-  const newMatches = matches.filter((m) => m.status === 'MATCHED');
-  const otherMatches = matches.filter((m) => m.status !== 'MATCHED');
+  // past that (working / completed) goes under "その他".
+  const newMatches = matches.filter(
+    (m) => m.engagementStatus === EngagementStatus.MATCHED,
+  );
+  const otherMatches = matches.filter(
+    (m) => m.engagementStatus !== EngagementStatus.MATCHED,
+  );
 
   return (
     <>
@@ -119,7 +124,10 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
           </Box>
         )}
       </Box>
-      <StatusChip status={match.status} />
+      <StatusChip
+        engagementStatus={match.engagementStatus}
+        reviewStatus={match.reviewStatus}
+      />
     </Box>
 
     <Typography variant="caption" color="text.secondary">

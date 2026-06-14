@@ -1,8 +1,9 @@
 import type {SeekerDocumentType} from '@/types/Document';
-import type {MatchStatus} from '@/types/Match';
+import type {EngagementStatus, ReviewStatus} from '@/types/Engagement';
 
-// One row in a seeker's application history. Matching is immediate, so an
-// application always has a status (it is born at MATCHED).
+// One row in a seeker's application history. Each is a matched Engagement
+// (matching is immediate); its state is the two real axes, from which the UI
+// derives the status badge.
 export interface SeekerApplication {
   id: string;
   jobTitle: string;
@@ -11,7 +12,8 @@ export interface SeekerApplication {
   workTimeStart: string;
   workTimeEnd: string;
   appliedAt: string;
-  matchStatus: MatchStatus;
+  engagementStatus: EngagementStatus;
+  reviewStatus: ReviewStatus;
 }
 
 // What the apply page needs to render the form and gate submission: the posting
