@@ -9,7 +9,6 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import BusinessIcon from '@mui/icons-material/Business';
-import StarIcon from '@mui/icons-material/Star';
 import WorkIcon from '@mui/icons-material/Work';
 
 import Footer from '@/components/Footer';
@@ -23,8 +22,8 @@ import {UserRole} from '@/types/User';
 // Reads the session, so it renders per-request.
 export const dynamic = 'force-dynamic';
 
-// TODO(#7 follow-up): the "評価を書く" card points at a sample match for now; the
-// real destination is a list of reviewable matches (phase 2).
+// Reviews are entered per completed engagement from the application inbox, so
+// there is no standalone "評価を書く" entry here.
 const NAV_CARDS = [
   {
     href: '/nursery/profile',
@@ -43,12 +42,6 @@ const NAV_CARDS = [
     icon: <AssignmentIndIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
     title: '応募管理',
     description: '届いた応募の確認',
-  },
-  {
-    href: '/nursery/reviews/m1',
-    icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
-    title: '評価を書く',
-    description: '業務完了後の評価入力',
   },
 ];
 

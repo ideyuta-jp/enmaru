@@ -180,6 +180,8 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
         viewerParty="NURSERY"
         seekerReported={match.seekerReported}
         nurseryReported={match.nurseryReported}
+        viewerReviewed={match.nurseryReviewed}
+        reviewHref={`/nursery/reviews/${match.id}`}
       />
     </Box>
   </Box>

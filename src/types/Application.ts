@@ -19,6 +19,9 @@ export interface SeekerApplication {
   // start-work / report actions.
   seekerReported: boolean;
   nurseryReported: boolean;
+  // Whether this seeker has already reviewed the nursery; drives the review CTA
+  // once the engagement is COMPLETED.
+  seekerReviewed: boolean;
 }
 
 // What the apply page needs to render the form and gate submission: the posting

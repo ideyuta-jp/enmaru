@@ -20,6 +20,7 @@ export async function listSeekerApplications(): Promise<SeekerApplication[]> {
     include: {
       job: {include: {nursery: {select: {nurseryName: true}}}},
       workReports: {select: {reporter: true, completed: true}},
+      reviewSeekerToNursery: {select: {id: true}},
     },
     orderBy: {createdAt: 'desc'},
   });
@@ -36,6 +37,7 @@ export async function listSeekerApplications(): Promise<SeekerApplication[]> {
     reviewStatus: e.reviewStatus,
     seekerReported: hasReported(e.workReports, 'SEEKER'),
     nurseryReported: hasReported(e.workReports, 'NURSERY'),
+    seekerReviewed: e.reviewSeekerToNursery !== null,
   }));
 }
 

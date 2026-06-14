@@ -84,6 +84,8 @@ export default async function ApplicationsPage() {
                     viewerParty="SEEKER"
                     seekerReported={app.seekerReported}
                     nurseryReported={app.nurseryReported}
+                    viewerReviewed={app.seekerReviewed}
+                    reviewHref={`/reviews/${app.id}`}
                   />
                 </Box>
               </Box>

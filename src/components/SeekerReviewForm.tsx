@@ -13,6 +13,8 @@ import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
+import {submitSeekerToNurseryReview} from '@/server/review-actions';
+import type {ReviewTarget} from '@/types/Review';
 
 const CRITERIA = [
   {key: 'explanation', label: '説明のわかりやすさ'},
@@ -26,11 +28,7 @@ type Ratings = Record<
   number
 >;
 
-interface Props {
-  matchId: string;
-}
-
-export default function SeekerReviewForm({matchId}: Props) {
+export default function SeekerReviewForm({target}: {target: ReviewTarget}) {
   const router = useRouter();
   const [ratings, setRatings] = useState<Ratings>({
     explanation: 0,
@@ -44,7 +42,22 @@ export default function SeekerReviewForm({matchId}: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  if (!target.eligible) {
+    return (
+      <Alert severity="info" sx={{borderRadius: 2}}>
+        この業務はまだ評価できません（業務完了後に評価できます）。
+      </Alert>
+    );
+  }
+  if (target.alreadyReviewed && !success) {
+    return (
+      <Alert severity="info" sx={{borderRadius: 2}}>
+        この業務はすでに評価済みです。
+      </Alert>
+    );
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     for (const c of CRITERIA) {
@@ -56,13 +69,25 @@ export default function SeekerReviewForm({matchId}: Props) {
 
     setError(null);
     setSubmitting(true);
-    // TODO(#7 follow-up): submit the review for `matchId` to the backend. For now
-    // the success screen is shown immediately so the flow is exercisable.
-    void matchId;
-    void comment;
-    void wouldWorkAgain;
-    setSubmitting(false);
-    setSuccess(true);
+    try {
+      const result = await submitSeekerToNurseryReview(target.engagementId, {
+        explanation: ratings.explanation,
+        atmosphere: ratings.atmosphere,
+        support: ratings.support,
+        clarity: ratings.clarity,
+        comment,
+        wouldWorkAgain,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setSuccess(true);
+    } catch {
+      setError('評価の送信に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (success) {
@@ -74,9 +99,9 @@ export default function SeekerReviewForm({matchId}: Props) {
         <Button
           variant="contained"
           fullWidth
-          onClick={() => router.push('/mypage')}
+          onClick={() => router.push('/applications')}
         >
-          マイページへ戻る
+          応募履歴へ戻る
         </Button>
       </>
     );
@@ -84,7 +109,9 @@ export default function SeekerReviewForm({matchId}: Props) {
 
   return (
     <>
-      <SectionHeading subtitle="保育園への評価を入力してください">
+      <SectionHeading
+        subtitle={`${target.counterpartName}への評価を入力してください`}
+      >
         保育園を評価する
       </SectionHeading>
 

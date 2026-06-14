@@ -30,6 +30,7 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
         select: {displayName: true, realName: true, preferredStyle: true},
       },
       workReports: {select: {reporter: true, completed: true}},
+      reviewNurseryToSeeker: {select: {id: true}},
     },
     orderBy: {createdAt: 'desc'},
   });
@@ -50,6 +51,7 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
     appliedAt: e.createdAt.toISOString(),
     seekerReported: hasReported(e.workReports, 'SEEKER'),
     nurseryReported: hasReported(e.workReports, 'NURSERY'),
+    nurseryReviewed: e.reviewNurseryToSeeker !== null,
   }));
 }
 

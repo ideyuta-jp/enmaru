@@ -22,6 +22,9 @@ export interface NurseryMatch {
   // uses these to drive its report action and waiting state.
   seekerReported: boolean;
   nurseryReported: boolean;
+  // Whether this nursery has already reviewed the seeker; drives the review CTA
+  // once the engagement is COMPLETED.
+  nurseryReviewed: boolean;
 }
 
 // An engagement as seen by an admin in the matching console. Admins can see the
