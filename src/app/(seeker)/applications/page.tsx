@@ -64,7 +64,10 @@ export default async function ApplicationsPage() {
                       {app.workTimeStart}〜{app.workTimeEnd}
                     </Typography>
                   </Box>
-                  {app.matchStatus && <StatusChip status={app.matchStatus} />}
+                  <StatusChip
+                    engagementStatus={app.engagementStatus}
+                    reviewStatus={app.reviewStatus}
+                  />
                 </Box>
                 <Typography
                   variant="caption"

@@ -1,6 +1,5 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
-import {toMatchStatus} from '@/types/Match';
 import type {AdminMatch, NurseryMatch} from '@/types/Match';
 import {UserRole} from '@/types/User';
 
@@ -35,7 +34,8 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
 
   return engagements.map((e) => ({
     id: e.id,
-    status: toMatchStatus(e.status, e.reviewStatus),
+    engagementStatus: e.status,
+    reviewStatus: e.reviewStatus,
     jobTitle: e.job.title,
     workDate: e.job.workDate.toISOString().slice(0, 10),
     workTimeStart: e.job.workTimeStart,
@@ -71,7 +71,8 @@ export async function listAllMatches(): Promise<AdminMatch[]> {
 
   return engagements.map((e) => ({
     id: e.id,
-    status: toMatchStatus(e.status, e.reviewStatus),
+    engagementStatus: e.status,
+    reviewStatus: e.reviewStatus,
     adminMemo: e.adminMemo,
     createdAt: e.createdAt.toISOString(),
     jobTitle: e.job.title,

@@ -2,7 +2,6 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import type {ApplyTarget, SeekerApplication} from '@/types/Application';
 import type {SeekerDocumentType} from '@/types/Document';
-import {toMatchStatus} from '@/types/Match';
 import {UserRole} from '@/types/User';
 
 // The signed-in seeker's application history (newest first). Each application is
@@ -29,7 +28,8 @@ export async function listSeekerApplications(): Promise<SeekerApplication[]> {
     workTimeStart: e.job.workTimeStart,
     workTimeEnd: e.job.workTimeEnd,
     appliedAt: e.createdAt.toISOString(),
-    matchStatus: toMatchStatus(e.status, e.reviewStatus),
+    engagementStatus: e.status,
+    reviewStatus: e.reviewStatus,
   }));
 }
 

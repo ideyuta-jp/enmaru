@@ -59,7 +59,7 @@ A match then moves through three statuses:
 | ----------- | ------------------------------- | ----------------------------------------------- |
 | `matched`   | Seeker and nursery are paired   | Seeker applies (the posting closes, first-come) |
 | `working`   | The shift is underway           | Seeker marks the work as started                |
-| `completed` | The shift is done and confirmed | The work-completion report(s) are in            |
+| `completed` | The shift is done and confirmed | Both sides' work-completion reports are in      |
 
 Review progress is tracked alongside the status: `none` → `partial` (one side has
 reviewed) → `done` (both sides have reviewed). A review may be submitted only once
@@ -104,7 +104,7 @@ mirrors what the reference implementation already has working.
   requires.
 - See incoming matches, including the matched seeker's real name (disclosed at
   match time — see the personal-information boundary).
-- File a work-completion report (see open question below).
+- File a work-completion report (required — both sides must report; see below).
 - Chat with the seeker within the match (time-bounded).
 - Review the seeker after completion (numeric criteria + optional comment +
   "would rehire" Yes/No).
@@ -135,6 +135,10 @@ every capability above.
   stored record.
 - **Document gate.** A seeker can apply to a posting only when every document that
   posting requires has been verified by admin. Verification is manual.
+- **Mutual completion confirmation.** Both the seeker and the nursery must file a
+  work-completion report; `completed` is reached only when both are in. This is so
+  the nursery confirms the work actually happened ("worked these hours"), which is
+  what makes paying out the seeker safe — it guards against payment disputes.
 - **Review-after-work.** Reviews cannot exist before a match is `completed`. This
   is the lifecycle constraint above, stated from the review's side.
 - **Reviews start private.** A submitted review is not public by default; admin
@@ -203,14 +207,6 @@ Do not build these; their rules do not exist yet (the spec marks them "別途
 - Time-clock UX after the URL is opened.
 - Group visibility toggle (public ↔ group-only) UI.
 - No-show definition and automatic detection.
-
-## Open questions — confirm with KASUMIN
-
-- **Does the nursery also file a work-completion report?** The spec and the
-  reference implementation both have _both_ sides report, and gate `completed` on
-  both. The likely rationale is mutual confirmation that the shift actually happened
-  before reviews open. Confirm whether the nursery must report too, or whether the
-  seeker's report (perhaps with a lightweight nursery acknowledgement) is enough.
 
 ## What this doc deliberately omits
 
