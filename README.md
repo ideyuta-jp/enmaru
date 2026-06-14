@@ -116,7 +116,7 @@ Find the right document by the question you have:
   - [Conventions](docs/conventions/index.md) — coding, repo, docs
 - **How is the project tested?**
   - [Testing](docs/testing.md) — where each layer's tests live, how to run them
-- **How do I run an operator task (e.g. grant admin)?**
+- **How do I run an operator task?**
   - [Operations](docs/operations.md) — operator procedures
 - **How do I write or run e2e tests specifically?**
   - [`e2e/README.md`](e2e/README.md) — Playwright structure, page objects, fixtures
