@@ -3,6 +3,7 @@
 import type {Prisma} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
+import {isUniqueViolation} from '@/server/prisma-error';
 import type {ActionResult} from '@/types/ActionResult';
 import {EngagementStatus, ReviewStatus} from '@/types/Engagement';
 import type {
@@ -14,17 +15,6 @@ import {UserRole} from '@/types/User';
 // Numeric criteria are 1-5 integers.
 function isValidScore(n: number): boolean {
   return Number.isInteger(n) && n >= 1 && n <= 5;
-}
-
-// Prisma raises P2002 on the unique engagementId — i.e. this direction's review
-// already exists.
-function isUniqueViolation(e: unknown): boolean {
-  return (
-    typeof e === 'object' &&
-    e !== null &&
-    'code' in e &&
-    (e as {code: unknown}).code === 'P2002'
-  );
 }
 
 // Recompute the engagement's review axis from how many of the two reviews now

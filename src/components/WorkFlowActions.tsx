@@ -19,7 +19,8 @@ interface Props {
   seekerReported: boolean;
   nurseryReported: boolean;
   // Whether the viewer has already reviewed the counterpart, and where their
-  // review form lives — used to surface the review CTA once COMPLETED.
+  // review form lives — used to show the 評価する button (or 評価済み) once
+  // the engagement is COMPLETED.
   viewerReviewed: boolean;
   reviewHref: string;
 }

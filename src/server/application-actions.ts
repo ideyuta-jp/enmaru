@@ -3,6 +3,7 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import {missingRequiredDocuments} from '@/server/application';
+import {isUniqueViolation} from '@/server/prisma-error';
 import type {ActionResult} from '@/types/ActionResult';
 import {DOCUMENT_TYPE_LABEL} from '@/types/Document';
 import {UserRole} from '@/types/User';
@@ -10,17 +11,6 @@ import {UserRole} from '@/types/User';
 // Thrown inside the transaction when another seeker closed the posting first, so
 // the catch below can tell it apart from a real error and map it to a message.
 const POSTING_CLOSED = 'POSTING_CLOSED';
-
-// Prisma raises P2002 on a unique-constraint violation (here: this seeker already
-// has an Engagement for this posting).
-function isUniqueViolation(e: unknown): boolean {
-  return (
-    typeof e === 'object' &&
-    e !== null &&
-    'code' in e &&
-    (e as {code: unknown}).code === 'P2002'
-  );
-}
 
 // A seeker applies to a posting. Matching is immediate and first-come: the first
 // applicant's apply both creates the Engagement (MATCHED) and closes the posting,
