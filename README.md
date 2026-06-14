@@ -87,19 +87,43 @@ repo; GitHub Actions only runs the quality-gate CI.
 
 ## Commands
 
-| Command                 | Description                           |
-| ----------------------- | ------------------------------------- |
-| `pnpm dev`              | Dev server (host)                     |
-| `pnpm build`            | `prisma generate` + production build  |
-| `pnpm lint`             | ESLint                                |
-| `pnpm format`           | Prettier (write)                      |
-| `pnpm typecheck`        | `tsc --noEmit`                        |
-| `pnpm db:migrate`       | Prisma migration (dev)                |
-| `pnpm db:studio`        | Prisma Studio                         |
-| `./cmd test unit`       | Vitest unit tests                     |
-| `./cmd test e2e-setup`  | Install Playwright browser (one-time) |
-| `./cmd test e2e`        | Playwright e2e (host, via webServer)  |
-| `./cmd test e2e-report` | Open the last e2e HTML report         |
+| Command                    | Description                                |
+| -------------------------- | ------------------------------------------ |
+| `pnpm dev`                 | Dev server (host)                          |
+| `pnpm build`               | `prisma generate` + production build       |
+| `pnpm lint`                | ESLint                                     |
+| `pnpm format`              | Prettier (write)                           |
+| `pnpm typecheck`           | `tsc --noEmit`                             |
+| `pnpm db:migrate`          | Prisma migration (dev)                     |
+| `pnpm db:studio`           | Prisma Studio                              |
+| `pnpm admin:grant <email>` | Grant the ADMIN role to a user (see below) |
+| `./cmd test unit`          | Vitest unit tests                          |
+| `./cmd test e2e-setup`     | Install Playwright browser (one-time)      |
+| `./cmd test e2e`           | Playwright e2e (host, via webServer)       |
+| `./cmd test e2e-report`    | Open the last e2e HTML report              |
+
+## Granting an admin
+
+Admins (the KASUMIN operator) are not self-registered — sign-up only creates
+seeker / nursery accounts, and the `(admin)` area is role-guarded. To create an
+admin you promote an existing user:
+
+1. The person signs in via Logto and completes registration once (any role).
+   That creates their `User` row, keyed by their email.
+2. Promote that row to `ADMIN` by email:
+   - **Dev** (uses `DATABASE_URL` from `.env.local`):
+     ```bash
+     pnpm admin:grant person@example.com
+     ```
+   - **Prod** (point `DATABASE_URL` at the production database):
+     ```bash
+     DATABASE_URL="<prod connection string>" node scripts/grant-admin.mjs person@example.com
+     ```
+3. The script reports the updated user, or errors if no user has that email
+   (e.g. they haven't registered yet). Verify by signing in and opening `/admin`.
+
+The role lives on the `User` row, so this takes effect on their next request; no
+redeploy needed.
 
 ## Where to look next
 
