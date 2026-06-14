@@ -23,15 +23,20 @@ in prod.
    Click ログイン / 新規登録 → sign in via Logto → finish the registration step.
    This creates their `User` row (keyed by email) in that environment's database.
 
-2. **Promote (from this repo, on your machine).** The grant command connects to
-   whichever database `DATABASE_URL` points at, so use the form that matches
-   where they signed up:
-   - Dev — uses `.env.local` (the dev Neon branch):
+2. **Promote.** Run the grant from the **repository root** on your machine —
+   the same checkout you run `pnpm dev` from (it needs `package.json` and
+   `scripts/grant-admin.mjs`, so it can't be run from an arbitrary directory).
+   The command connects to whichever database `DATABASE_URL` points at, so use
+   the form that matches where they signed up:
+   - Dev — reads `DATABASE_URL` from the `.env.local` in that directory (the dev
+     Neon branch, same as `pnpm dev`):
      ```bash
+     cd <your enmaru checkout>
      pnpm admin:grant person@example.com
      ```
-   - Prod — point `DATABASE_URL` at the production database:
+   - Prod — pass the production `DATABASE_URL` explicitly instead:
      ```bash
+     cd <your enmaru checkout>
      DATABASE_URL="<prod connection string>" node scripts/grant-admin.mjs person@example.com
      ```
 
