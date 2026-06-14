@@ -163,11 +163,19 @@ export async function setReviewPublication(
   await requireRole([UserRole.ADMIN]);
 
   if (direction === ReviewDirection.NURSERY_TO_SEEKER) {
+    const review = await prisma.reviewNurseryToSeeker.findUnique({
+      where: {id: reviewId},
+    });
+    if (!review) return {ok: false, message: '対象の評価が見つかりません。'};
     await prisma.reviewNurseryToSeeker.update({
       where: {id: reviewId},
       data: {isPublished},
     });
   } else {
+    const review = await prisma.reviewSeekerToNursery.findUnique({
+      where: {id: reviewId},
+    });
+    if (!review) return {ok: false, message: '対象の評価が見つかりません。'};
     await prisma.reviewSeekerToNursery.update({
       where: {id: reviewId},
       data: {isPublished},

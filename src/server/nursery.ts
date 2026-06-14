@@ -44,15 +44,22 @@ export async function getPublishedNursery(
   });
   if (!n) return null;
 
+  // Independent queries — run together to cut round-trips on this public page.
+  const [rating, jobPostings, reviews] = await Promise.all([
+    getNurseryRating(n.id),
+    listOpenJobsByNursery(n.id),
+    listPublishedNurseryReviews(n.id),
+  ]);
+
   return {
     id: n.id,
     nurseryName: n.nurseryName,
     area: n.area,
     concept: n.concept,
     policy: n.policy,
-    rating: await getNurseryRating(n.id),
-    jobPostings: await listOpenJobsByNursery(n.id),
-    reviews: await listPublishedNurseryReviews(n.id),
+    rating,
+    jobPostings,
+    reviews,
   };
 }
 
