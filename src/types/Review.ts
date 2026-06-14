@@ -32,3 +32,29 @@ export interface ReviewTarget {
   eligible: boolean;
   alreadyReviewed: boolean;
 }
+
+// The two review tables, named by direction. The admin publication toggle uses
+// this to know which table a review row lives in.
+export type ReviewDirection = 'NURSERY_TO_SEEKER' | 'SEEKER_TO_NURSERY';
+
+export const ReviewDirection = {
+  NURSERY_TO_SEEKER: 'NURSERY_TO_SEEKER',
+  SEEKER_TO_NURSERY: 'SEEKER_TO_NURSERY',
+} as const;
+
+// A submitted review as the admin moderation console sees it. Both directions are
+// projected into this one shape (criteria flattened to labelled scores) so the
+// console lists them uniformly and toggles publication.
+export interface AdminReview {
+  id: string;
+  direction: ReviewDirection;
+  nurseryName: string;
+  seekerDisplayName: string;
+  jobTitle: string;
+  scores: {label: string; value: number}[];
+  comment: string | null;
+  // wouldRehire (nursery→seeker) or wouldWorkAgain (seeker→nursery).
+  recommend: boolean;
+  isPublished: boolean;
+  reviewedAt: string;
+}
