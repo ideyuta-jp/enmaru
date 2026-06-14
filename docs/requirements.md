@@ -102,7 +102,8 @@ mirrors what the reference implementation already has working.
 - Create, edit, and close job postings (title, work content, date, time, optional
   hourly wage, target person, remarks), and set which documents each posting
   requires.
-- See incoming matches.
+- See incoming matches, including the matched seeker's real name (disclosed at
+  match time — see the personal-information boundary).
 - File a work-completion report (see open question below).
 - Chat with the seeker within the match (time-bounded).
 - Review the seeker after completion (numeric criteria + optional comment +
@@ -127,10 +128,11 @@ mirrors what the reference implementation already has working.
 These are properties of the system, not features of one screen. They constrain
 every capability above.
 
-- **Personal-information boundary.** Real name, street address, and phone number
-  are visible to admin only. The public / seeker / nursery views of a profile are a
-  strictly narrower shape than the stored record — the boundary must be
-  structural, not a per-screen reminder.
+- **Personal-information boundary.** A seeker's real name is shown to admin
+  always, and to a nursery once they are matched (applying forms the match, so the
+  nursery's match inbox shows it). Street address and phone number are admin-only.
+  Public, seeker, and nursery profile views are each a narrower shape than the
+  stored record.
 - **Document gate.** A seeker can apply to a posting only when every document that
   posting requires has been verified by admin. Verification is manual.
 - **Review-after-work.** Reviews cannot exist before a match is `completed`. This
