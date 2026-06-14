@@ -1,5 +1,6 @@
 import {prisma} from '@/lib/prisma';
 import {getCurrentUser} from '@/server/auth';
+import {listOpenJobsByNursery} from '@/server/job';
 import type {
   NurseryDashboard,
   NurseryProfileInput,
@@ -45,7 +46,7 @@ export async function getPublishedNursery(
     concept: n.concept,
     policy: n.policy,
     rating: null,
-    jobPostings: [],
+    jobPostings: await listOpenJobsByNursery(n.id),
     reviews: [],
   };
 }

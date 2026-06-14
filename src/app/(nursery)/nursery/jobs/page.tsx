@@ -12,12 +12,12 @@ import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import {listNurseryJobs} from '@/server/job';
-import type {Job} from '@/types/Job';
+import {JobStatus, type Job} from '@/types/Job';
 
 export default async function NurseryJobsPage() {
   const jobs = await listNurseryJobs();
-  const openJobs = jobs.filter((j) => j.status === 'OPEN');
-  const closedJobs = jobs.filter((j) => j.status === 'CLOSED');
+  const openJobs = jobs.filter((j) => j.status === JobStatus.OPEN);
+  const closedJobs = jobs.filter((j) => j.status === JobStatus.CLOSED);
 
   return (
     <>
@@ -136,11 +136,11 @@ const JobRow = ({job}: {job: Job}) => (
     </Box>
     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}>
       <Chip
-        label={job.status === 'OPEN' ? '公開中' : '終了'}
+        label={job.status === JobStatus.OPEN ? '公開中' : '終了'}
         size="small"
         sx={{
-          bgcolor: job.status === 'OPEN' ? '#E8F5E9' : '#F9F9F9',
-          color: job.status === 'OPEN' ? '#2E7D32' : '#AAAAAA',
+          bgcolor: job.status === JobStatus.OPEN ? '#E8F5E9' : '#F9F9F9',
+          color: job.status === JobStatus.OPEN ? '#2E7D32' : '#AAAAAA',
           fontSize: '0.7rem',
         }}
       />

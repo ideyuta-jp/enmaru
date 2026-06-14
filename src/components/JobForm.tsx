@@ -4,20 +4,11 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 
-export interface JobFormState {
-  title: string;
-  workContent: string;
-  workDate: string;
-  workTimeStart: string;
-  workTimeEnd: string;
-  hourlyWage: string;
-  targetPerson: string;
-  remarks: string;
-}
+import type {JobInput} from '@/types/Job';
 
 interface Props {
-  form: JobFormState;
-  setForm: (form: JobFormState) => void;
+  form: JobInput;
+  setForm: (form: JobInput) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   saving: boolean;
