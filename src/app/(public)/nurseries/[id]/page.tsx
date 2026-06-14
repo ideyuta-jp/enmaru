@@ -163,6 +163,48 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
             </Box>
           )}
         </Box>
+
+        <Box sx={{mb: 3}}>
+          <SectionHeading subtitle={`${nursery.reviews.length}件`}>
+            保育士からの評価
+          </SectionHeading>
+          {nursery.reviews.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              まだ公開されている評価はありません
+            </Typography>
+          ) : (
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
+              {nursery.reviews.map((review) => (
+                <Box
+                  key={review.id}
+                  sx={{
+                    p: {xs: 1.5, md: 2},
+                    bgcolor: '#FAFAFA',
+                    borderRadius: 2,
+                    border: '1px solid #E0E0E0',
+                  }}
+                >
+                  {review.comment ? (
+                    <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
+                      {review.comment}
+                    </Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      （コメントなし）
+                    </Typography>
+                  )}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{display: 'block', mt: 0.5}}
+                  >
+                    {new Date(review.reviewedAt).toLocaleDateString('ja-JP')}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
       </PageContainer>
       <Footer />
     </>

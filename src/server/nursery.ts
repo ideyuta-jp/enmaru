@@ -1,6 +1,11 @@
 import {prisma} from '@/lib/prisma';
 import {getCurrentUser} from '@/server/auth';
 import {listOpenJobsByNursery} from '@/server/job';
+import {
+  getNurseryRating,
+  getNurseryRatings,
+  listPublishedNurseryReviews,
+} from '@/server/review';
 import type {
   NurseryDashboard,
   NurseryProfileInput,
@@ -10,13 +15,14 @@ import type {
 
 // Published nurseries for the public list. Maps to the public projection only —
 // address / phone / contactName are never included (personal-info boundary).
-// rating is null for now; it is computed from published reviews in the review
-// vertical.
+// Ratings come from published reviews, fetched in bulk to avoid an N+1.
 export async function listPublishedNurseries(): Promise<PublicNursery[]> {
   const nurseries = await prisma.nurseryProfile.findMany({
     where: {isPublished: true},
     orderBy: {createdAt: 'desc'},
   });
+
+  const ratings = await getNurseryRatings(nurseries.map((n) => n.id));
 
   return nurseries.map((n) => ({
     id: n.id,
@@ -24,13 +30,12 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
     area: n.area,
     concept: n.concept,
     policy: n.policy,
-    rating: null,
+    rating: ratings.get(n.id) ?? null,
   }));
 }
 
-// One published nursery's public detail. Only the profile portion is wired here;
-// jobPostings / reviews / rating are populated by the posting and review
-// verticals and are empty until then.
+// One published nursery's public detail: profile + open postings + the rating and
+// published reviews aggregated from seeker→nursery reviews.
 export async function getPublishedNursery(
   id: string,
 ): Promise<PublicNurseryDetail | null> {
@@ -39,15 +44,22 @@ export async function getPublishedNursery(
   });
   if (!n) return null;
 
+  // Independent queries — run together to cut round-trips on this public page.
+  const [rating, jobPostings, reviews] = await Promise.all([
+    getNurseryRating(n.id),
+    listOpenJobsByNursery(n.id),
+    listPublishedNurseryReviews(n.id),
+  ]);
+
   return {
     id: n.id,
     nurseryName: n.nurseryName,
     area: n.area,
     concept: n.concept,
     policy: n.policy,
-    rating: null,
-    jobPostings: await listOpenJobsByNursery(n.id),
-    reviews: [],
+    rating,
+    jobPostings,
+    reviews,
   };
 }
 

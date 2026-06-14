@@ -19,6 +19,7 @@ export interface PublicNursery {
 
 // A single published review of a nursery, as shown on its detail page.
 export interface NurseryReview {
+  id: string;
   comment: string | null;
   // ISO timestamp
   reviewedAt: string;

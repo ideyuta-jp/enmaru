@@ -6,9 +6,10 @@ import {requireRole} from '@/server/auth';
 import {isUniqueViolation} from '@/server/prisma-error';
 import type {ActionResult} from '@/types/ActionResult';
 import {EngagementStatus, ReviewStatus} from '@/types/Engagement';
-import type {
-  NurseryToSeekerReviewInput,
-  SeekerToNurseryReviewInput,
+import {
+  type NurseryToSeekerReviewInput,
+  ReviewDirection,
+  type SeekerToNurseryReviewInput,
 } from '@/types/Review';
 import {UserRole} from '@/types/User';
 
@@ -147,6 +148,38 @@ export async function submitNurseryToSeekerReview(
       return {ok: false, message: 'すでに評価を送信済みです。'};
     }
     throw e;
+  }
+  return {ok: true};
+}
+
+// Admin publishes or unpublishes a review. Reviews start private; publication is
+// the admin's call. `direction` selects which review table the id lives in.
+// Guarded to ADMIN.
+export async function setReviewPublication(
+  direction: ReviewDirection,
+  reviewId: string,
+  isPublished: boolean,
+): Promise<ActionResult> {
+  await requireRole([UserRole.ADMIN]);
+
+  if (direction === ReviewDirection.NURSERY_TO_SEEKER) {
+    const review = await prisma.reviewNurseryToSeeker.findUnique({
+      where: {id: reviewId},
+    });
+    if (!review) return {ok: false, message: '対象の評価が見つかりません。'};
+    await prisma.reviewNurseryToSeeker.update({
+      where: {id: reviewId},
+      data: {isPublished},
+    });
+  } else {
+    const review = await prisma.reviewSeekerToNursery.findUnique({
+      where: {id: reviewId},
+    });
+    if (!review) return {ok: false, message: '対象の評価が見つかりません。'};
+    await prisma.reviewSeekerToNursery.update({
+      where: {id: reviewId},
+      data: {isPublished},
+    });
   }
   return {ok: true};
 }
