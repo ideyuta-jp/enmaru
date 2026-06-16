@@ -93,15 +93,16 @@ export default function Home() {
           >
             保育士と保育園を
             <br />
-            やさしくつなぐ
+            ご縁でつなぐ
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{mb: 4, maxWidth: 480, mx: 'auto', lineHeight: 1.8}}
+            sx={{mb: 4, maxWidth: 560, mx: 'auto', lineHeight: 1.8}}
           >
-            えんまーるは保育士と保育園をつなぐスポットマッチングサービスです。
-            ブランクがあっても、短時間から始められます。
+            えんまーるは、短時間から始められる新しい「復職支援」の形。
+            <br />
+            保育専門のスポットマッチングで、自分に合った働き方を探す保育士と、安心して子どもと向き合いたい保育園を丁寧にサポートします。
           </Typography>
           <Button
             href="/register"
