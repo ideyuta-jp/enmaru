@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import Image from 'next/image';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -80,38 +81,184 @@ export default function Home() {
       <Header />
 
       {/* 1. Hero */}
-      <Box sx={{bgcolor: '#FFFFFF', pt: {xs: 6, md: 10}, pb: {xs: 6, md: 8}}}>
-        <Container maxWidth="md" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
+      <Box
+        sx={{
+          position: 'relative',
+          bgcolor: '#FFFFFF',
+          minHeight: 'min(76dvh, 660px)',
+          pt: '56px',
+          pb: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        {/* 背景写真 */}
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            '& img': {
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center 30%',
+              opacity: 0.26,
+              maskImage:
+                'radial-gradient(ellipse 82% 86% at 50% 46%, #000 22%, transparent 78%)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(ellipse 62% 58% at 50% 46%, rgba(255,255,255,.78) 0%, rgba(255,255,255,.42) 52%, rgba(255,255,255,0) 100%)',
+            },
+          }}
+        >
+          <Image src="/hero.jpg" alt="" fill priority />
+        </Box>
+
+        {/* 桜装飾 */}
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 24,
+            width: 190,
+            opacity: 0.35,
+            transform: 'rotate(12deg)',
+            pointerEvents: 'none',
+            zIndex: 1,
+            display: {xs: 'none', md: 'block'},
+          }}
+        >
+          <Image src="/kasumin-sakura.png" alt="" width={190} height={190} />
+        </Box>
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: 24,
+            width: 150,
+            opacity: 0.28,
+            transform: 'rotate(-18deg)',
+            pointerEvents: 'none',
+            zIndex: 1,
+            display: {xs: 'none', md: 'block'},
+          }}
+        >
+          <Image src="/kasumin-sakura.png" alt="" width={150} height={150} />
+        </Box>
+
+        {/* コピー */}
+        <Container
+          maxWidth="lg"
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            px: {xs: 2, md: 3},
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '22px',
+          }}
+        >
+          {/* アイブロウ */}
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              px: '16px',
+              py: '7px',
+              borderRadius: '24px',
+              bgcolor: '#FFF0F3',
+              color: '#F4A7B9',
+              fontSize: '.8rem',
+              fontWeight: 700,
+              letterSpacing: '.03em',
+            }}
+          >
+            保育専門のスポットマッチング
+          </Box>
+
+          {/* 見出し */}
           <Typography
             variant="h1"
             sx={{
-              fontSize: {xs: '1.625rem', md: '2.5rem'},
+              fontSize: 'clamp(2rem, 4.4vw, 3.1rem)',
               fontWeight: 700,
-              lineHeight: 1.4,
-              mb: 2,
+              lineHeight: 1.42,
+              letterSpacing: '.01em',
+              textWrap: 'balance',
+              mb: 0,
             }}
           >
             保育士と保育園を
             <br />
-            ご縁でつなぐ
+            <Box component="span" sx={{color: '#F4A7B9'}}>
+              ご縁
+            </Box>
+            でつなぐ
           </Typography>
+
+          {/* サブコピー */}
           <Typography
             variant="body1"
-            color="text.secondary"
-            sx={{mb: 4, maxWidth: 560, mx: 'auto', lineHeight: 1.8}}
+            sx={{
+              color: '#666666',
+              fontSize: 'clamp(.95rem, 1.15vw, 1.0625rem)',
+              lineHeight: 1.95,
+              maxWidth: 600,
+              mx: 'auto',
+              textWrap: 'pretty',
+              mb: 0,
+            }}
           >
             えんまーるは、短時間から始められる新しい「復職支援」の形。
-            <br />
+            <Box
+              component="br"
+              sx={{display: {xs: 'none', sm: 'inline'}}}
+            />
             保育専門のスポットマッチングで、自分に合った働き方を探す保育士と、安心して子どもと向き合いたい保育園を丁寧にサポートします。
           </Typography>
-          <Button
-            href="/register"
-            variant="contained"
-            size="large"
-            sx={{px: 4, py: 1.5, fontSize: '1rem', borderRadius: 3}}
+
+          {/* CTA */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+            }}
           >
-            まずは登録してみる
-          </Button>
+            <Button
+              href="/register"
+              variant="contained"
+              size="large"
+              sx={{
+                px: '44px',
+                py: '15px',
+                fontSize: '1.0625rem',
+                borderRadius: '24px',
+                boxShadow: '0 6px 18px rgba(244,167,185,.20)',
+              }}
+            >
+              まずは登録してみる
+            </Button>
+            <Typography
+              variant="caption"
+              sx={{fontSize: '.78rem', color: '#AAAAAA'}}
+            >
+              登録は無料・いつでも退会できます
+            </Typography>
+          </Box>
         </Container>
       </Box>
 
@@ -207,7 +354,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 3. Features */}
+      {/* 4. Features */}
       <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
         <Container maxWidth="lg" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -245,7 +392,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 4. How it works */}
+      {/* 5. How it works */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -303,7 +450,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 5. Trust */}
+      {/* 6. Trust */}
       <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
           <Typography
@@ -344,7 +491,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 6. CTA */}
+      {/* 7. CTA */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="sm" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
           <Typography
