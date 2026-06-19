@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
@@ -173,7 +174,15 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
       )}
     </Box>
 
-    <Box sx={{mt: 1.5}}>
+    <Box
+      sx={{
+        mt: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1,
+      }}
+    >
       <WorkFlowActions
         engagementId={match.id}
         engagementStatus={match.engagementStatus}
@@ -183,6 +192,14 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
         viewerReviewed={match.nurseryReviewed}
         reviewHref={`/nursery/reviews/${match.id}`}
       />
+      <Button
+        href={`/nursery/chat/${match.id}`}
+        variant="outlined"
+        size="small"
+        sx={{borderColor: '#F4A7B9', color: '#F4A7B9', flexShrink: 0}}
+      >
+        チャット
+      </Button>
     </Box>
   </Box>
 );
