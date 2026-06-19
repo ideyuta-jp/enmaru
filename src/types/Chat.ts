@@ -7,7 +7,6 @@
 // send action (server) so both judge the limit the same way.
 export const MAX_CHAT_MESSAGE_LENGTH = 2000;
 
-// One chat message as shown to a viewer.
 export interface ChatMessage {
   id: string;
   body: string;

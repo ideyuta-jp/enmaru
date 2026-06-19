@@ -27,25 +27,34 @@ export default function ChatPanel({initial}: Props) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Guards every async setState (poll and post-send refresh) against firing
+  // after the panel unmounts.
+  const mountedRef = useRef(true);
 
-  // Poll the thread so the counterpart's messages appear without a reload. The
-  // mounted flag prevents a state update after unmount from an in-flight poll.
+  // Poll the thread so the counterpart's messages appear without a reload.
+  // Self-scheduling (setTimeout re-armed after each poll settles) rather than
+  // setInterval: a fixed interval can launch a new request before the previous
+  // one returns, and an earlier-but-slower response can then clobber a fresher
+  // one. Chaining keeps at most one request in flight, so the order is stable.
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
+    let timer: ReturnType<typeof setTimeout>;
     async function poll() {
       try {
         const thread = await fetchChatThread(initial.engagementId);
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         setMessages(thread.messages);
         setOpen(thread.open);
       } catch {
-        // Transient poll failure: keep the last good view and retry next tick.
+        // Transient poll failure: keep the last good view and retry next round.
+      } finally {
+        if (mountedRef.current) timer = setTimeout(poll, POLL_INTERVAL_MS);
       }
     }
-    const timer = setInterval(poll, POLL_INTERVAL_MS);
+    timer = setTimeout(poll, POLL_INTERVAL_MS);
     return () => {
-      mounted = false;
-      clearInterval(timer);
+      mountedRef.current = false;
+      clearTimeout(timer);
     };
   }, [initial.engagementId]);
 
@@ -67,6 +76,7 @@ export default function ChatPanel({initial}: Props) {
       }
       setBody('');
       const thread = await fetchChatThread(initial.engagementId);
+      if (!mountedRef.current) return;
       setMessages(thread.messages);
       setOpen(thread.open);
     } catch {
