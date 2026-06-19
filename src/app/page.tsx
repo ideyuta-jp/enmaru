@@ -16,10 +16,35 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 
+function SakuraDecoration({size, opacity, rotate, position}: {
+  size: number;
+  opacity: number;
+  rotate: number;
+  position: {top?: number; bottom?: number; left?: number; right?: number};
+}) {
+  return (
+    <Box
+      aria-hidden="true"
+      sx={{
+        position: 'absolute',
+        ...position,
+        width: size,
+        opacity,
+        transform: `rotate(${rotate}deg)`,
+        pointerEvents: 'none',
+        zIndex: 1,
+        display: {xs: 'none', md: 'block'},
+      }}
+    >
+      <Image src="/kasumin-sakura.png" alt="" width={size} height={size} />
+    </Box>
+  );
+}
+
 export const metadata: Metadata = {
   title: 'えんまーる | 保育士と保育園のスポットマッチング',
   description:
-    'えんまーるは保育士と保育園をやさしくつなぐスポットマッチングサービスです。ブランクがある保育士も、短時間から働けます。',
+    'えんまーるは、短時間から始められる新しい「復職支援」の形。保育専門のスポットマッチングで、自分に合った働き方を探す保育士と、安心して子どもと向き合いたい保育園を丁寧にサポートします。',
 };
 
 const FEATURES = [
@@ -93,7 +118,7 @@ export default function Home() {
           overflow: 'hidden',
         }}
       >
-        {/* 背景写真 */}
+        {/* background image */}
         <Box
           aria-hidden="true"
           sx={{
@@ -121,41 +146,11 @@ export default function Home() {
           <Image src="/hero.jpg" alt="" fill priority />
         </Box>
 
-        {/* 桜装飾 */}
-        <Box
-          aria-hidden="true"
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 24,
-            width: 190,
-            opacity: 0.35,
-            transform: 'rotate(12deg)',
-            pointerEvents: 'none',
-            zIndex: 1,
-            display: {xs: 'none', md: 'block'},
-          }}
-        >
-          <Image src="/kasumin-sakura.png" alt="" width={190} height={190} />
-        </Box>
-        <Box
-          aria-hidden="true"
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            left: 24,
-            width: 150,
-            opacity: 0.28,
-            transform: 'rotate(-18deg)',
-            pointerEvents: 'none',
-            zIndex: 1,
-            display: {xs: 'none', md: 'block'},
-          }}
-        >
-          <Image src="/kasumin-sakura.png" alt="" width={150} height={150} />
-        </Box>
+        {/* sakura decorations */}
+        <SakuraDecoration size={190} opacity={0.35} rotate={12} position={{top: 16, right: 24}} />
+        <SakuraDecoration size={150} opacity={0.28} rotate={-18} position={{bottom: 16, left: 24}} />
 
-        {/* コピー */}
+        {/* copy */}
         <Container
           maxWidth="lg"
           sx={{
@@ -169,7 +164,7 @@ export default function Home() {
             gap: '22px',
           }}
         >
-          {/* アイブロウ */}
+          {/* eyebrow label */}
           <Box
             component="span"
             sx={{
@@ -188,7 +183,7 @@ export default function Home() {
             保育専門のスポットマッチング
           </Box>
 
-          {/* 見出し */}
+          {/* heading */}
           <Typography
             variant="h1"
             sx={{
@@ -208,11 +203,11 @@ export default function Home() {
             でつなぐ
           </Typography>
 
-          {/* サブコピー */}
+          {/* subcopy */}
           <Typography
             variant="body1"
+            color="text.secondary"
             sx={{
-              color: '#666666',
               fontSize: 'clamp(.95rem, 1.15vw, 1.0625rem)',
               lineHeight: 1.95,
               maxWidth: 600,
@@ -229,7 +224,7 @@ export default function Home() {
             保育専門のスポットマッチングで、自分に合った働き方を探す保育士と、安心して子どもと向き合いたい保育園を丁寧にサポートします。
           </Typography>
 
-          {/* CTA */}
+          {/* primary CTA */}
           <Box
             sx={{
               display: 'flex',
@@ -246,7 +241,6 @@ export default function Home() {
                 px: '44px',
                 py: '15px',
                 fontSize: '1.0625rem',
-                borderRadius: '24px',
                 boxShadow: '0 6px 18px rgba(244,167,185,.20)',
               }}
             >
@@ -254,7 +248,7 @@ export default function Home() {
             </Button>
             <Typography
               variant="caption"
-              sx={{fontSize: '.78rem', color: '#AAAAAA'}}
+              sx={{fontSize: '.78rem'}}
             >
               登録は無料・いつでも退会できます
             </Typography>
@@ -262,7 +256,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 2. Two audiences */}
+      {/* 2. two audiences */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -354,7 +348,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 4. Features */}
+      {/* 3. Features */}
       <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
         <Container maxWidth="lg" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -392,7 +386,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 5. How it works */}
+      {/* 4. How it works */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -450,7 +444,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 6. Trust */}
+      {/* 5. Trust */}
       <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
           <Typography
@@ -491,7 +485,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 7. CTA */}
+      {/* 6. CTA */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="sm" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
           <Typography
