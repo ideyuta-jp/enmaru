@@ -2,7 +2,9 @@
 
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
+import {notify} from '@/server/notification';
 import type {ActionResult} from '@/types/ActionResult';
+import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
 
 // Which party (if any) the signed-in user is to this engagement. The seeker party
@@ -65,7 +67,11 @@ export async function submitWorkReport(
 
   const engagement = await prisma.engagement.findUnique({
     where: {id: engagementId},
-    select: {status: true},
+    select: {
+      status: true,
+      seeker: {select: {userId: true}},
+      job: {select: {nursery: {select: {userId: true}}}},
+    },
   });
   if (!engagement) return {ok: false, message: '対象の業務が見つかりません。'};
   if (engagement.status === 'MATCHED') {
@@ -76,6 +82,11 @@ export async function submitWorkReport(
   }
 
   const trimmed = comment.trim() || null;
+
+  // Set inside the tx when this report is the one that flips the engagement to
+  // COMPLETED, so the after-commit notify can tell "review requested" (both in)
+  // apart from "the other party should still report".
+  let becameCompleted = false;
 
   await prisma.$transaction(async (tx) => {
     // Lock the engagement row first so the report read-modify-write is
@@ -105,12 +116,46 @@ export async function submitWorkReport(
       reports.some((r) => r.reporter === 'NURSERY');
     if (bothReported) {
       // Guard on WORKING so the transition is idempotent under a race.
-      await tx.engagement.updateMany({
+      const completed = await tx.engagement.updateMany({
         where: {id: engagementId, status: 'WORKING'},
         data: {status: 'COMPLETED', completedAt: new Date()},
       });
+      // count === 1 means this call (not a concurrent one) won the transition,
+      // so only it sends the review-requested notifications.
+      becameCompleted = completed.count === 1;
     }
   });
+
+  // Notify after commit so a notification failure can't roll back the report.
+  const seekerUserId = engagement.seeker.userId;
+  const nurseryUserId = engagement.job.nursery.userId;
+  if (becameCompleted) {
+    // Both reports are in: ask each party for a mutual review.
+    await notify({
+      userId: seekerUserId,
+      type: NotificationType.REVIEW_REQUESTED,
+      title: 'レビューをお願いします',
+      body: '業務が完了しました。相手への評価を投稿してください。',
+      linkUrl: `/reviews/${engagementId}`,
+    });
+    await notify({
+      userId: nurseryUserId,
+      type: NotificationType.REVIEW_REQUESTED,
+      title: 'レビューをお願いします',
+      body: '業務が完了しました。担当保育士への評価を投稿してください。',
+      linkUrl: `/nursery/reviews/${engagementId}`,
+    });
+  } else {
+    // Only this party has reported: nudge the other to file theirs.
+    const otherUserId = party === 'SEEKER' ? nurseryUserId : seekerUserId;
+    await notify({
+      userId: otherUserId,
+      type: NotificationType.WORK_REPORT_FILED,
+      title: '業務完了が報告されました',
+      body: '相手が業務完了を報告しました。あなたも報告してください。',
+      linkUrl: party === 'SEEKER' ? '/nursery/applications' : '/applications',
+    });
+  }
 
   return {ok: true};
 }

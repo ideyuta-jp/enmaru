@@ -3,9 +3,11 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import {missingRequiredDocuments} from '@/server/application';
+import {notify} from '@/server/notification';
 import {isUniqueViolation} from '@/server/prisma-error';
 import type {ActionResult} from '@/types/ActionResult';
 import {DOCUMENT_TYPE_LABEL} from '@/types/Document';
+import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
 
 // Thrown inside the transaction when another seeker closed the posting first, so
@@ -28,7 +30,10 @@ export async function applyToJob(input: {
     return {ok: false, message: '先にプロフィールを作成してください。'};
   }
 
-  const job = await prisma.jobPosting.findUnique({where: {id: input.jobId}});
+  const job = await prisma.jobPosting.findUnique({
+    where: {id: input.jobId},
+    include: {nursery: {select: {userId: true, nurseryName: true}}},
+  });
   if (!job) return {ok: false, message: '募集が見つかりません。'};
   if (job.status !== 'OPEN') {
     return {ok: false, message: 'この募集はすでに締め切られています。'};
@@ -75,6 +80,23 @@ export async function applyToJob(input: {
     }
     throw e;
   }
+
+  // Match formed (applying is the match). Notify both parties after commit so a
+  // notification failure can't roll back the match.
+  await notify({
+    userId: job.nursery.userId,
+    type: NotificationType.MATCH_FORMED,
+    title: 'マッチング成立',
+    body: `「${job.title}」に保育士がマッチングしました`,
+    linkUrl: '/nursery/applications',
+  });
+  await notify({
+    userId: user.id,
+    type: NotificationType.MATCH_FORMED,
+    title: 'マッチング成立',
+    body: `${job.nursery.nurseryName}「${job.title}」のマッチングが成立しました`,
+    linkUrl: '/applications',
+  });
 
   return {ok: true};
 }

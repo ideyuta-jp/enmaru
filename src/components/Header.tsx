@@ -17,6 +17,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import Link from 'next/link';
 
+import NotificationBell from '@/components/NotificationBell';
 import {signOut} from '@/server/auth-actions';
 import {UserRole} from '@/types/User';
 
@@ -116,20 +117,29 @@ export default function Header({role = null}: Props) {
 
           <Box sx={{flexGrow: {xs: 1, md: 0}}} />
 
-          <Box sx={{display: {xs: 'none', md: 'flex'}, gap: 1}}>
+          <Box
+            sx={{
+              display: {xs: 'none', md: 'flex'},
+              gap: 1,
+              alignItems: 'center',
+            }}
+          >
             {role ? (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleLogout}
-                sx={{
-                  borderColor: '#AAAAAA',
-                  color: '#666666',
-                  fontSize: '0.8rem',
-                }}
-              >
-                ログアウト
-              </Button>
+              <>
+                <NotificationBell />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleLogout}
+                  sx={{
+                    borderColor: '#AAAAAA',
+                    color: '#666666',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  ログアウト
+                </Button>
+              </>
             ) : (
               <>
                 <Button
@@ -157,6 +167,12 @@ export default function Header({role = null}: Props) {
               </>
             )}
           </Box>
+
+          {role && (
+            <Box sx={{display: {xs: 'flex', md: 'none'}}}>
+              <NotificationBell />
+            </Box>
+          )}
 
           <IconButton
             edge="end"

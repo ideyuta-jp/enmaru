@@ -3,14 +3,17 @@
 import {prisma} from '@/lib/prisma';
 import {putObject} from '@/lib/storage';
 import {requireRole} from '@/server/auth';
+import {notify} from '@/server/notification';
 import type {ActionResult} from '@/types/ActionResult';
 import {
   ALL_DOCUMENT_TYPES,
   ALLOWED_DOCUMENT_MIME_TYPES,
+  DOCUMENT_TYPE_LABEL,
   MAX_DOCUMENT_BYTES,
   SeekerDocumentStatus,
   type SeekerDocumentType,
 } from '@/types/Document';
+import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
 
 // Seeker uploads (or replaces) one document. Stored in R2 under a key keyed by
@@ -69,7 +72,10 @@ export async function uploadDocument(
 // Admin marks a document verified.
 export async function verifyDocument(id: string): Promise<ActionResult> {
   await requireRole([UserRole.ADMIN]);
-  const doc = await prisma.seekerDocument.findUnique({where: {id}});
+  const doc = await prisma.seekerDocument.findUnique({
+    where: {id},
+    include: {seeker: {select: {userId: true}}},
+  });
   if (!doc) return {ok: false, message: '対象の書類が見つかりません。'};
 
   await prisma.seekerDocument.update({
@@ -79,6 +85,14 @@ export async function verifyDocument(id: string): Promise<ActionResult> {
       rejectionReason: null,
       verifiedAt: new Date(),
     },
+  });
+
+  await notify({
+    userId: doc.seeker.userId,
+    type: NotificationType.DOCUMENT_APPROVED,
+    title: '書類が認証されました',
+    body: `${DOCUMENT_TYPE_LABEL[doc.documentType]}が認証されました。`,
+    linkUrl: '/documents',
   });
   return {ok: true};
 }
@@ -92,7 +106,10 @@ export async function rejectDocument(
   const trimmed = reason.trim();
   if (!trimmed) return {ok: false, message: '差し戻し理由を入力してください。'};
 
-  const doc = await prisma.seekerDocument.findUnique({where: {id}});
+  const doc = await prisma.seekerDocument.findUnique({
+    where: {id},
+    include: {seeker: {select: {userId: true}}},
+  });
   if (!doc) return {ok: false, message: '対象の書類が見つかりません。'};
 
   await prisma.seekerDocument.update({
@@ -102,6 +119,14 @@ export async function rejectDocument(
       rejectionReason: trimmed,
       verifiedAt: new Date(),
     },
+  });
+
+  await notify({
+    userId: doc.seeker.userId,
+    type: NotificationType.DOCUMENT_REJECTED,
+    title: '書類が差し戻されました',
+    body: `${DOCUMENT_TYPE_LABEL[doc.documentType]}が差し戻されました。理由：${trimmed}`,
+    linkUrl: '/documents',
   });
   return {ok: true};
 }

@@ -16,6 +16,7 @@ import {
   type ChatMessage,
   type ChatThread,
 } from '@/types/Chat';
+import {formatDateTime} from '@/utils/date';
 
 // How often the panel polls for the counterpart's new messages.
 const POLL_INTERVAL_MS = 5000;
@@ -198,12 +199,7 @@ const MessageBubble = ({
           color: mine ? 'rgba(255,255,255,0.8)' : '#AAAAAA',
         }}
       >
-        {new Date(message.createdAt).toLocaleString('ja-JP', {
-          month: 'numeric',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
+        {formatDateTime(message.createdAt)}
       </Typography>
     </Box>
   </Box>
