@@ -45,7 +45,8 @@ export async function sendChatMessage(
   const seeker = engagement.seeker;
   const nursery = engagement.job.nursery;
   const isSeeker = seeker.userId === user.id;
-  const isParty = isSeeker || nursery.userId === user.id;
+  const isNursery = nursery.userId === user.id;
+  const isParty = isSeeker || isNursery;
   if (!isParty) {
     return {
       ok: false,
