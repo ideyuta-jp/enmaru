@@ -11,7 +11,7 @@
 | Layer           | Choice                                                        |
 | --------------- | ------------------------------------------------------------- |
 | Framework       | Next.js 16 (App Router, TypeScript, `src/`)                   |
-| Hosting         | Vercel (automatic deploys)                                    |
+| Hosting         | Netlify (automatic deploys)                                   |
 | Package manager | pnpm (pinned via corepack)                                    |
 | UI              | MUI v9 (`@mui/material-nextjs` App Router integration)        |
 | ORM             | Prisma 7 (`prisma-client` generator + `@prisma/adapter-neon`) |
@@ -20,10 +20,9 @@
 | Auth            | Logto Cloud (`@logto/next`)                                   |
 | Lint / Format   | ESLint + Prettier                                             |
 | Unit test       | Vitest + Testing Library (jsdom)                              |
-| E2E test        | Playwright (runs on the host, see `e2e/`)                     |
-| CI              | GitHub Actions (lint / typecheck / unit / e2e)                |
+| CI              | GitHub Actions (format / lint / typecheck / unit)             |
 
-There is no Docker: the app runs on the host locally (`pnpm dev`) and on Vercel's managed
+There is no Docker: the app runs on the host locally (`pnpm dev`) and on Netlify's managed
 runtime in production. The database, storage, and auth are managed cloud services.
 
 The directory layout and the rules for where new code lands are documented in
@@ -53,8 +52,9 @@ Production and development always use **separate** Neon / R2 / Logto instances:
 
 - **Local dev** reads credentials from `.env.local`, pointing at the dev branch / bucket /
   tenant.
-- **Production & preview** read credentials from **Vercel environment variables**, set per
-  environment in the Vercel project settings.
+- **Production & dev (branch deploy)** read credentials from **Netlify environment
+  variables**, scoped per deploy context (Production / Branch deploys) in the Netlify site
+  settings.
 
 Next.js loads `.env.local` automatically; the Prisma CLI loads it via `@next/env` (see
 `prisma.config.ts`), so `prisma migrate dev` / `prisma studio` also target the dev branch.
@@ -74,30 +74,30 @@ pnpm prisma:generate    # regenerate the client (also runs on build)
 
 ## Deployment
 
-Deploys are automatic via Vercel's GitHub integration:
+Deploys are automatic via Netlify's GitHub integration:
 
-- **Production** — push/merge to `main`
-- **Preview** — every pull request
+- **Production** — push/merge to `main` → https://enmaru.kasumin.biz
+- **dev** — push to the `dev` branch (Netlify branch deploy) →
+  https://dev--marvelous-crepe-8a78fb.netlify.app
 
-Set the production and preview environment variables in the Vercel project settings (the
-same keys as `.env.example`). No deploy workflow lives in this repo; GitHub Actions only runs
-the quality-gate CI.
+Set the environment variables per deploy context (Production / Branch deploys) in the
+Netlify site settings (the same keys as `.env.example`). No deploy workflow lives in this
+repo; GitHub Actions only runs the quality-gate CI.
 
 ## Commands
 
-| Command                 | Description                           |
-| ----------------------- | ------------------------------------- |
-| `pnpm dev`              | Dev server (host)                     |
-| `pnpm build`            | `prisma generate` + production build  |
-| `pnpm lint`             | ESLint                                |
-| `pnpm format`           | Prettier (write)                      |
-| `pnpm typecheck`        | `tsc --noEmit`                        |
-| `pnpm db:migrate`       | Prisma migration (dev)                |
-| `pnpm db:studio`        | Prisma Studio                         |
-| `./cmd test unit`       | Vitest unit tests                     |
-| `./cmd test e2e-setup`  | Install Playwright browser (one-time) |
-| `./cmd test e2e`        | Playwright e2e (host, via webServer)  |
-| `./cmd test e2e-report` | Open the last e2e HTML report         |
+| Command                    | Description                                                          |
+| -------------------------- | -------------------------------------------------------------------- |
+| `pnpm dev`                 | Dev server (host)                                                    |
+| `pnpm build`               | `prisma generate` + production build                                 |
+| `pnpm lint`                | ESLint                                                               |
+| `pnpm format`              | Prettier (write)                                                     |
+| `pnpm typecheck`           | `tsc --noEmit`                                                       |
+| `pnpm db:migrate`          | Prisma migration (dev)                                               |
+| `pnpm db:studio`           | Prisma Studio                                                        |
+| `pnpm admin:grant <email>` | Grant the ADMIN role to a user ([operations.md](docs/operations.md)) |
+| `./cmd check`              | Full CI gate locally (format check, lint, typecheck, unit)           |
+| `./cmd test unit`          | Vitest unit tests                                                    |
 
 ## Where to look next
 
@@ -113,8 +113,8 @@ Find the right document by the question you have:
   - [Conventions](docs/conventions/index.md) — coding, repo, docs
 - **How is the project tested?**
   - [Testing](docs/testing.md) — where each layer's tests live, how to run them
-- **How do I write or run e2e tests specifically?**
-  - [`e2e/README.md`](e2e/README.md) — Playwright structure, page objects, fixtures
+- **How do I run an operator task?**
+  - [Operations](docs/operations.md) — operator procedures
 
-The shipped Vitest and Playwright tests are smoke tests proving the harnesses work; replace
-them as real features land.
+The shipped Vitest tests are smoke tests proving the harness works; replace them as real
+features land.

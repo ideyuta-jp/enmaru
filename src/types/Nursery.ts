@@ -19,6 +19,7 @@ export interface PublicNursery {
 
 // A single published review of a nursery, as shown on its detail page.
 export interface NurseryReview {
+  id: string;
   comment: string | null;
   // ISO timestamp
   reviewedAt: string;
@@ -29,4 +30,43 @@ export interface NurseryReview {
 export interface PublicNurseryDetail extends PublicNursery {
   jobPostings: Job[];
   reviews: NurseryReview[];
+}
+
+// The editable shape of a nursery's own profile — form state + prefill. Unlike
+// PublicNursery this includes the non-public fields (address / contactName /
+// phone). Text fields are plain strings (empty = unset); the server maps empty
+// to null when persisting.
+export interface NurseryProfileInput {
+  nurseryName: string;
+  area: string;
+  address: string;
+  contactName: string;
+  phone: string;
+  concept: string;
+  policy: string;
+  isPublished: boolean;
+}
+
+export const EMPTY_NURSERY_PROFILE: NurseryProfileInput = {
+  nurseryName: '',
+  area: '',
+  address: '',
+  contactName: '',
+  phone: '',
+  concept: '',
+  policy: '',
+  isPublished: false,
+};
+
+// Nursery dashboard summary. Job / application counts come from later verticals
+// and are 0 until then.
+export interface NurseryDashboard {
+  hasProfile: boolean;
+  // The nursery profile's id (null when no profile yet); used to link to its own
+  // public page for preview.
+  id: string | null;
+  nurseryName: string | null;
+  isPublished: boolean;
+  openJobCount: number;
+  newApplicationCount: number;
 }

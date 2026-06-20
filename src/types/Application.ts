@@ -1,7 +1,9 @@
-import type {MatchStatus} from '@/types/Match';
+import type {SeekerDocumentType} from '@/types/Document';
+import type {EngagementStatus, ReviewStatus} from '@/types/Engagement';
 
-// One row in a seeker's application history. `matchStatus` is null until the
-// operator has created a match for this application.
+// One row in a seeker's application history. Each is a matched Engagement
+// (matching is immediate); its state is the two real axes, from which the UI
+// derives the status badge.
 export interface SeekerApplication {
   id: string;
   jobTitle: string;
@@ -10,5 +12,29 @@ export interface SeekerApplication {
   workTimeStart: string;
   workTimeEnd: string;
   appliedAt: string;
-  matchStatus: MatchStatus | null;
+  engagementStatus: EngagementStatus;
+  reviewStatus: ReviewStatus;
+  // Whether each party has filed its work-completion report. Both true is what
+  // moves the engagement to COMPLETED; the seeker view uses these to drive the
+  // start-work / report actions.
+  seekerReported: boolean;
+  nurseryReported: boolean;
+  // Whether this seeker has already reviewed the nursery; drives the review CTA
+  // once the engagement is COMPLETED.
+  seekerReviewed: boolean;
+}
+
+// What the apply page needs to render the form and gate submission: the posting
+// summary plus this seeker's eligibility. `missingDocuments` lists required
+// documents that are not yet APPROVED — non-empty blocks applying.
+export interface ApplyTarget {
+  jobId: string;
+  nurseryName: string;
+  title: string;
+  workDate: string;
+  workTimeStart: string;
+  workTimeEnd: string;
+  isOpen: boolean;
+  alreadyApplied: boolean;
+  missingDocuments: SeekerDocumentType[];
 }

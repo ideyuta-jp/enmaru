@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
@@ -8,13 +9,21 @@ import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import StatusChip from '@/components/StatusChip';
+import WorkFlowActions from '@/components/WorkFlowActions';
 import {listNurseryMatches} from '@/server/match';
+import {EngagementStatus} from '@/types/Engagement';
 import type {NurseryMatch} from '@/types/Match';
 
 export default async function NurseryApplicationsPage() {
   const matches = await listNurseryMatches();
-  const newMatches = matches.filter((m) => m.status === 'APPLIED');
-  const otherMatches = matches.filter((m) => m.status !== 'APPLIED');
+  // Matching is immediate, so a fresh application arrives at MATCHED; anything
+  // past that (working / completed) goes under "その他".
+  const newMatches = matches.filter(
+    (m) => m.engagementStatus === EngagementStatus.MATCHED,
+  );
+  const otherMatches = matches.filter(
+    (m) => m.engagementStatus !== EngagementStatus.MATCHED,
+  );
 
   return (
     <>
@@ -95,6 +104,14 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
       <Box>
         <Typography variant="subtitle2" sx={{fontWeight: 700}}>
           {match.seekerDisplayName}
+          <Typography
+            component="span"
+            variant="caption"
+            color="text.secondary"
+            sx={{ml: 0.5, fontWeight: 400}}
+          >
+            （{match.seekerRealName}）
+          </Typography>
         </Typography>
         {match.seekerPreferredStyle.length > 0 && (
           <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5}}>
@@ -109,7 +126,10 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
           </Box>
         )}
       </Box>
-      <StatusChip status={match.status} />
+      <StatusChip
+        engagementStatus={match.engagementStatus}
+        reviewStatus={match.reviewStatus}
+      />
     </Box>
 
     <Typography variant="caption" color="text.secondary">
@@ -152,6 +172,34 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
           LINE連絡OK
         </Typography>
       )}
+    </Box>
+
+    <Box
+      sx={{
+        mt: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1,
+      }}
+    >
+      <WorkFlowActions
+        engagementId={match.id}
+        engagementStatus={match.engagementStatus}
+        viewerParty="NURSERY"
+        seekerReported={match.seekerReported}
+        nurseryReported={match.nurseryReported}
+        viewerReviewed={match.nurseryReviewed}
+        reviewHref={`/nursery/reviews/${match.id}`}
+      />
+      <Button
+        href={`/nursery/chat/${match.id}`}
+        variant="outlined"
+        size="small"
+        sx={{borderColor: '#F4A7B9', color: '#F4A7B9', flexShrink: 0}}
+      >
+        チャット
+      </Button>
     </Box>
   </Box>
 );

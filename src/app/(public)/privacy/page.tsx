@@ -4,12 +4,15 @@ import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 
 export const metadata: Metadata = {
   title: 'プライバシーポリシー',
 };
+
+// Renders SessionHeader (reads the session), so it renders per-request.
+export const dynamic = 'force-dynamic';
 
 const SECTIONS = [
   {
@@ -37,7 +40,7 @@ const SECTIONS = [
 export default function PrivacyPage() {
   return (
     <>
-      <Header />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <Typography
           variant="h1"

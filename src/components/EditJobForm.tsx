@@ -1,51 +1,69 @@
 'use client';
 
 import {useState} from 'react';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
-import JobForm, {type JobFormState} from '@/components/JobForm';
+import JobForm from '@/components/JobForm';
 import SectionHeading from '@/components/SectionHeading';
-import type {JobStatus} from '@/types/Job';
-
-// Placeholder content so the edit form is exercisable without a backend.
-const SAMPLE_FORM: JobFormState = {
-  title: '午前中サポート保育スタッフ募集',
-  workContent:
-    '0〜2歳児クラスの保育補助。朝の受け入れと午前の活動をお願いします。',
-  workDate: '2026-07-01',
-  workTimeStart: '08:30',
-  workTimeEnd: '12:30',
-  hourlyWage: '1200',
-  targetPerson: '保育士資格をお持ちの方',
-  remarks: '駐車場あり、制服貸出あり',
-};
+import {setJobStatus, updateJob} from '@/server/job-actions';
+import {JobStatus, type JobInput} from '@/types/Job';
 
 interface Props {
   jobId: string;
+  initial: JobInput;
+  initialStatus: JobStatus;
 }
 
-export default function EditJobForm({jobId}: Props) {
+export default function EditJobForm({jobId, initial, initialStatus}: Props) {
   const router = useRouter();
-  // TODO(#7 follow-up): load the posting identified by `jobId` instead of the
-  // sample data below.
-  void jobId;
-  const [form, setForm] = useState<JobFormState>(SAMPLE_FORM);
+  const [form, setForm] = useState<JobInput>(initial);
+  const [status, setStatus] = useState<JobStatus>(initialStatus);
   const [saving, setSaving] = useState(false);
-  const [error] = useState<string | null>(null);
-  const [status, setStatus] = useState<JobStatus>('OPEN');
+  const [updatingJobStatus, setUpdatingJobStatus] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    // TODO(#7 follow-up): persist the posting, then redirect to /nursery/jobs.
+    setError(null);
+    setSaved(false);
+    try {
+      const result = await updateJob(jobId, form);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setSaved(true);
+      router.refresh();
+    } catch {
+      setError('保存に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleToggleStatus() {
-    // TODO(#7 follow-up): persist the open/closed change to the backend.
-    setStatus((prev) => (prev === 'OPEN' ? 'CLOSED' : 'OPEN'));
+  async function handleToggleStatus() {
+    const next = status === JobStatus.OPEN ? JobStatus.CLOSED : JobStatus.OPEN;
+    setUpdatingJobStatus(true);
+    setError(null);
+    try {
+      const result = await setJobStatus(jobId, next);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setStatus(next);
+      router.refresh();
+    } catch {
+      setError('ステータスの更新に失敗しました。');
+    } finally {
+      setUpdatingJobStatus(false);
+    }
   }
 
   return (
@@ -63,16 +81,24 @@ export default function EditJobForm({jobId}: Props) {
           variant="outlined"
           size="small"
           onClick={handleToggleStatus}
+          disabled={updatingJobStatus}
           sx={{
-            borderColor: status === 'OPEN' ? '#AAAAAA' : '#F4A7B9',
-            color: status === 'OPEN' ? '#666666' : '#F4A7B9',
+            borderColor: status === JobStatus.OPEN ? '#AAAAAA' : '#F4A7B9',
+            color: status === JobStatus.OPEN ? '#666666' : '#F4A7B9',
             fontSize: '0.75rem',
           }}
         >
-          {status === 'OPEN' ? '募集を終了する' : '募集を再開する'}
+          {status === JobStatus.OPEN ? '募集を終了する' : '募集を再開する'}
         </Button>
       </Box>
+
       <ErrorAlert message={error} />
+      {saved && (
+        <Alert severity="success" sx={{mb: 2}}>
+          保存しました
+        </Alert>
+      )}
+
       <JobForm
         form={form}
         setForm={setForm}

@@ -1,22 +1,28 @@
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
+import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import SearchIcon from '@mui/icons-material/Search';
-import StarIcon from '@mui/icons-material/Star';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SummaryCard from '@/components/SummaryCard';
+import {requireRole} from '@/server/auth';
 import {getSeekerDashboard} from '@/server/seeker';
+import {UserRole} from '@/types/User';
 
-// TODO(#7 follow-up): the "評価を書く" card points at a sample match for now; the
-// real destination is a list of reviewable matches (phase 2).
+// Reads the session, so it renders per-request.
+export const dynamic = 'force-dynamic';
+
+// Reviews are entered per completed engagement from the application history, so
+// there is no standalone "評価を書く" entry here.
 const NAV_CARDS = [
   {
     href: '/profile',
@@ -36,20 +42,15 @@ const NAV_CARDS = [
     title: '応募履歴',
     description: '応募した募集の状況を確認',
   },
-  {
-    href: '/reviews/m1',
-    icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
-    title: '評価を書く',
-    description: '業務完了後の評価入力',
-  },
 ];
 
 export default async function SeekerMypagePage() {
+  const user = await requireRole([UserRole.SEEKER]);
   const dashboard = await getSeekerDashboard();
 
   return (
     <>
-      <Header role="SEEKER" />
+      <Header role={user.role} />
       <PageContainer>
         <Box sx={{mb: 3}}>
           <Typography
@@ -64,6 +65,15 @@ export default async function SeekerMypagePage() {
             えんまーるへようこそ
           </Typography>
         </Box>
+
+        {!dashboard.hasProfile && (
+          <Alert severity="info" sx={{mb: 3}}>
+            プロフィールを作成すると応募できるようになります。{' '}
+            <MuiLink href="/profile" underline="hover">
+              プロフィールを作成
+            </MuiLink>
+          </Alert>
+        )}
 
         <Box
           sx={{
@@ -80,7 +90,7 @@ export default async function SeekerMypagePage() {
           />
           <SummaryCard
             label="進行中のマッチング"
-            value={dashboard.activeMatchCount}
+            value={dashboard.activeEngagementCount}
             unit="件"
           />
         </Box>

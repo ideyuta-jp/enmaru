@@ -1,9 +1,0 @@
-# Files not needed for the Vercel build or runtime.
-# `cmd` is a bare (extension-less) shell script; without ignoring it Vercel's
-# Go-function auto-detection treats it as a directory and fails with
-# `ENOTDIR: not a directory, stat '.../cmd/api/main.go'`.
-cmd
-
-# e2e is a standalone npm package (its own deps + Playwright), unrelated to the
-# app build/runtime.
-e2e

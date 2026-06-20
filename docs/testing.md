@@ -1,25 +1,22 @@
 # Testing
 
-Two layers. Unit tests sit alongside the code they cover; end-to-end tests live at
-the repository root as a standalone package.
+One layer for now: unit tests sit alongside the code they cover.
 
 | Layer | Location                          | Scope                                                                       |
 | ----- | --------------------------------- | --------------------------------------------------------------------------- |
 | Unit  | `src/**/*.test.ts(x)` (colocated) | Components (Testing Library + jsdom), `server/` logic, `types/` conversions |
-| E2E   | [`e2e/`](../e2e/README.md)        | Browser-driven flows (Playwright, starts the app via `webServer`)           |
 
 ## Running
 
 ```bash
-./cmd test unit          # Vitest
-./cmd test e2e-setup     # one-time: install e2e deps + browser
-./cmd test e2e           # Playwright
-./cmd test e2e-report    # open the last HTML report
+./cmd check              # the full CI gate: format check, lint, typecheck, unit
+./cmd test unit          # Vitest only
 pnpm test:unit:watch     # Vitest watch mode while developing
 ```
 
-CI runs format check, lint, typecheck, unit, and e2e on every push to `main` and
-every pull request ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)).
+CI runs `./cmd check` on every push to `main` / `dev` and every pull request
+targeting them ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)), so
+`./cmd check` locally mirrors CI exactly.
 
 ## Placement
 
@@ -27,17 +24,13 @@ every pull request ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)).
   `src/components/ReservationCard.test.tsx` beside
   `src/components/ReservationCard.tsx`. Vitest picks up
   `src/**/*.{test,spec}.{ts,tsx}` (see [`vitest.config.ts`](../vitest.config.ts)).
-- E2E specs, page objects, and fixtures follow the structure described in
-  [`e2e/README.md`](../e2e/README.md).
 
 ## What to test where
 
 - **Unit** — behavior that can be verified without the real cloud services:
   component rendering and interaction, `server/` logic with `lib/` clients
   mocked, pure conversions in `types/`.
-- **E2E** — flows that cross the tiers (page → server → page) through a real
-  browser. E2E runs against the dev cloud instances configured in `.env.local`
-  (or CI's environment), never against production.
 
-A failure should point at its layer: when a unit test can catch it, do not push it
-up to e2e — e2e runs are slower and their failures are harder to localize.
+Feature behavior that crosses the tiers (page → server → page) is not covered by
+CI — verify it by running the app against the dev cloud instances and exercising
+it in a browser before merging.

@@ -16,9 +16,10 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import Link from 'next/link';
-import {useRouter} from 'next/navigation';
 
-import type {UserRole} from '@/types/User';
+import NotificationBell from '@/components/NotificationBell';
+import {signOut} from '@/server/auth-actions';
+import {UserRole} from '@/types/User';
 
 interface NavItem {
   label: string;
@@ -28,6 +29,7 @@ interface NavItem {
 const SEEKER_NAV: NavItem[] = [
   {label: 'マイページ', href: '/mypage'},
   {label: 'プロフィール', href: '/profile'},
+  {label: '書類', href: '/documents'},
   {label: '保育園を探す', href: '/nurseries'},
   {label: '応募履歴', href: '/applications'},
 ];
@@ -41,6 +43,8 @@ const NURSERY_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   {label: 'マッチング管理', href: '/admin/matches'},
+  {label: '書類確認', href: '/admin/documents'},
+  {label: '評価確認', href: '/admin/reviews'},
 ];
 
 const PUBLIC_NAV: NavItem[] = [
@@ -49,9 +53,9 @@ const PUBLIC_NAV: NavItem[] = [
 ];
 
 function getNavItems(role: UserRole | null): NavItem[] {
-  if (role === 'SEEKER') return SEEKER_NAV;
-  if (role === 'NURSERY') return NURSERY_NAV;
-  if (role === 'ADMIN') return ADMIN_NAV;
+  if (role === UserRole.SEEKER) return SEEKER_NAV;
+  if (role === UserRole.NURSERY) return NURSERY_NAV;
+  if (role === UserRole.ADMIN) return ADMIN_NAV;
   return PUBLIC_NAV;
 }
 
@@ -61,13 +65,11 @@ interface Props {
 
 export default function Header({role = null}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const router = useRouter();
   const navItems = getNavItems(role);
 
   function handleLogout() {
-    // TODO(#7 follow-up): call the sign-out endpoint / Logto flow before
-    // redirecting. Here we only navigate so the UI is exercisable.
-    router.push('/login');
+    // Server Action: ends the Logto session and redirects to the base URL.
+    void signOut();
   }
 
   return (
@@ -115,24 +117,33 @@ export default function Header({role = null}: Props) {
 
           <Box sx={{flexGrow: {xs: 1, md: 0}}} />
 
-          <Box sx={{display: {xs: 'none', md: 'flex'}, gap: 1}}>
+          <Box
+            sx={{
+              display: {xs: 'none', md: 'flex'},
+              gap: 1,
+              alignItems: 'center',
+            }}
+          >
             {role ? (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleLogout}
-                sx={{
-                  borderColor: '#AAAAAA',
-                  color: '#666666',
-                  fontSize: '0.8rem',
-                }}
-              >
-                ログアウト
-              </Button>
+              <>
+                <NotificationBell />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleLogout}
+                  sx={{
+                    borderColor: '#AAAAAA',
+                    color: '#666666',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  ログアウト
+                </Button>
+              </>
             ) : (
               <>
                 <Button
-                  component={Link}
+                  component="a"
                   href="/login"
                   variant="outlined"
                   size="small"
@@ -145,7 +156,7 @@ export default function Header({role = null}: Props) {
                   ログイン
                 </Button>
                 <Button
-                  component={Link}
+                  component="a"
                   href="/register"
                   variant="contained"
                   size="small"
@@ -156,6 +167,12 @@ export default function Header({role = null}: Props) {
               </>
             )}
           </Box>
+
+          {role && (
+            <Box sx={{display: {xs: 'flex', md: 'none'}}}>
+              <NotificationBell />
+            </Box>
+          )}
 
           <IconButton
             edge="end"
@@ -235,7 +252,7 @@ export default function Header({role = null}: Props) {
           ) : (
             <>
               <Button
-                component={Link}
+                component="a"
                 href="/login"
                 variant="outlined"
                 fullWidth
@@ -245,7 +262,7 @@ export default function Header({role = null}: Props) {
                 ログイン
               </Button>
               <Button
-                component={Link}
+                component="a"
                 href="/register"
                 variant="contained"
                 fullWidth

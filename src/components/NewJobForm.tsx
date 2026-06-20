@@ -4,30 +4,33 @@ import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
-import JobForm, {type JobFormState} from '@/components/JobForm';
+import JobForm from '@/components/JobForm';
 import SectionHeading from '@/components/SectionHeading';
-
-const INITIAL_FORM: JobFormState = {
-  title: '',
-  workContent: '',
-  workDate: '',
-  workTimeStart: '',
-  workTimeEnd: '',
-  hourlyWage: '',
-  targetPerson: '',
-  remarks: '',
-};
+import {createJob} from '@/server/job-actions';
+import {EMPTY_JOB, type JobInput} from '@/types/Job';
 
 export default function NewJobForm() {
   const router = useRouter();
-  const [form, setForm] = useState<JobFormState>(INITIAL_FORM);
+  const [form, setForm] = useState<JobInput>(EMPTY_JOB);
   const [saving, setSaving] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    // TODO(#7 follow-up): create the posting, then redirect to /nursery/jobs.
+    setError(null);
+    try {
+      const result = await createJob(form);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      router.push('/nursery/jobs');
+    } catch {
+      setError('作成に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

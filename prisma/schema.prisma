@@ -13,3 +13,310 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// The data model for the MVP. Shapes follow docs/requirements.md (the What);
+// see docs/design.md for where the code that uses these models lives. Naming:
+// PascalCase models, camelCase fields, cuid() ids.
+//
+// Core shape of the flow:
+//   JobPosting (1) ──< Engagement (N)   — one posting, many seekers (future)
+// A JobPosting is a nursery's offer. An Engagement is one seeker's whole
+// involvement with that posting: it is created when the seeker applies (matching
+// is immediate), then runs MATCHED -> WORKING -> COMPLETED and carries the mutual
+// review. "Applying" is the birth of an Engagement, not a separate entity. The
+// posting's own open/closed life is JobPosting.status, kept apart from each
+// seeker's lifecycle.
+//
+// Vocabulary — "Job" vs "Work" are used deliberately, not interchangeably:
+//   - Job / JobPosting: the posting (the offer a nursery lists). JobStatus is the
+//     posting's open/closed state.
+//   - Work: the actual shift the posting offers. workContent / workDate /
+//     workTime* describe that shift; WorkReport confirms it was performed.
+// In short: a JobPosting advertises Work.
+//
+// Public/private boundary is NOT expressed by field-level flags here. What a
+// non-admin sees is defined structurally by the DTOs in src/types/
+// (PublicSeeker / PublicNursery) and enforced in server/ — see docs/requirements.md.
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SEEKER
+  NURSERY
+  ADMIN
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+// Lifecycle of one Engagement. Matching is immediate and first-come, so an
+// Engagement is born at MATCHED. Review progress is tracked separately (see
+// ReviewStatus), not as extra states here.
+enum EngagementStatus {
+  MATCHED
+  WORKING
+  COMPLETED
+}
+
+// How far the mutual review has progressed for a completed Engagement.
+enum ReviewStatus {
+  NONE
+  PARTIAL
+  DONE
+}
+
+// The two parties to an Engagement. Deliberately separate from Role: a Role can
+// be ADMIN, but only a seeker or a nursery can be a party to an Engagement.
+// Using Party for things like WorkReport.reporter makes "admin filed a report"
+// unrepresentable rather than something to validate against at runtime.
+enum Party {
+  SEEKER
+  NURSERY
+}
+
+// Kinds of document a seeker submits for admin verification (the application
+// gate). Scoped to the seeker so future nursery-side documents (audit, billing)
+// get their own type rather than overloading this one.
+enum SeekerDocumentType {
+  RESUME // 履歴書相当情報
+  LICENSE // 保育士証
+  HEALTH_CHECK // 健康診断書
+  STOOL_TEST // 検便結果（一部の募集のみ必須）
+}
+
+enum SeekerDocumentStatus {
+  PENDING // 確認中
+  APPROVED // 認証済み
+  REJECTED // 差し戻し
+}
+
+// ---------------------------------------------------------------------------
+// Account
+// ---------------------------------------------------------------------------
+
+model User {
+  id         String    @id @default(cuid())
+  // Logto subject (OIDC `sub`). Auth lives in Logto; no password is stored here.
+  // Named generically so swapping the auth provider touches lib/ + this field
+  // only, not the rest of the model.
+  authId     String    @unique
+  email      String    @unique
+  role       Role
+  isActive   Boolean   @default(true)
+  // Terms agreement (required for seeker and nursery at registration).
+  agreedAt   DateTime?
+  // LINE Messaging API user id, obtained from the required friend-add at
+  // registration. Null until the friend-add completes.
+  lineUserId String?   @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  seekerProfile  SeekerProfile?
+  nurseryProfile NurseryProfile?
+  notifications  Notification[]
+  chatMessages   ChatMessage[]
+}
+
+model SeekerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  realName       String
+  displayName    String
+  license        Boolean  @default(false)
+  blankYears     String?
+  preferredArea  String?
+  preferredStyle String[] @default([])
+  bio            String?
+  experience     String?
+  skills         String?
+  ngConditions   String?
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  engagements Engagement[]
+  documents   SeekerDocument[]
+}
+
+model NurseryProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  nurseryName String
+  area        String
+  address     String?
+  contactName String
+  phone       String?
+  concept     String?
+  policy      String?
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Engagements and reviews are reached through jobPostings, not stored here:
+  // an Engagement keeps only jobId + seekerId (the nursery is derived via the
+  // posting), so there is no redundant nurseryId to keep in sync.
+  jobPostings JobPosting[]
+}
+
+// ---------------------------------------------------------------------------
+// Posting and engagement
+// ---------------------------------------------------------------------------
+
+model JobPosting {
+  id                String               @id @default(cuid())
+  nurseryId         String
+  nursery           NurseryProfile       @relation(fields: [nurseryId], references: [id])
+  title             String
+  workContent       String
+  workDate          DateTime
+  workTimeStart     String // 'HH:mm'
+  workTimeEnd       String // 'HH:mm'
+  hourlyWage        Int? // null = undecided
+  targetPerson      String?
+  remarks           String?
+  // Documents this posting requires to be verified before a seeker may apply.
+  requiredDocuments SeekerDocumentType[] @default([])
+  status            JobStatus            @default(OPEN)
+  postedAt          DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  engagements Engagement[]
+}
+
+// One seeker's whole involvement with one posting, from applying through the
+// mutual review. Created when the seeker applies (immediate, first-come match),
+// so applyMessage/lineContactOk live here and createdAt is the application time.
+// Holds only jobId + seekerId; the nursery is reached via job.
+model Engagement {
+  id            String           @id @default(cuid())
+  jobId         String
+  job           JobPosting       @relation(fields: [jobId], references: [id])
+  seekerId      String
+  seeker        SeekerProfile    @relation(fields: [seekerId], references: [id])
+  applyMessage  String?
+  lineContactOk Boolean          @default(false)
+  status        EngagementStatus @default(MATCHED)
+  completedAt   DateTime?
+  reviewStatus  ReviewStatus     @default(NONE)
+  // Admin-only operating note.
+  adminMemo     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  workReports           WorkReport[]
+  chatMessages          ChatMessage[]
+  reviewNurseryToSeeker ReviewNurseryToSeeker?
+  reviewSeekerToNursery ReviewSeekerToNursery?
+
+  // A seeker can engage a given posting only once.
+  @@unique([jobId, seekerId])
+}
+
+// Both parties confirm the shift happened; the Engagement becomes COMPLETED once
+// both reports are in. (Whether the nursery must also report is an open question
+// in docs/requirements.md — current behavior follows the spec: both report.)
+model WorkReport {
+  id           String     @id @default(cuid())
+  engagementId String
+  engagement   Engagement @relation(fields: [engagementId], references: [id])
+  reporter     Party
+  completed    Boolean
+  comment      String?
+  reportedAt   DateTime   @default(now())
+
+  // Each party reports at most once per engagement.
+  @@unique([engagementId, reporter])
+}
+
+// ---------------------------------------------------------------------------
+// Chat, documents, notifications
+// ---------------------------------------------------------------------------
+
+// A chat message within an engagement. Named specifically (not "Message") to
+// leave room for other message kinds the app may grow. Chat is available from
+// when the engagement forms until 24h after completion; that time-window rule is
+// enforced in server/, not the schema.
+model ChatMessage {
+  id           String     @id @default(cuid())
+  engagementId String
+  engagement   Engagement @relation(fields: [engagementId], references: [id])
+  senderId     String
+  sender       User       @relation(fields: [senderId], references: [id])
+  body         String
+  createdAt    DateTime   @default(now())
+}
+
+// A document a seeker submits for verification. Named SeekerDocument (not
+// "Document") because the app will likely handle other document kinds later
+// (nursery audit paperwork, billing), which should be their own models.
+// fileKey is the R2 object key (a signed URL is produced via src/lib/storage.ts).
+// RESUME is upload-only for the MVP — the in-app résumé form path (spec 06 §2.2)
+// is intentionally NOT supported yet; whether it is needed is tracked in #18.
+// Admin verifies each by eye — no auto-verification.
+model SeekerDocument {
+  id              String               @id @default(cuid())
+  seekerId        String
+  seeker          SeekerProfile        @relation(fields: [seekerId], references: [id])
+  documentType    SeekerDocumentType
+  fileKey         String
+  status          SeekerDocumentStatus @default(PENDING)
+  rejectionReason String?
+  uploadedAt      DateTime             @default(now())
+  verifiedAt      DateTime?
+
+  // One current document per type per seeker.
+  @@unique([seekerId, documentType])
+}
+
+// In-app notification. `type` is a string rather than an enum so new kinds do
+// not each require a migration; the known values are a union in the TS layer.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Mutual review (one row per direction per engagement; both gated on COMPLETED).
+// Linked only to the engagement; seeker/nursery are derived via it.
+// isPublished is false by default: reviews start private until admin publishes.
+// ---------------------------------------------------------------------------
+
+model ReviewNurseryToSeeker {
+  id            String     @id @default(cuid())
+  engagementId  String     @unique
+  engagement    Engagement @relation(fields: [engagementId], references: [id])
+  attitude      Int // 勤務態度 1-5
+  communication Int // コミュニケーション 1-5
+  skill         Int // 業務への姿勢 1-5
+  comment       String?
+  wouldRehire   Boolean
+  isPublished   Boolean    @default(false)
+  reviewedAt    DateTime   @default(now())
+}
+
+model ReviewSeekerToNursery {
+  id             String     @id @default(cuid())
+  engagementId   String     @unique
+  engagement     Engagement @relation(fields: [engagementId], references: [id])
+  explanation    Int // 受け入れ説明の丁寧さ 1-5
+  atmosphere     Int // 現場の雰囲気 1-5
+  support        Int // サポート体制 1-5
+  clarity        Int // 業務内容の明確さ 1-5
+  comment        String?
+  wouldWorkAgain Boolean
+  isPublished    Boolean    @default(false)
+  reviewedAt     DateTime   @default(now())
+}

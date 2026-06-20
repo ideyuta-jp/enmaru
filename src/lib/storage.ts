@@ -1,9 +1,9 @@
-import {S3Client} from '@aws-sdk/client-s3';
+import {GetObjectCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
 
 // Cloudflare R2 is S3-compatible. The region is always "auto" and the endpoint
 // points at the account's R2 gateway. Credentials are an R2 API token
 // (access key id / secret). Local dev uses a dev bucket; production values are
-// set in Vercel env vars. Cached on globalThis to avoid creating a new client
+// set as Netlify env vars. Cached on globalThis to avoid creating a new client
 // on every hot reload in development (mirrors src/lib/prisma.ts).
 const globalForR2 = globalThis as unknown as {r2?: S3Client};
 
@@ -23,3 +23,33 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export const R2_BUCKET = process.env.R2_BUCKET ?? '';
+
+// Store an object (overwrites any existing object at the same key).
+export async function putObject(
+  key: string,
+  body: Uint8Array,
+  contentType: string,
+): Promise<void> {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    }),
+  );
+}
+
+// Fetch an object as a web ReadableStream plus its content type, for streaming
+// back through a route handler. Throws if the key does not exist.
+export async function getObjectStream(
+  key: string,
+): Promise<{body: ReadableStream; contentType: string}> {
+  const res = await r2.send(
+    new GetObjectCommand({Bucket: R2_BUCKET, Key: key}),
+  );
+  return {
+    body: res.Body!.transformToWebStream(),
+    contentType: res.ContentType ?? 'application/octet-stream',
+  };
+}

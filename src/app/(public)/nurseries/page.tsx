@@ -4,10 +4,10 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import NurseryCard from '@/components/NurseryCard';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {listPublishedNurseries} from '@/server/nursery';
 
 export const metadata: Metadata = {
@@ -16,12 +16,15 @@ export const metadata: Metadata = {
     '保育園・保育施設の一覧です。スポットサポートを募集している保育園を探せます。',
 };
 
+// Backed by a live DB query, so it renders per-request (still SSR'd for SEO).
+export const dynamic = 'force-dynamic';
+
 export default async function NurseriesPage() {
   const nurseries = await listPublishedNurseries();
 
   return (
     <>
-      <Header />
+      <SessionHeader />
       <PageContainer>
         <SectionHeading subtitle="スポットサポートを募集している保育施設">
           保育園一覧

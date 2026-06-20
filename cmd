@@ -8,29 +8,27 @@ usage() {
   cat <<'EOF'
 Usage: ./cmd <command>
 
+  check              Run the full CI gate (format check, lint, typecheck, unit)
   test unit          Run Vitest unit tests
-  test e2e           Run Playwright e2e tests (starts the app via webServer)
-  test e2e-setup     Install Playwright browsers (one-time)
-  test e2e-report    Open the last Playwright HTML report
   lint               Run ESLint
+  typecheck          Run tsc --noEmit
   format             Run Prettier (write)
+  format-check       Run Prettier (check only; does not write)
 EOF
 }
 
 case "${1:-}" in
+  check)
+    # The exact gate CI runs, so `./cmd check` locally mirrors CI.
+    pnpm format:check
+    pnpm lint
+    pnpm typecheck
+    pnpm test:unit
+    ;;
   test)
     case "${2:-}" in
       unit)
         pnpm test:unit
-        ;;
-      e2e)
-        (cd e2e && npm test)
-        ;;
-      e2e-setup)
-        (cd e2e && npm ci && npm run setup)
-        ;;
-      e2e-report)
-        (cd e2e && npm run report)
         ;;
       *)
         usage
@@ -41,8 +39,14 @@ case "${1:-}" in
   lint)
     pnpm lint
     ;;
+  typecheck)
+    pnpm typecheck
+    ;;
   format)
     pnpm format
+    ;;
+  format-check)
+    pnpm format:check
     ;;
   *)
     usage

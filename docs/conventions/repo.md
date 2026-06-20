@@ -1,10 +1,17 @@
 # Repo Conventions
 
-## `main` is production
+## Branch flow: `feature` → `dev` → `main`
 
-Vercel deploys every push to `main` to production (and every pull request to a
-preview URL). There is no release tag or staging branch: merging a PR _is_
-releasing. Keep `main` releasable at all times — CI green, verified behavior.
+Two long-lived branches map to two Netlify environments:
+
+- `dev` — the dev/staging environment (Netlify branch deploy,
+  https://dev--marvelous-crepe-8a78fb.netlify.app)
+- `main` — production (push deploys to https://enmaru.kasumin.biz)
+
+Work branches (`feature/...`, `fix/...`, etc.) open their PR against `dev`. Once
+verified on the dev deploy, `dev` is promoted to `main` to release. So merging a
+work PR is _not_ releasing — promoting `dev` → `main` is. There is no release tag.
+Keep both branches deployable: CI green, verified behavior.
 
 ## Branch naming
 
@@ -61,7 +68,7 @@ so that what lands reads as a coherent set of meaningful commits.
   trade-offs that led to it. This prevents the same question from being
   re-evaluated later.
 - Include evidence of verification (what was tested, what was observed) in a test
-  plan. CI covers lint / typecheck / unit / e2e, but not feature behavior — see
+  plan. CI covers format / lint / typecheck / unit, but not feature behavior — see
   "Ship with care" in [`index.md`](index.md).
 - Title is descriptive; no emoji or bracket prefix.
 - Link the related issue with `Closes #N`.

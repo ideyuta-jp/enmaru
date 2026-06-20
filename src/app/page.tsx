@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import Image from 'next/image';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -13,13 +14,47 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import VerifiedIcon from '@mui/icons-material/Verified';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import SessionHeader from '@/components/SessionHeader';
+
+function SakuraDecoration({
+  size,
+  opacity,
+  rotate,
+  position,
+}: {
+  size: number;
+  opacity: number;
+  rotate: number;
+  position: {top?: number; bottom?: number; left?: number; right?: number};
+}) {
+  return (
+    <Box
+      aria-hidden="true"
+      sx={{
+        position: 'absolute',
+        ...position,
+        width: size,
+        opacity,
+        transform: `rotate(${rotate}deg)`,
+        pointerEvents: 'none',
+        zIndex: 1,
+        display: {xs: 'none', md: 'block'},
+      }}
+    >
+      <Image src="/kasumin-sakura.png" alt="" width={size} height={size} />
+    </Box>
+  );
+}
 
 export const metadata: Metadata = {
   title: 'えんまーる | 保育士と保育園のスポットマッチング',
   description:
-    'えんまーるは保育士と保育園をやさしくつなぐスポットマッチングサービスです。ブランクがある保育士も、短時間から働けます。',
+    'えんまーるは、短時間から始められる新しい「復職支援」の形。保育専門のスポットマッチングで、自分に合った働き方を探す保育士と、安心して子どもと向き合いたい保育園を丁寧にサポートします。',
 };
+
+// Renders SessionHeader, which reads the session, so it renders per-request
+// (still SSR'd for SEO). Needed so a signed-in visitor sees their own header.
+export const dynamic = 'force-dynamic';
 
 const FEATURES = [
   {
@@ -77,44 +112,165 @@ const TRUST_POINTS = [
 export default function Home() {
   return (
     <>
-      <Header />
+      <SessionHeader />
 
       {/* 1. Hero */}
-      <Box sx={{bgcolor: '#FFFFFF', pt: {xs: 6, md: 10}, pb: {xs: 6, md: 8}}}>
-        <Container maxWidth="md" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
+      <Box
+        sx={{
+          position: 'relative',
+          bgcolor: '#FFFFFF',
+          minHeight: 'min(76dvh, 660px)',
+          pt: '56px',
+          pb: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        {/* background image */}
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            '& img': {
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center 30%',
+              opacity: 0.26,
+              maskImage:
+                'radial-gradient(ellipse 82% 86% at 50% 46%, #000 22%, transparent 78%)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(ellipse 62% 58% at 50% 46%, rgba(255,255,255,.78) 0%, rgba(255,255,255,.42) 52%, rgba(255,255,255,0) 100%)',
+            },
+          }}
+        >
+          <Image src="/hero.jpg" alt="" fill priority />
+        </Box>
+
+        {/* sakura decorations */}
+        <SakuraDecoration
+          size={190}
+          opacity={0.35}
+          rotate={12}
+          position={{top: 16, right: 24}}
+        />
+        <SakuraDecoration
+          size={150}
+          opacity={0.28}
+          rotate={-18}
+          position={{bottom: 16, left: 24}}
+        />
+
+        {/* copy */}
+        <Container
+          maxWidth="lg"
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            px: {xs: 2, md: 3},
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '22px',
+          }}
+        >
+          {/* eyebrow label */}
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              px: '16px',
+              py: '7px',
+              borderRadius: '24px',
+              bgcolor: '#FFF0F3',
+              color: '#F4A7B9',
+              fontSize: '.8rem',
+              fontWeight: 700,
+              letterSpacing: '.03em',
+            }}
+          >
+            保育専門のスポットマッチング
+          </Box>
+
+          {/* heading */}
           <Typography
             variant="h1"
             sx={{
-              fontSize: {xs: '1.625rem', md: '2.5rem'},
+              fontSize: 'clamp(2rem, 4.4vw, 3.1rem)',
               fontWeight: 700,
-              lineHeight: 1.4,
-              mb: 2,
+              lineHeight: 1.42,
+              letterSpacing: '.01em',
+              textWrap: 'balance',
+              mb: 0,
             }}
           >
             保育士と保育園を
             <br />
-            やさしくつなぐ
+            <Box component="span" sx={{color: '#F4A7B9'}}>
+              ご縁
+            </Box>
+            でつなぐ
           </Typography>
+
+          {/* subcopy */}
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{mb: 4, maxWidth: 480, mx: 'auto', lineHeight: 1.8}}
+            sx={{
+              fontSize: 'clamp(.95rem, 1.15vw, 1.0625rem)',
+              lineHeight: 1.95,
+              maxWidth: 600,
+              mx: 'auto',
+              textWrap: 'pretty',
+              mb: 0,
+            }}
           >
-            えんまーるは保育士と保育園をつなぐスポットマッチングサービスです。
-            ブランクがあっても、短時間から始められます。
+            えんまーるは、短時間から始められる新しい「復職支援」の形。
+            <Box component="br" sx={{display: {xs: 'none', sm: 'inline'}}} />
+            保育専門のスポットマッチングで、自分に合った働き方を探す保育士と、安心して子どもと向き合いたい保育園を丁寧にサポートします。
           </Typography>
-          <Button
-            href="/register"
-            variant="contained"
-            size="large"
-            sx={{px: 4, py: 1.5, fontSize: '1rem', borderRadius: 3}}
+
+          {/* primary CTA */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+            }}
           >
-            まずは登録してみる
-          </Button>
+            <Button
+              component="a"
+              href="/register"
+              variant="contained"
+              size="large"
+              sx={{
+                px: '44px',
+                py: '15px',
+                fontSize: '1.0625rem',
+                boxShadow: '0 6px 18px rgba(244,167,185,.20)',
+              }}
+            >
+              まずは登録してみる
+            </Button>
+            <Typography variant="caption" sx={{fontSize: '.78rem'}}>
+              登録は無料・いつでも退会できます
+            </Typography>
+          </Box>
         </Container>
       </Box>
 
-      {/* 2. Two audiences */}
+      {/* 2. two audiences */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -155,6 +311,7 @@ export default function Home() {
                     ブランクがある方も歓迎。午前だけ・週1など、希望のスタイルで働けます。
                   </Typography>
                   <Button
+                    component="a"
                     href="/register"
                     variant="contained"
                     fullWidth
@@ -192,6 +349,7 @@ export default function Home() {
                     行事の準備・急な欠員対応など、必要なときにサポートスタッフを確保できます。
                   </Typography>
                   <Button
+                    component="a"
                     href="/register"
                     variant="outlined"
                     fullWidth
@@ -357,6 +515,7 @@ export default function Home() {
           </Typography>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
             <Button
+              component="a"
               href="/register"
               variant="contained"
               size="large"

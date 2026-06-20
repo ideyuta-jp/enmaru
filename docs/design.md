@@ -54,6 +54,13 @@ the routing surface and nothing more:
   (e.g. `server/auth.ts`).
 - Must never reach the client bundle. The only thing client code may import from
   `server/` is a `'use server'` file — React compiles that into an RPC stub.
+- **Authorization belongs here, at the data layer.** A `server/` function that
+  returns or mutates real data must verify the caller's role/ownership itself
+  (e.g. via `requireRole`), not assume an upstream guard ran. The route-group
+  `layout.tsx` guards (`app/(seeker|nursery|admin)/layout.tsx`) are redirect UX
+  and protect direct/initial requests, but Next does not re-run layouts on
+  client-side soft navigation between sibling pages — so the layout is not the
+  authorization boundary for data.
 
 ### `components/` — UI
 

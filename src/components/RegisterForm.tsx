@@ -6,35 +6,26 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Checkbox from '@mui/material/Checkbox';
-import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import MuiLink from '@mui/material/Link';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import NextLink from 'next/link';
-import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
-import type {UserRole} from '@/types/User';
+import {registerCurrentUser} from '@/server/user';
+import {UserRole, type RegisterRole} from '@/types/User';
 
-const ROLE_LANDING: Record<UserRole, string> = {
-  SEEKER: '/mypage',
-  NURSERY: '/nursery/mypage',
-  ADMIN: '/admin/matches',
-};
-
+// The credential step already happened on Logto; here a signed-in user only
+// picks their role (RegisterRole — SEEKER / NURSERY) and agrees to the terms.
 export default function RegisterForm() {
-  const router = useRouter();
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<RegisterRole | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!role) {
       setError('登録区分を選択してください');
@@ -46,10 +37,13 @@ export default function RegisterForm() {
     }
     setError(null);
     setLoading(true);
-    // TODO(#7 follow-up): create the account and sign in via the auth backend.
-    // The redirect below is frontend-only so the role areas are reachable by
-    // navigation without a backend.
-    router.push(ROLE_LANDING[role]);
+    try {
+      // On success this redirects, so control does not return here.
+      await registerCurrentUser(role);
+    } catch {
+      setError('登録に失敗しました。時間をおいて再度お試しください。');
+      setLoading(false);
+    }
   }
 
   return (
@@ -59,29 +53,26 @@ export default function RegisterForm() {
           variant="h1"
           sx={{fontSize: {xs: '1.5rem', md: '1.75rem'}, mb: 1}}
         >
-          新規登録
+          登録区分の選択
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          えんまーるへようこそ
+          えんまーるへようこそ。区分を選んで登録を完了してください。
         </Typography>
       </Box>
 
       <ErrorAlert message={error} />
 
-      <Typography variant="body2" sx={{mb: 1.5, fontWeight: 600}}>
-        登録区分を選択してください
-      </Typography>
       <Box
         sx={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 3}}
       >
         <RoleCard
-          selected={role === 'SEEKER'}
-          onClick={() => setRole('SEEKER')}
+          selected={role === UserRole.SEEKER}
+          onClick={() => setRole(UserRole.SEEKER)}
           icon={
             <ChildCareIcon
               sx={{
                 fontSize: 36,
-                color: role === 'SEEKER' ? '#F4A7B9' : '#AAAAAA',
+                color: role === UserRole.SEEKER ? '#F4A7B9' : '#AAAAAA',
               }}
             />
           }
@@ -89,13 +80,13 @@ export default function RegisterForm() {
           description="仕事を探している保育士・保育経験者"
         />
         <RoleCard
-          selected={role === 'NURSERY'}
-          onClick={() => setRole('NURSERY')}
+          selected={role === UserRole.NURSERY}
+          onClick={() => setRole(UserRole.NURSERY)}
           icon={
             <ApartmentIcon
               sx={{
                 fontSize: 36,
-                color: role === 'NURSERY' ? '#F4A7B9' : '#AAAAAA',
+                color: role === UserRole.NURSERY ? '#F4A7B9' : '#AAAAAA',
               }}
             />
           }
@@ -109,26 +100,6 @@ export default function RegisterForm() {
         onSubmit={handleSubmit}
         sx={{display: 'flex', flexDirection: 'column', gap: 2}}
       >
-        <TextField
-          label="メールアドレス"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          size="small"
-          autoComplete="email"
-        />
-        <TextField
-          label="パスワード（8文字以上）"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          size="small"
-          slotProps={{htmlInput: {minLength: 8}}}
-          autoComplete="new-password"
-        />
-
         <FormControlLabel
           control={
             <Checkbox
@@ -161,44 +132,9 @@ export default function RegisterForm() {
           disabled={loading}
           sx={{py: 1.25}}
         >
-          {loading ? '登録中...' : '登録する'}
+          {loading ? '登録中...' : '登録を完了する'}
         </Button>
       </Box>
-
-      <Box
-        sx={{
-          mt: 3,
-          p: 2,
-          bgcolor: '#F9F9F9',
-          borderRadius: 2,
-          border: '1px solid #E0E0E0',
-        }}
-      >
-        <Typography variant="body2" sx={{fontWeight: 600, mb: 0.5}}>
-          📱 LINE友だち追加のお願い
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          マッチング通知や業務連絡をLINEでお届けします。登録後にLINE公式アカウントを友だち追加してください。
-        </Typography>
-      </Box>
-
-      <Divider sx={{my: 3}} />
-
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{textAlign: 'center'}}
-      >
-        すでにアカウントをお持ちの方は{' '}
-        <MuiLink
-          component={NextLink}
-          href="/login"
-          color="primary"
-          underline="hover"
-        >
-          ログイン
-        </MuiLink>
-      </Typography>
     </>
   );
 }

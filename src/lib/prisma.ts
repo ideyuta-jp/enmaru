@@ -3,7 +3,8 @@ import {PrismaNeon} from '@prisma/adapter-neon';
 import {PrismaClient} from '@/generated/prisma/client';
 
 // Neon serverless driver over WebSockets (Pool-based: supports transactions).
-// Node 22+/Vercel provide a global WebSocket, so no `ws` polyfill is needed.
+// Node 22+ provides a global WebSocket (locally and on Netlify's runtime), so
+// no `ws` polyfill is needed.
 const adapter = new PrismaNeon({
   connectionString: process.env.DATABASE_URL ?? '',
 });

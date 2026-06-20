@@ -29,12 +29,12 @@ letting both sides review each other **only after real work has happened**.
 
 ## Actors
 
-| Actor                  | Who                                        | Primary stance                              |
-| ---------------------- | ------------------------------------------ | ------------------------------------------- |
-| Seeker (潜在保育士)    | License holder, often with a career gap    | Wants flexible work, low re-entry pressure  |
-| Nursery (保育園)       | Director / hiring staff                    | Wants to fill shifts and avoid mismatches   |
-| Admin (事務局/KASUMIN) | Operator                                   | Keeps the service healthy and trustworthy   |
-| Public (未ログイン)    | Anyone browsing                            | Evaluates the service before signing up     |
+| Actor                  | Who                                     | Primary stance                             |
+| ---------------------- | --------------------------------------- | ------------------------------------------ |
+| Seeker (潜在保育士)    | License holder, often with a career gap | Wants flexible work, low re-entry pressure |
+| Nursery (保育園)       | Director / hiring staff                 | Wants to fill shifts and avoid mismatches  |
+| Admin (事務局/KASUMIN) | Operator                                | Keeps the service healthy and trustworthy  |
+| Public (未ログイン)    | Anyone browsing                         | Evaluates the service before signing up    |
 
 ## Core lifecycle — the backbone
 
@@ -55,11 +55,11 @@ separate screening or manual-approval step (per the spec's
 
 A match then moves through three statuses:
 
-| Status      | Meaning                                  | Entered when                                    |
-| ----------- | ---------------------------------------- | ----------------------------------------------- |
-| `matched`   | Seeker and nursery are paired            | Seeker applies (the posting closes, first-come) |
-| `working`   | The shift is underway                    | Seeker marks the work as started                |
-| `completed` | The shift is done and confirmed          | The work-completion report(s) are in            |
+| Status      | Meaning                         | Entered when                                    |
+| ----------- | ------------------------------- | ----------------------------------------------- |
+| `matched`   | Seeker and nursery are paired   | Seeker applies (the posting closes, first-come) |
+| `working`   | The shift is underway           | Seeker marks the work as started                |
+| `completed` | The shift is done and confirmed | Both sides' work-completion reports are in      |
 
 Review progress is tracked alongside the status: `none` → `partial` (one side has
 reviewed) → `done` (both sides have reviewed). A review may be submitted only once
@@ -102,8 +102,9 @@ mirrors what the reference implementation already has working.
 - Create, edit, and close job postings (title, work content, date, time, optional
   hourly wage, target person, remarks), and set which documents each posting
   requires.
-- See incoming matches.
-- File a work-completion report (see open question below).
+- See incoming matches, including the matched seeker's real name (disclosed at
+  match time — see the personal-information boundary).
+- File a work-completion report (required — both sides must report; see below).
 - Chat with the seeker within the match (time-bounded).
 - Review the seeker after completion (numeric criteria + optional comment +
   "would rehire" Yes/No).
@@ -127,12 +128,17 @@ mirrors what the reference implementation already has working.
 These are properties of the system, not features of one screen. They constrain
 every capability above.
 
-- **Personal-information boundary.** Real name, street address, and phone number
-  are visible to admin only. The public / seeker / nursery views of a profile are a
-  strictly narrower shape than the stored record — the boundary must be
-  structural, not a per-screen reminder.
+- **Personal-information boundary.** A seeker's real name is shown to admin
+  always, and to a nursery once they are matched (applying forms the match, so the
+  nursery's match inbox shows it). Street address and phone number are admin-only.
+  Public, seeker, and nursery profile views are each a narrower shape than the
+  stored record.
 - **Document gate.** A seeker can apply to a posting only when every document that
   posting requires has been verified by admin. Verification is manual.
+- **Mutual completion confirmation.** Both the seeker and the nursery must file a
+  work-completion report; `completed` is reached only when both are in. This is so
+  the nursery confirms the work actually happened ("worked these hours"), which is
+  what makes paying out the seeker safe — it guards against payment disputes.
 - **Review-after-work.** Reviews cannot exist before a match is `completed`. This
   is the lifecycle constraint above, stated from the review's side.
 - **Reviews start private.** A submitted review is not public by default; admin
@@ -150,13 +156,13 @@ every capability above.
 
 ## Non-functional requirements
 
-| Area            | Requirement                                                                          |
-| --------------- | ------------------------------------------------------------------------------------ |
-| Privacy         | Protect personal data; enforce the information boundary above.                       |
-| Discoverability | Public nursery and posting pages must be findable by search engines.                 |
+| Area            | Requirement                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Privacy         | Protect personal data; enforce the information boundary above.                                     |
+| Discoverability | Public nursery and posting pages must be findable by search engines.                               |
 | Usability       | Intuitive for non-technical nursery staff and seekers; keep the admin's manual operating load low. |
-| Trust           | Evaluations reflect real, completed work.                                            |
-| Region          | Initial target is Nagasaki (default area selection).                                 |
+| Trust           | Evaluations reflect real, completed work.                                                          |
+| Region          | Initial target is Nagasaki (default area selection).                                               |
 
 ## Scope and phasing
 
@@ -201,14 +207,6 @@ Do not build these; their rules do not exist yet (the spec marks them "別途
 - Time-clock UX after the URL is opened.
 - Group visibility toggle (public ↔ group-only) UI.
 - No-show definition and automatic detection.
-
-## Open questions — confirm with KASUMIN
-
-- **Does the nursery also file a work-completion report?** The spec and the
-  reference implementation both have *both* sides report, and gate `completed` on
-  both. The likely rationale is mutual confirmation that the shift actually happened
-  before reviews open. Confirm whether the nursery must report too, or whether the
-  seeker's report (perhaps with a lightweight nursery acknowledgement) is enough.
 
 ## What this doc deliberately omits
 

@@ -1,6 +1,8 @@
 'use client';
 
 import {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -14,6 +16,8 @@ import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
+import {saveSeekerProfile} from '@/server/seeker-actions';
+import {EMPTY_SEEKER_PROFILE, type SeekerProfileInput} from '@/types/Seeker';
 
 const PREFERRED_STYLE_OPTIONS = [
   '午前のみ',
@@ -25,39 +29,19 @@ const PREFERRED_STYLE_OPTIONS = [
   '長期',
 ];
 
-interface ProfileForm {
-  realName: string;
-  displayName: string;
-  license: boolean;
-  blankYears: string;
-  preferredArea: string;
-  preferredStyle: string[];
-  bio: string;
-  experience: string;
-  skills: string;
-  ngConditions: string;
-  isPublished: boolean;
+interface Props {
+  // The seeker's existing profile, or null when creating one for the first time.
+  initial: SeekerProfileInput | null;
 }
 
-const INITIAL_FORM: ProfileForm = {
-  realName: '',
-  displayName: '',
-  license: false,
-  blankYears: '',
-  preferredArea: '',
-  preferredStyle: [],
-  bio: '',
-  experience: '',
-  skills: '',
-  ngConditions: '',
-  isPublished: false,
-};
-
-export default function SeekerProfileForm() {
-  // TODO(#7 follow-up): load the seeker's existing profile and prefill this form.
-  const [form, setForm] = useState<ProfileForm>(INITIAL_FORM);
+export default function SeekerProfileForm({initial}: Props) {
+  const router = useRouter();
+  const [form, setForm] = useState<SeekerProfileInput>(
+    initial ?? EMPTY_SEEKER_PROFILE,
+  );
   const [saving, setSaving] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   function toggleStyle(style: string) {
     setForm((prev) => ({
@@ -68,10 +52,24 @@ export default function SeekerProfileForm() {
     }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    // TODO(#7 follow-up): persist the profile, then surface a success message.
+    setError(null);
+    setSaved(false);
+    try {
+      const result = await saveSeekerProfile(form);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setSaved(true);
+      router.refresh();
+    } catch {
+      setError('保存に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -81,6 +79,11 @@ export default function SeekerProfileForm() {
       </SectionHeading>
 
       <ErrorAlert message={error} />
+      {saved && (
+        <Alert severity="success" sx={{mb: 2}}>
+          保存しました
+        </Alert>
+      )}
 
       <Box
         component="form"
@@ -100,6 +103,7 @@ export default function SeekerProfileForm() {
               value={form.realName}
               onChange={(e) => setForm({...form, realName: e.target.value})}
               size="small"
+              required
               helperText="マッチング成立後、保育園に開示されます"
             />
             <TextField

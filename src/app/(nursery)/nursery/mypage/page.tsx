@@ -1,23 +1,31 @@
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
+import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import BusinessIcon from '@mui/icons-material/Business';
-import StarIcon from '@mui/icons-material/Star';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import WorkIcon from '@mui/icons-material/Work';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SummaryCard from '@/components/SummaryCard';
+import {requireRole} from '@/server/auth';
 import {getNurseryDashboard} from '@/server/nursery';
+import {UserRole} from '@/types/User';
 
-// TODO(#7 follow-up): the "評価を書く" card points at a sample match for now; the
-// real destination is a list of reviewable matches (phase 2).
+// Reads the session, so it renders per-request.
+export const dynamic = 'force-dynamic';
+
+// Reviews are entered per completed engagement from the application inbox, so
+// there is no standalone "評価を書く" entry here.
 const NAV_CARDS = [
   {
     href: '/nursery/profile',
@@ -37,20 +45,15 @@ const NAV_CARDS = [
     title: '応募管理',
     description: '届いた応募の確認',
   },
-  {
-    href: '/nursery/reviews/m1',
-    icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
-    title: '評価を書く',
-    description: '業務完了後の評価入力',
-  },
 ];
 
 export default async function NurseryMypagePage() {
+  const user = await requireRole([UserRole.NURSERY]);
   const dashboard = await getNurseryDashboard();
 
   return (
     <>
-      <Header role="NURSERY" />
+      <Header role={user.role} />
       <PageContainer>
         <Box
           sx={{
@@ -81,7 +84,34 @@ export default async function NurseryMypagePage() {
               fontSize: '0.75rem',
             }}
           />
+          {dashboard.id && (
+            <Button
+              href={`/nurseries/${dashboard.id}`}
+              variant="outlined"
+              size="small"
+              startIcon={<VisibilityIcon />}
+              sx={{
+                ml: {sm: 'auto'},
+                borderColor: '#F4A7B9',
+                color: '#F4A7B9',
+                fontSize: '0.75rem',
+              }}
+            >
+              {dashboard.isPublished
+                ? '公開ページを見る'
+                : '公開ページをプレビュー'}
+            </Button>
+          )}
         </Box>
+
+        {!dashboard.hasProfile && (
+          <Alert severity="info" sx={{mb: 3}}>
+            園プロフィールを作成・公開すると保育士に表示されます。{' '}
+            <MuiLink href="/nursery/profile" underline="hover">
+              園プロフィールを作成
+            </MuiLink>
+          </Alert>
+        )}
 
         <Box
           sx={{
