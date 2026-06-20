@@ -9,9 +9,10 @@ import {signIn} from '@/server/auth-actions';
 // constraint is exactly why this is a route, not a page. Already-registered
 // users skip to their dashboard.
 //
-// Reached by the auth guards' redirect('/login') for unauthenticated access to
-// protected pages; the header's sign-in button invokes signIn directly and does
-// not pass through here.
+// Reached by the header sign-in button (a plain anchor: a hard navigation that,
+// unlike next/link, never client-routes into the external Logto redirect), by
+// the auth guards' redirect('/login'), and by /register forwarding its
+// unauthenticated visitors here.
 export async function GET() {
   const user = await getCurrentUser();
   if (user) redirect(landingPathForRole(user.role));
