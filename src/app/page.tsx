@@ -238,6 +238,7 @@ export default function Home() {
             }}
           >
             <Button
+              component="a"
               href="/register"
               variant="contained"
               size="large"
@@ -301,6 +302,7 @@ export default function Home() {
                     ブランクがある方も歓迎。午前だけ・週1など、希望のスタイルで働けます。
                   </Typography>
                   <Button
+                    component="a"
                     href="/register"
                     variant="contained"
                     fullWidth
@@ -338,6 +340,7 @@ export default function Home() {
                     行事の準備・急な欠員対応など、必要なときにサポートスタッフを確保できます。
                   </Typography>
                   <Button
+                    component="a"
                     href="/register"
                     variant="outlined"
                     fullWidth
@@ -503,6 +506,7 @@ export default function Home() {
           </Typography>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
             <Button
+              component="a"
               href="/register"
               variant="contained"
               size="large"

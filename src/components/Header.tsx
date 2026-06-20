@@ -133,7 +133,7 @@ export default function Header({role = null}: Props) {
             ) : (
               <>
                 <Button
-                  component={Link}
+                  component="a"
                   href="/login"
                   variant="outlined"
                   size="small"
@@ -146,7 +146,7 @@ export default function Header({role = null}: Props) {
                   ログイン
                 </Button>
                 <Button
-                  component={Link}
+                  component="a"
                   href="/register"
                   variant="contained"
                   size="small"
@@ -236,7 +236,7 @@ export default function Header({role = null}: Props) {
           ) : (
             <>
               <Button
-                component={Link}
+                component="a"
                 href="/login"
                 variant="outlined"
                 fullWidth
@@ -246,7 +246,7 @@ export default function Header({role = null}: Props) {
                 ログイン
               </Button>
               <Button
-                component={Link}
+                component="a"
                 href="/register"
                 variant="contained"
                 fullWidth
