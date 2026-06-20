@@ -62,6 +62,9 @@ export const EMPTY_NURSERY_PROFILE: NurseryProfileInput = {
 // and are 0 until then.
 export interface NurseryDashboard {
   hasProfile: boolean;
+  // The nursery profile's id (null when no profile yet); used to link to its own
+  // public page for preview.
+  id: string | null;
   nurseryName: string | null;
   isPublished: boolean;
   openJobCount: number;

@@ -1,3 +1,4 @@
+import type {NurseryProfile} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
 import {getCurrentUser} from '@/server/auth';
 import {listOpenJobsByNursery} from '@/server/job';
@@ -34,17 +35,13 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
   }));
 }
 
-// One published nursery's public detail: profile + open postings + the rating and
-// published reviews aggregated from seeker→nursery reviews.
-export async function getPublishedNursery(
-  id: string,
-): Promise<PublicNurseryDetail | null> {
-  const n = await prisma.nurseryProfile.findFirst({
-    where: {id, isPublished: true},
-  });
-  if (!n) return null;
-
-  // Independent queries — run together to cut round-trips on this public page.
+// Assemble a nursery's public detail (profile + open postings + rating and
+// published reviews). Shared by the public read and the owner preview so both
+// render exactly the same projection. Independent queries run together to cut
+// round-trips.
+async function buildNurseryDetail(
+  n: Pick<NurseryProfile, 'id' | 'nurseryName' | 'area' | 'concept' | 'policy'>,
+): Promise<PublicNurseryDetail> {
   const [rating, jobPostings, reviews] = await Promise.all([
     getNurseryRating(n.id),
     listOpenJobsByNursery(n.id),
@@ -61,6 +58,26 @@ export async function getPublishedNursery(
     jobPostings,
     reviews,
   };
+}
+
+// The nursery detail page's data, scoped to who is viewing. A published nursery
+// is visible to anyone; an unpublished one is visible only to its owner, as a
+// preview before publishing (see #47). Returns null when the nursery does not
+// exist, or it is unpublished and the viewer is not its owner — the page maps
+// that to notFound. `isOwnerPreview` lets the page flag the not-yet-public state.
+export async function getNurseryDetailForViewer(
+  id: string,
+): Promise<{detail: PublicNurseryDetail; isOwnerPreview: boolean} | null> {
+  const n = await prisma.nurseryProfile.findUnique({where: {id}});
+  if (!n) return null;
+
+  if (n.isPublished) {
+    return {detail: await buildNurseryDetail(n), isOwnerPreview: false};
+  }
+
+  const user = await getCurrentUser();
+  if (!user || n.userId !== user.id) return null;
+  return {detail: await buildNurseryDetail(n), isOwnerPreview: true};
 }
 
 // The current nursery's profile as form-ready input, or null if none yet.
@@ -94,6 +111,7 @@ export async function getNurseryDashboard(): Promise<NurseryDashboard> {
   if (!profile) {
     return {
       hasProfile: false,
+      id: null,
       nurseryName: null,
       isPublished: false,
       openJobCount: 0,
@@ -110,6 +128,7 @@ export async function getNurseryDashboard(): Promise<NurseryDashboard> {
 
   return {
     hasProfile: true,
+    id: profile.id,
     nurseryName: profile.nurseryName,
     isPublished: profile.isPublished,
     openJobCount,
