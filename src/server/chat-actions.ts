@@ -47,6 +47,10 @@ export async function sendChatMessage(
   const isSeeker = seeker.userId === user.id;
   const isNursery = nursery.userId === user.id;
   const isParty = isSeeker || isNursery;
+  // Unlike the not-found case above (which hides whether the engagement exists),
+  // a distinct "you're not a party" message is fine here: sendChatMessage is only
+  // reached from the chat page, which getChatThread already gates to the two
+  // parties, so this doesn't leak engagement existence to an outsider.
   if (!isParty) {
     return {
       ok: false,
