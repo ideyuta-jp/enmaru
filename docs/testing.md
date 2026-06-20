@@ -9,13 +9,14 @@ One layer for now: unit tests sit alongside the code they cover.
 ## Running
 
 ```bash
-./cmd test unit          # Vitest
+./cmd check              # the full CI gate: format check, lint, typecheck, unit
+./cmd test unit          # Vitest only
 pnpm test:unit:watch     # Vitest watch mode while developing
 ```
 
-CI runs format check, lint, typecheck, and unit on every push to `main` / `dev`
-and every pull request targeting them
-([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)).
+CI runs `./cmd check` on every push to `main` / `dev` and every pull request
+targeting them ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)), so
+`./cmd check` locally mirrors CI exactly.
 
 ## Placement
 

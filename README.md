@@ -96,6 +96,7 @@ repo; GitHub Actions only runs the quality-gate CI.
 | `pnpm db:migrate`          | Prisma migration (dev)                                               |
 | `pnpm db:studio`           | Prisma Studio                                                        |
 | `pnpm admin:grant <email>` | Grant the ADMIN role to a user ([operations.md](docs/operations.md)) |
+| `./cmd check`              | Full CI gate locally (format check, lint, typecheck, unit)           |
 | `./cmd test unit`          | Vitest unit tests                                                    |
 
 ## Where to look next
