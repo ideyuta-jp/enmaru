@@ -46,3 +46,41 @@ in prod.
 
 Verify by signing in as that person and opening `/admin`. The role lives on the
 `User` row, so it takes effect on their next request — no redeploy.
+
+## Running database migrations
+
+Deploys do **not** run migrations: the Netlify build is `prisma generate &&
+next build` only, so applying a schema change to a database is a manual step
+(automating this is tracked in #78). New migration files are created during
+development with `pnpm db:migrate` (`prisma migrate dev`, dev branch only);
+applying already-committed migrations to an environment uses `prisma migrate
+deploy`.
+
+**Never run `pnpm db:migrate` against prod** — `migrate dev` is for authoring
+migrations (shadow database, interactive, can reset). Prod only ever gets
+`migrate deploy`, which applies pending committed migrations non-interactively.
+
+To migrate **prod** (run from a checkout of the released commit, usually `main`):
+
+1. Get the prod **direct (unpooled)** connection string. The runtime
+   `DATABASE_URL` in Netlify is the _pooled_ endpoint; `migrate` needs the direct
+   one. In the Neon console, select the **prod branch**, open Connect, and turn
+   **Connection pooling off** — or take the pooled string and remove `-pooler`
+   from the host (`ep-xxx-pooler.…` → `ep-xxx.…`).
+2. Run, with the URL in **single quotes** (it contains `&` / `?`, which the shell
+   would otherwise parse):
+   ```bash
+   cd <your enmaru checkout>   # on the released commit (main)
+   DATABASE_URL='<prod direct connection string>' pnpm exec prisma migrate deploy
+   ```
+   The inline `DATABASE_URL` takes precedence over any `.env.local` (same pattern
+   as the admin grant above). It applies any pending migrations, or prints
+   "No pending migrations" if the database is already up to date.
+
+If the database already has tables but no Prisma migration history, `migrate
+deploy` stops with `P3005` (schema not empty) — that database must be baselined
+first; do not force it blindly.
+
+The same command migrates **dev** with the dev branch's direct `DATABASE_URL`
+(or just run `pnpm db:migrate` locally, which both creates and applies against the
+dev branch from `.env.local`).
