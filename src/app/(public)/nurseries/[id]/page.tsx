@@ -1,3 +1,4 @@
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -14,7 +15,7 @@ import Footer from '@/components/Footer';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
-import {getPublishedNursery} from '@/server/nursery';
+import {getNurseryDetailForViewer} from '@/server/nursery';
 
 // Public page (no auth guard), so the header must reflect the actual session
 // rather than assume SEEKER. Reads the session, hence force-dynamic.
@@ -26,16 +27,22 @@ interface Props {
 
 export default async function SeekerNurseryDetailPage({params}: Props) {
   const {id} = await params;
-  const nursery = await getPublishedNursery(id);
+  const result = await getNurseryDetailForViewer(id);
 
-  if (!nursery) notFound();
+  if (!result) notFound();
 
+  const {detail: nursery, isOwnerPreview} = result;
   const rating = nursery.rating;
 
   return (
     <>
       <SessionHeader />
       <PageContainer maxWidth="md">
+        {isOwnerPreview && (
+          <Alert severity="info" sx={{mb: 3}}>
+            これは未公開のプレビューです。保育士にはまだ表示されていません。公開すると一般に表示されます。
+          </Alert>
+        )}
         <Box sx={{mb: 3}}>
           <Typography
             variant="h1"

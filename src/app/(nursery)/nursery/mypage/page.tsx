@@ -1,5 +1,6 @@
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
@@ -9,6 +10,7 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import BusinessIcon from '@mui/icons-material/Business';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import WorkIcon from '@mui/icons-material/Work';
 
 import Footer from '@/components/Footer';
@@ -82,6 +84,24 @@ export default async function NurseryMypagePage() {
               fontSize: '0.75rem',
             }}
           />
+          {dashboard.id && (
+            <Button
+              href={`/nurseries/${dashboard.id}`}
+              variant="outlined"
+              size="small"
+              startIcon={<VisibilityIcon />}
+              sx={{
+                ml: {sm: 'auto'},
+                borderColor: '#F4A7B9',
+                color: '#F4A7B9',
+                fontSize: '0.75rem',
+              }}
+            >
+              {dashboard.isPublished
+                ? '公開ページを見る'
+                : '公開ページをプレビュー'}
+            </Button>
+          )}
         </Box>
 
         {!dashboard.hasProfile && (
