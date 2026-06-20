@@ -45,9 +45,12 @@ export async function sendChatMessage(
   const seeker = engagement.seeker;
   const nursery = engagement.job.nursery;
   const isSeeker = seeker.userId === user.id;
-  const isNursery = nursery.userId === user.id;
-  if (!isSeeker && !isNursery) {
-    return {ok: false, message: '対象の業務が見つかりません。'};
+  const isParty = isSeeker || nursery.userId === user.id;
+  if (!isParty) {
+    return {
+      ok: false,
+      message: 'このチャットの当事者ではないため、メッセージを送信できません。',
+    };
   }
 
   if (!isChatOpen(engagement.status, engagement.completedAt, new Date())) {
