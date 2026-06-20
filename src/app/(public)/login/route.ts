@@ -9,13 +9,14 @@ import {signIn} from '@/server/auth-actions';
 // constraint is exactly why this is a route, not a page. Already-registered
 // users skip to their dashboard.
 //
-// Reached both by the header's sign-in button and by the auth guards'
-// redirect('/login') for unauthenticated access to protected pages.
+// Reached by the auth guards' redirect('/login') for unauthenticated access to
+// protected pages; the header's sign-in button invokes signIn directly and does
+// not pass through here.
 export async function GET() {
   const user = await getCurrentUser();
   if (user) redirect(landingPathForRole(user.role));
 
+  // signIn() writes the PKCE/state cookies and redirects to Logto, so control
+  // never returns past here (same shape as callback/route.ts).
   await signIn();
-  // Unreachable: signIn() redirects the browser to Logto.
-  return new Response(null, {status: 302});
 }
