@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 
@@ -77,7 +78,15 @@ export default async function ApplicationsPage() {
                 >
                   応募日: {new Date(app.appliedAt).toLocaleDateString('ja-JP')}
                 </Typography>
-                <Box sx={{mt: 1.5}}>
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                  }}
+                >
                   <WorkFlowActions
                     engagementId={app.id}
                     engagementStatus={app.engagementStatus}
@@ -87,6 +96,18 @@ export default async function ApplicationsPage() {
                     viewerReviewed={app.seekerReviewed}
                     reviewHref={`/reviews/${app.id}`}
                   />
+                  <Button
+                    href={`/chat/${app.id}`}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      borderColor: '#F4A7B9',
+                      color: '#F4A7B9',
+                      flexShrink: 0,
+                    }}
+                  >
+                    チャット
+                  </Button>
                 </Box>
               </Box>
             ))}
