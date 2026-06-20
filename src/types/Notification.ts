@@ -8,7 +8,8 @@ export type NotificationType =
   | 'DOCUMENT_APPROVED'
   | 'DOCUMENT_REJECTED'
   | 'WORK_REPORT_FILED'
-  | 'REVIEW_REQUESTED';
+  | 'REVIEW_REQUESTED'
+  | 'MESSAGE_RECEIVED';
 
 export const NotificationType = {
   MATCH_FORMED: 'MATCH_FORMED',
@@ -16,6 +17,7 @@ export const NotificationType = {
   DOCUMENT_REJECTED: 'DOCUMENT_REJECTED',
   WORK_REPORT_FILED: 'WORK_REPORT_FILED',
   REVIEW_REQUESTED: 'REVIEW_REQUESTED',
+  MESSAGE_RECEIVED: 'MESSAGE_RECEIVED',
 } as const;
 
 // One notification as shown to its recipient. `type` is a plain string (see

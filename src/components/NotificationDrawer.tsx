@@ -9,6 +9,7 @@ import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
@@ -53,6 +54,10 @@ const TYPE_ICON: Record<string, {icon: React.ReactNode; color: string}> = {
   [NotificationType.REVIEW_REQUESTED]: {
     icon: <StarBorderIcon fontSize="small" />,
     color: '#F57F17',
+  },
+  [NotificationType.MESSAGE_RECEIVED]: {
+    icon: <ChatBubbleOutlineIcon fontSize="small" />,
+    color: '#F4A7B9',
   },
 };
 
