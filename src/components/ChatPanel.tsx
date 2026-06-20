@@ -11,7 +11,11 @@ import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
 import {sendChatMessage} from '@/server/chat-actions';
 import {fetchChatThread} from '@/services/chat';
-import type {ChatMessage, ChatThread} from '@/types/Chat';
+import {
+  MAX_CHAT_MESSAGE_LENGTH,
+  type ChatMessage,
+  type ChatThread,
+} from '@/types/Chat';
 
 // How often the panel polls for the counterpart's new messages.
 const POLL_INTERVAL_MS = 5000;
@@ -64,12 +68,14 @@ export default function ChatPanel({initial}: Props) {
   }, [messages]);
 
   async function handleSend() {
-    const trimmed = body.trim();
-    if (!trimmed || sending) return;
+    // Guard against an empty / whitespace-only send (mirrors the disabled send
+    // button); the body itself is sent raw — sendChatMessage trims and is the
+    // authoritative validator, so a second client-side trim would be redundant.
+    if (sending || body.trim().length === 0) return;
     setSending(true);
     setError(null);
     try {
-      const result = await sendChatMessage(initial.engagementId, trimmed);
+      const result = await sendChatMessage(initial.engagementId, body);
       if (!result.ok) {
         setError(result.message);
         return;
@@ -134,6 +140,7 @@ export default function ChatPanel({initial}: Props) {
             multiline
             maxRows={4}
             fullWidth
+            slotProps={{htmlInput: {maxLength: MAX_CHAT_MESSAGE_LENGTH}}}
           />
           <Button
             variant="contained"

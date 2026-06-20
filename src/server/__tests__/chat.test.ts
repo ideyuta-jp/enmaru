@@ -15,6 +15,11 @@ import {EngagementStatus} from '@/types/Engagement';
 // close it.
 describe('isChatOpen', () => {
   const now = new Date('2026-06-19T12:00:00Z');
+  const HOUR_MS = 60 * 60 * 1000;
+  // completedAt expressed as an offset before `now` so each case reads as its
+  // distance from the boundary and stays correct if `now` changes.
+  const hoursBeforeNow = (hours: number) =>
+    new Date(now.getTime() - hours * HOUR_MS);
 
   it('is open while MATCHED', () => {
     expect(isChatOpen(EngagementStatus.MATCHED, null, now)).toBe(true);
@@ -25,27 +30,26 @@ describe('isChatOpen', () => {
   });
 
   it('is open within 24h of completion', () => {
-    const completedAt = new Date('2026-06-19T00:00:00Z'); // 12h ago
-    expect(isChatOpen(EngagementStatus.COMPLETED, completedAt, now)).toBe(true);
+    expect(
+      isChatOpen(EngagementStatus.COMPLETED, hoursBeforeNow(12), now),
+    ).toBe(true);
   });
 
   it('is open right up to the 24h boundary', () => {
-    const completedAt = new Date(now.getTime() - (24 * 60 * 60 * 1000 - 1));
+    const completedAt = new Date(now.getTime() - (24 * HOUR_MS - 1));
     expect(isChatOpen(EngagementStatus.COMPLETED, completedAt, now)).toBe(true);
   });
 
   it('is closed at exactly 24h after completion', () => {
-    const completedAt = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    expect(isChatOpen(EngagementStatus.COMPLETED, completedAt, now)).toBe(
-      false,
-    );
+    expect(
+      isChatOpen(EngagementStatus.COMPLETED, hoursBeforeNow(24), now),
+    ).toBe(false);
   });
 
   it('is closed more than 24h after completion', () => {
-    const completedAt = new Date('2026-06-17T12:00:00Z'); // 48h ago
-    expect(isChatOpen(EngagementStatus.COMPLETED, completedAt, now)).toBe(
-      false,
-    );
+    expect(
+      isChatOpen(EngagementStatus.COMPLETED, hoursBeforeNow(48), now),
+    ).toBe(false);
   });
 
   it('stays open if COMPLETED but completedAt is missing (data inconsistency)', () => {

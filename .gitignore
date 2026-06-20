@@ -46,4 +46,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local logs (e.g. `pnpm dev > dev.log`)
+*.log
+
 /src/generated/prisma
