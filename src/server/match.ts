@@ -26,7 +26,7 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
         },
       },
       seeker: {
-        select: {displayName: true, realName: true, preferredStyle: true},
+        select: {displayName: true, realName: true, preferredStyle: true, blankYears: true, experience: true},
       },
       reviewNurseryToSeeker: {select: {id: true}},
     },
@@ -44,6 +44,8 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
     seekerDisplayName: e.seeker.displayName,
     seekerRealName: e.seeker.realName,
     seekerPreferredStyle: e.seeker.preferredStyle,
+    seekerBlankYears: e.seeker.blankYears,
+    seekerExperience: e.seeker.experience,
     applyMessage: e.applyMessage,
     lineContactOk: e.lineContactOk,
     appliedAt: e.createdAt.toISOString(),

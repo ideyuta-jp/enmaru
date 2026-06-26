@@ -15,6 +15,8 @@ export interface NurseryMatch {
   seekerDisplayName: string;
   seekerRealName: string;
   seekerPreferredStyle: string[];
+  seekerBlankYears: string | null;
+  seekerExperience: string | null;
   applyMessage: string | null;
   lineContactOk: boolean;
   appliedAt: string;

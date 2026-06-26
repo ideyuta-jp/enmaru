@@ -136,6 +136,53 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
       {match.workTimeStart}〜{match.workTimeEnd}
     </Typography>
 
+    {(match.seekerBlankYears || match.seekerExperience) && (
+      <Box
+        sx={{
+          mt: 1,
+          p: 1,
+          bgcolor: '#FFFFFF',
+          borderRadius: 1,
+          border: '1px solid #F0F0F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.75,
+        }}
+      >
+        {match.seekerBlankYears && (
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'block', mb: 0.25}}
+            >
+              ブランク期間
+            </Typography>
+            <Typography variant="body2" sx={{fontSize: '0.8rem'}}>
+              {match.seekerBlankYears}
+            </Typography>
+          </Box>
+        )}
+        {match.seekerExperience && (
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'block', mb: 0.25}}
+            >
+              職務経歴
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{fontSize: '0.8rem', whiteSpace: 'pre-wrap'}}
+            >
+              {match.seekerExperience}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    )}
+
     {match.applyMessage && (
       <Box
         sx={{

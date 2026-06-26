@@ -74,7 +74,7 @@ export default function SeekerProfileForm({initial}: Props) {
 
   return (
     <>
-      <SectionHeading subtitle="公開される情報と非公開の情報があります">
+      <SectionHeading subtitle="一部の情報はマッチング相手の保育園のみに開示されます">
         プロフィール編集
       </SectionHeading>
 
@@ -150,7 +150,7 @@ export default function SeekerProfileForm({initial}: Props) {
               label={<Typography variant="body2">保育士資格あり</Typography>}
             />
             <TextField
-              label="ブランク期間"
+              label="ブランク期間（マッチング相手のみ）"
               value={form.blankYears}
               onChange={(e) => setForm({...form, blankYears: e.target.value})}
               size="small"
@@ -166,7 +166,7 @@ export default function SeekerProfileForm({initial}: Props) {
               placeholder="例：製作活動、リトミック、乳児保育"
             />
             <TextField
-              label="職務経歴（公開）"
+              label="職務経歴（マッチング相手のみ）"
               value={form.experience}
               onChange={(e) => setForm({...form, experience: e.target.value})}
               size="small"
