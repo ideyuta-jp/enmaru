@@ -17,6 +17,11 @@ import ErrorAlert from '@/components/ErrorAlert';
 import {registerCurrentUser} from '@/server/user';
 import {UserRole, type RegisterRole} from '@/types/User';
 
+const TERMS_HREF: Record<RegisterRole, string> = {
+  SEEKER: '/terms/seeker',
+  NURSERY: '/terms/nursery',
+};
+
 // The credential step already happened on Logto; here a signed-in user only
 // picks their role (RegisterRole — SEEKER / NURSERY) and agrees to the terms.
 export default function RegisterForm() {
@@ -113,7 +118,7 @@ export default function RegisterForm() {
             <Typography variant="body2">
               <MuiLink
                 component={NextLink}
-                href="/terms"
+                href={role ? TERMS_HREF[role] : '/terms'}
                 target="_blank"
                 color="primary"
                 underline="hover"
