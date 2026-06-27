@@ -1,5 +1,7 @@
 import {prisma} from '@/lib/prisma';
+import {missingRequiredDocuments} from '@/server/application';
 import {getCurrentUser} from '@/server/auth';
+import {REQUIRED_SEEKER_DOCUMENT_TYPES} from '@/types/Document';
 import type {SeekerDashboard, SeekerProfileInput} from '@/types/Seeker';
 
 // The current seeker's profile as form-ready input, or null if they have no
@@ -41,13 +43,24 @@ export async function getSeekerDashboard(): Promise<SeekerDashboard> {
       displayName: null,
       applicationCount: 0,
       activeEngagementCount: 0,
+      hasMissingRequiredDocuments: false,
+      hasPendingDocuments: false,
     };
   }
 
-  const [applicationCount, activeEngagementCount] = await Promise.all([
+  const [
+    applicationCount,
+    activeEngagementCount,
+    missingDocuments,
+    pendingCount,
+  ] = await Promise.all([
     prisma.engagement.count({where: {seekerId: profile.id}}),
     prisma.engagement.count({
       where: {seekerId: profile.id, status: {in: ['MATCHED', 'WORKING']}},
+    }),
+    missingRequiredDocuments(profile.id, REQUIRED_SEEKER_DOCUMENT_TYPES),
+    prisma.seekerDocument.count({
+      where: {seekerId: profile.id, status: 'PENDING'},
     }),
   ]);
 
@@ -56,5 +69,7 @@ export async function getSeekerDashboard(): Promise<SeekerDashboard> {
     displayName: profile.displayName,
     applicationCount,
     activeEngagementCount,
+    hasMissingRequiredDocuments: missingDocuments.length > 0,
+    hasPendingDocuments: pendingCount > 0,
   };
 }

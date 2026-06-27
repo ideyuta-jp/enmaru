@@ -8,6 +8,7 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import FolderIcon from '@mui/icons-material/Folder';
 import SearchIcon from '@mui/icons-material/Search';
 
 import Footer from '@/components/Footer';
@@ -74,6 +75,34 @@ export default async function SeekerMypagePage() {
             </MuiLink>
           </Alert>
         )}
+
+        {dashboard.hasProfile && dashboard.hasMissingRequiredDocuments && (
+          <Alert
+            severity="warning"
+            icon={<FolderIcon />}
+            sx={{mb: 3}}
+            action={
+              <MuiLink
+                href="/documents"
+                underline="always"
+                variant="caption"
+                sx={{color: 'inherit', whiteSpace: 'nowrap'}}
+              >
+                書類管理へ
+              </MuiLink>
+            }
+          >
+            応募には健康診断書・履歴書の認証が必要です。
+          </Alert>
+        )}
+
+        {dashboard.hasProfile &&
+          !dashboard.hasMissingRequiredDocuments &&
+          dashboard.hasPendingDocuments && (
+            <Alert severity="info" icon={<FolderIcon />} sx={{mb: 3}}>
+              書類を確認中です。認証まで少々お待ちください。
+            </Alert>
+          )}
 
         <Box
           sx={{

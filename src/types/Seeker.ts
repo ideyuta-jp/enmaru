@@ -38,4 +38,8 @@ export interface SeekerDashboard {
   displayName: string | null;
   applicationCount: number;
   activeEngagementCount: number;
+  // Baseline-document state for the mypage nudge. Both false when the seeker has
+  // no profile yet (documents are keyed to the profile).
+  hasMissingRequiredDocuments: boolean;
+  hasPendingDocuments: boolean;
 }

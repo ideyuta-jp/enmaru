@@ -31,6 +31,15 @@ export const ALL_DOCUMENT_TYPES: SeekerDocumentType[] = [
   SeekerDocumentType.STOOL_TEST,
 ];
 
+// Baseline documents a seeker is expected to get approved (resume and
+// health-check certificate). This seeker-facing "required" set backs the mypage
+// nudge to finish them. It is distinct from a JobPosting's own requiredDocuments
+// — the per-posting application gate, which may differ per posting.
+export const REQUIRED_SEEKER_DOCUMENT_TYPES: SeekerDocumentType[] = [
+  SeekerDocumentType.HEALTH_CHECK,
+  SeekerDocumentType.RESUME,
+];
+
 export const DOCUMENT_TYPE_LABEL: Record<SeekerDocumentType, string> = {
   RESUME: '履歴書',
   LICENSE: '保育士証',
