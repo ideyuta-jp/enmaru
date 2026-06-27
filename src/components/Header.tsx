@@ -29,9 +29,9 @@ interface NavItem {
 const SEEKER_NAV: NavItem[] = [
   {label: 'マイページ', href: '/mypage'},
   {label: 'プロフィール', href: '/profile'},
-  {label: '書類', href: '/documents'},
   {label: '保育園を探す', href: '/nurseries'},
   {label: '応募履歴', href: '/applications'},
+  {label: '書類管理', href: '/documents'},
 ];
 
 const NURSERY_NAV: NavItem[] = [
