@@ -198,7 +198,7 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
         size="small"
         sx={{borderColor: '#F4A7B9', color: '#F4A7B9', flexShrink: 0}}
       >
-        チャット
+        詳細・チャット
       </Button>
     </Box>
   </Box>

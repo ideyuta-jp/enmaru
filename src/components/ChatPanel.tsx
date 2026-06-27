@@ -3,12 +3,11 @@
 import {useEffect, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 
 import ErrorAlert from '@/components/ErrorAlert';
-import SectionHeading from '@/components/SectionHeading';
 import {sendChatMessage} from '@/server/chat-actions';
 import {fetchChatThread} from '@/services/chat';
 import {
@@ -94,19 +93,35 @@ export default function ChatPanel({initial}: Props) {
   }
 
   return (
-    <Box>
-      <SectionHeading subtitle={initial.jobTitle}>
-        {initial.counterpartName}さんとのチャット
-      </SectionHeading>
-
-      <Paper
-        variant="outlined"
+    <Box
+      sx={{
+        border: '1px solid #E0E0E0',
+        borderRadius: 2,
+        overflow: 'hidden',
+      }}
+    >
+      <Box
         sx={{
-          p: {xs: 1.5, md: 2},
-          mb: 2,
+          px: 2,
+          py: 1.5,
+          bgcolor: '#F9F9F9',
+          borderBottom: '1px solid #E0E0E0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <ChatBubbleOutlineIcon sx={{fontSize: 18, color: '#F4A7B9'}} />
+        <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+          チャット
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
           height: {xs: '60vh', md: 440},
           overflowY: 'auto',
-          bgcolor: '#FAFAFA',
+          p: {xs: 1.5, md: 2},
         }}
       >
         {messages.length === 0 ? (
@@ -127,40 +142,41 @@ export default function ChatPanel({initial}: Props) {
             <div ref={bottomRef} />
           </Box>
         )}
-      </Paper>
+      </Box>
 
-      <ErrorAlert message={error} />
-
-      {open ? (
-        <Box sx={{display: 'flex', gap: 1, alignItems: 'flex-end'}}>
-          <TextField
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="メッセージを入力"
-            size="small"
-            multiline
-            maxRows={4}
-            fullWidth
-            slotProps={{htmlInput: {maxLength: MAX_CHAT_MESSAGE_LENGTH}}}
-          />
-          <Button
-            variant="contained"
-            disabled={sending || body.trim().length === 0}
-            onClick={handleSend}
-            sx={{whiteSpace: 'nowrap'}}
+      <Box sx={{px: 2, py: 1.5, borderTop: '1px solid #E0E0E0'}}>
+        <ErrorAlert message={error} />
+        {open ? (
+          <Box sx={{display: 'flex', gap: 1, alignItems: 'flex-end'}}>
+            <TextField
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="メッセージを入力"
+              size="small"
+              multiline
+              maxRows={4}
+              fullWidth
+              slotProps={{htmlInput: {maxLength: MAX_CHAT_MESSAGE_LENGTH}}}
+            />
+            <Button
+              variant="contained"
+              disabled={sending || body.trim().length === 0}
+              onClick={handleSend}
+              sx={{whiteSpace: 'nowrap'}}
+            >
+              {sending ? '送信中...' : '送信'}
+            </Button>
+          </Box>
+        ) : (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{textAlign: 'center', py: 1}}
           >
-            {sending ? '送信中...' : '送信'}
-          </Button>
-        </Box>
-      ) : (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{textAlign: 'center', py: 1}}
-        >
-          チャットの利用可能期間が終了しました（業務完了から24時間）。
-        </Typography>
-      )}
+            チャットの利用可能期間が終了しました（業務完了から24時間）。
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 }

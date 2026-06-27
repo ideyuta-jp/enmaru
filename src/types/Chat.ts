@@ -14,15 +14,14 @@ export interface ChatMessage {
   createdAt: string; // ISO 8601
 }
 
-// The whole chat view for one engagement: who the viewer is (to align bubbles),
-// the counterpart and job context for the header, whether sending is currently
-// allowed (the time window), and the messages so far. `open` is derived in
-// server/ from the engagement's lifecycle — it is not stored.
+// The chat view for one engagement: who the viewer is (to align bubbles),
+// whether sending is currently allowed (the time window), and the messages so
+// far. `open` is derived in server/ from the engagement's lifecycle — it is not
+// stored. The match/posting context above the chat comes from EngagementSummary,
+// not here, so the polled payload stays lean.
 export interface ChatThread {
   engagementId: string;
   viewerParty: 'SEEKER' | 'NURSERY';
-  counterpartName: string;
-  jobTitle: string;
   open: boolean;
   messages: ChatMessage[];
 }
