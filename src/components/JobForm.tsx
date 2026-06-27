@@ -1,10 +1,12 @@
 'use client';
 
+import {useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
+import FormHelperText from '@mui/material/FormHelperText';
 import FormLabel from '@mui/material/FormLabel';
 import TextField from '@mui/material/TextField';
 
@@ -24,8 +26,10 @@ interface Props {
   submitLabel: string;
 }
 
-// Presentational field set shared by the new / edit job pages. State and submit
-// handling live in the parent.
+// Field set shared by the new / edit job pages. Form state and the actual submit
+// (create / update) live in the parent; this component only validates the
+// start/end time order before delegating, so that error can be shown inline on
+// the end-time field rather than as a generic banner.
 export default function JobForm({
   form,
   setForm,
@@ -34,6 +38,25 @@ export default function JobForm({
   saving,
   submitLabel,
 }: Props) {
+  const [timeError, setTimeError] = useState<string | null>(null);
+
+  // End must be after start. Validate here (before delegating to the parent's
+  // submit) so the error shows inline on the end-time field rather than as a
+  // generic server-error banner. The server re-checks as the backstop.
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setTimeError(null);
+    if (
+      form.workTimeStart &&
+      form.workTimeEnd &&
+      form.workTimeEnd <= form.workTimeStart
+    ) {
+      setTimeError('終了時刻は開始時刻より後に設定してください');
+      return;
+    }
+    onSubmit(e);
+  }
+
   function toggleRequiredDocument(type: SeekerDocumentType) {
     const has = form.requiredDocuments.includes(type);
     setForm({
@@ -47,7 +70,7 @@ export default function JobForm({
   return (
     <Box
       component="form"
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
       sx={{display: 'flex', flexDirection: 'column', gap: 2}}
     >
       <TextField
@@ -89,7 +112,10 @@ export default function JobForm({
           label="開始時刻"
           type="time"
           value={form.workTimeStart}
-          onChange={(e) => setForm({...form, workTimeStart: e.target.value})}
+          onChange={(e) => {
+            setTimeError(null);
+            setForm({...form, workTimeStart: e.target.value});
+          }}
           required
           size="small"
           slotProps={{inputLabel: {shrink: true}}}
@@ -98,12 +124,21 @@ export default function JobForm({
           label="終了時刻"
           type="time"
           value={form.workTimeEnd}
-          onChange={(e) => setForm({...form, workTimeEnd: e.target.value})}
+          onChange={(e) => {
+            setTimeError(null);
+            setForm({...form, workTimeEnd: e.target.value});
+          }}
           required
           size="small"
           slotProps={{inputLabel: {shrink: true}}}
+          error={timeError !== null}
         />
       </Box>
+      {timeError && (
+        <FormHelperText error sx={{mx: 0, mt: -1}}>
+          {timeError}
+        </FormHelperText>
+      )}
 
       <TextField
         label="時給（円・任意）"

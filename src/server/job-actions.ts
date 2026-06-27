@@ -23,7 +23,7 @@ function parseJobInput(
   }
   // Both are zero-padded 'HH:mm', so a lexicographic compare orders them.
   if (input.workTimeStart >= input.workTimeEnd) {
-    return {ok: false, message: '終了時間は開始時間より後にしてください。'};
+    return {ok: false, message: '終了時刻は開始時刻より後に設定してください'};
   }
 
   let hourlyWage: number | null = null;
