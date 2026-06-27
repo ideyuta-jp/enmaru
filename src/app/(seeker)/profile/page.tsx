@@ -1,7 +1,7 @@
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SeekerProfileForm from '@/components/SeekerProfileForm';
+import SessionHeader from '@/components/SessionHeader';
 import {requireRole} from '@/server/auth';
 import {getSeekerProfileInput} from '@/server/seeker';
 import {UserRole} from '@/types/User';
@@ -10,12 +10,12 @@ import {UserRole} from '@/types/User';
 export const dynamic = 'force-dynamic';
 
 export default async function SeekerProfilePage() {
-  const user = await requireRole([UserRole.SEEKER]);
+  await requireRole([UserRole.SEEKER]);
   const initial = await getSeekerProfileInput();
 
   return (
     <>
-      <Header role={user.role} />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <SeekerProfileForm initial={initial} />
       </PageContainer>

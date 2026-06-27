@@ -61,9 +61,10 @@ function getNavItems(role: UserRole | null): NavItem[] {
 
 interface Props {
   role?: UserRole | null;
+  email?: string | null;
 }
 
-export default function Header({role = null}: Props) {
+export default function Header({role = null, email = null}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navItems = getNavItems(role);
 
@@ -127,6 +128,19 @@ export default function Header({role = null}: Props) {
             {role ? (
               <>
                 <NotificationBell />
+                {email && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      maxWidth: 180,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {email}
+                  </Typography>
+                )}
                 <Button
                   variant="outlined"
                   size="small"

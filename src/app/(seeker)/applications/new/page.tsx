@@ -2,9 +2,9 @@ import Typography from '@mui/material/Typography';
 
 import ApplicationForm from '@/components/ApplicationForm';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {getApplicationTarget} from '@/server/application';
 
 interface Props {
@@ -17,7 +17,7 @@ export default async function NewApplicationPage({searchParams}: Props) {
 
   return (
     <>
-      <Header role="SEEKER" />
+      <SessionHeader />
       <PageContainer maxWidth="sm">
         {target ? (
           <ApplicationForm target={target} />

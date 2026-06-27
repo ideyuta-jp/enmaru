@@ -2,8 +2,8 @@ import {notFound} from 'next/navigation';
 
 import ChatPanel from '@/components/ChatPanel';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import {getChatThread} from '@/server/chat';
 
 interface Props {
@@ -17,7 +17,7 @@ export default async function NurseryChatPage({params}: Props) {
 
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer maxWidth="sm">
         <ChatPanel initial={thread} />
       </PageContainer>

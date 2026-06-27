@@ -4,9 +4,9 @@ import Typography from '@mui/material/Typography';
 
 import DocumentUploadRow from '@/components/DocumentUploadRow';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {listMyDocuments} from '@/server/document';
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default async function SeekerDocumentsPage() {
 
   return (
     <>
-      <Header role="SEEKER" />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <SectionHeading subtitle="運営が確認・認証した書類のみ応募に使えます">
           書類の提出

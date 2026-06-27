@@ -1,9 +1,9 @@
 import {notFound} from 'next/navigation';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import NurseryReviewForm from '@/components/NurseryReviewForm';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import {getReviewTarget} from '@/server/review';
 
 interface Props {
@@ -17,7 +17,7 @@ export default async function NurseryReviewPage({params}: Props) {
 
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer maxWidth="sm">
         <NurseryReviewForm target={target} />
       </PageContainer>

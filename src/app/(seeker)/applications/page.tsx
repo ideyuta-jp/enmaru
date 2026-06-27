@@ -4,9 +4,9 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import StatusChip from '@/components/StatusChip';
 import WorkFlowActions from '@/components/WorkFlowActions';
 import {listSeekerApplications} from '@/server/application';
@@ -16,7 +16,7 @@ export default async function ApplicationsPage() {
 
   return (
     <>
-      <Header role="SEEKER" />
+      <SessionHeader />
       <PageContainer>
         <SectionHeading>応募履歴</SectionHeading>
 

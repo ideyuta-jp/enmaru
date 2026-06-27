@@ -2,8 +2,8 @@ import {notFound} from 'next/navigation';
 
 import EditJobForm from '@/components/EditJobForm';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import {getNurseryJob} from '@/server/job';
 import {toJobInput} from '@/types/Job';
 
@@ -19,7 +19,7 @@ export default async function EditJobPage({params}: Props) {
 
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <EditJobForm
           jobId={job.id}

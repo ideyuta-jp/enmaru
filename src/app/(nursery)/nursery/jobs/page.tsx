@@ -8,9 +8,9 @@ import AddIcon from '@mui/icons-material/Add';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {listNurseryJobs} from '@/server/job';
 import {JobStatus, type Job} from '@/types/Job';
 
@@ -21,7 +21,7 @@ export default async function NurseryJobsPage() {
 
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer>
         <Box
           sx={{

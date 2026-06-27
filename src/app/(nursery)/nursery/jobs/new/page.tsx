@@ -1,12 +1,12 @@
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import NewJobForm from '@/components/NewJobForm';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 
 export default function NewJobPage() {
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <NewJobForm />
       </PageContainer>

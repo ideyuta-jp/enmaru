@@ -5,9 +5,9 @@ import Typography from '@mui/material/Typography';
 
 import AdminDocumentRow from '@/components/AdminDocumentRow';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {listSubmittedDocuments} from '@/server/document';
 import {
   DOCUMENT_STATUS_LABEL,
@@ -51,7 +51,7 @@ export default async function AdminDocumentsPage({searchParams}: Props) {
 
   return (
     <>
-      <Header role="ADMIN" />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <SectionHeading subtitle="提出された書類を目視確認し、認証または差し戻します">
           書類確認

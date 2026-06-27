@@ -5,9 +5,9 @@ import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import StatusChip from '@/components/StatusChip';
 import WorkFlowActions from '@/components/WorkFlowActions';
 import {listNurseryMatches} from '@/server/match';
@@ -27,7 +27,7 @@ export default async function NurseryApplicationsPage() {
 
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer>
         <SectionHeading subtitle="保育士の本名はマッチング成立後に開示されます">
           応募管理

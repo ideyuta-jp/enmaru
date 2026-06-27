@@ -1,9 +1,9 @@
 import {notFound} from 'next/navigation';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SeekerReviewForm from '@/components/SeekerReviewForm';
+import SessionHeader from '@/components/SessionHeader';
 import {getReviewTarget} from '@/server/review';
 
 interface Props {
@@ -17,7 +17,7 @@ export default async function SeekerReviewPage({params}: Props) {
 
   return (
     <>
-      <Header role="SEEKER" />
+      <SessionHeader />
       <PageContainer maxWidth="sm">
         <SeekerReviewForm target={target} />
       </PageContainer>

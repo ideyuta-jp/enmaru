@@ -14,8 +14,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import WorkIcon from '@mui/icons-material/Work';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import SummaryCard from '@/components/SummaryCard';
 import {requireRole} from '@/server/auth';
 import {getNurseryDashboard} from '@/server/nursery';
@@ -48,12 +48,12 @@ const NAV_CARDS = [
 ];
 
 export default async function NurseryMypagePage() {
-  const user = await requireRole([UserRole.NURSERY]);
+  await requireRole([UserRole.NURSERY]);
   const dashboard = await getNurseryDashboard();
 
   return (
     <>
-      <Header role={user.role} />
+      <SessionHeader />
       <PageContainer>
         <Box
           sx={{

@@ -11,8 +11,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import SearchIcon from '@mui/icons-material/Search';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import SummaryCard from '@/components/SummaryCard';
 import {requireRole} from '@/server/auth';
 import {getSeekerDashboard} from '@/server/seeker';
@@ -45,12 +45,12 @@ const NAV_CARDS = [
 ];
 
 export default async function SeekerMypagePage() {
-  const user = await requireRole([UserRole.SEEKER]);
+  await requireRole([UserRole.SEEKER]);
   const dashboard = await getSeekerDashboard();
 
   return (
     <>
-      <Header role={user.role} />
+      <SessionHeader />
       <PageContainer>
         <Box sx={{mb: 3}}>
           <Typography
