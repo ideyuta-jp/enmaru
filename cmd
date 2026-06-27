@@ -8,7 +8,7 @@ usage() {
   cat <<'EOF'
 Usage: ./cmd <command>
 
-  check              Run the full CI gate (format check, lint, typecheck, unit)
+  check              Run the full CI gate (format check, lint, typecheck, unit, build)
   test unit          Run Vitest unit tests
   lint               Run ESLint
   typecheck          Run tsc --noEmit
@@ -24,6 +24,7 @@ case "${1:-}" in
     pnpm lint
     pnpm typecheck
     pnpm test:unit
+    pnpm build
     ;;
   test)
     case "${2:-}" in
