@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
-import AdminDocumentRow from '@/components/AdminDocumentRow';
+import AdminDocumentsTable from '@/components/AdminDocumentsTable';
 import Footer from '@/components/Footer';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
@@ -52,7 +52,7 @@ export default async function AdminDocumentsPage({searchParams}: Props) {
   return (
     <>
       <SessionHeader />
-      <PageContainer maxWidth="md">
+      <PageContainer maxWidth="lg">
         <SectionHeading subtitle="提出された書類を目視確認し、認証または差し戻します">
           書類確認
         </SectionHeading>
@@ -82,11 +82,7 @@ export default async function AdminDocumentsPage({searchParams}: Props) {
             </Typography>
           </Box>
         ) : (
-          <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
-            {documents.map((doc) => (
-              <AdminDocumentRow key={doc.id} doc={doc} />
-            ))}
-          </Box>
+          <AdminDocumentsTable documents={documents} />
         )}
       </PageContainer>
       <Footer />
