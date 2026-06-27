@@ -1,6 +1,5 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
-import {hasReported} from '@/server/work-report';
 import type {AdminMatch, NurseryMatch} from '@/types/Match';
 import {UserRole} from '@/types/User';
 
@@ -29,7 +28,6 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
       seeker: {
         select: {displayName: true, realName: true, preferredStyle: true},
       },
-      workReports: {select: {reporter: true, completed: true}},
       reviewNurseryToSeeker: {select: {id: true}},
     },
     orderBy: {createdAt: 'desc'},
@@ -49,8 +47,6 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
     applyMessage: e.applyMessage,
     lineContactOk: e.lineContactOk,
     appliedAt: e.createdAt.toISOString(),
-    seekerReported: hasReported(e.workReports, 'SEEKER'),
-    nurseryReported: hasReported(e.workReports, 'NURSERY'),
     nurseryReviewed: e.reviewNurseryToSeeker !== null,
   }));
 }

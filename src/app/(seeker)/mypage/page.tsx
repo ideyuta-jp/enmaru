@@ -10,6 +10,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import FolderIcon from '@mui/icons-material/Folder';
 import SearchIcon from '@mui/icons-material/Search';
+import StarIcon from '@mui/icons-material/Star';
 
 import Footer from '@/components/Footer';
 import PageContainer from '@/components/PageContainer';
@@ -22,8 +23,6 @@ import {UserRole} from '@/types/User';
 // Reads the session, so it renders per-request.
 export const dynamic = 'force-dynamic';
 
-// Reviews are entered per completed engagement from the application history, so
-// there is no standalone "評価を書く" entry here.
 const NAV_CARDS = [
   {
     href: '/profile',
@@ -42,6 +41,12 @@ const NAV_CARDS = [
     icon: <AssignmentIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
     title: '応募履歴',
     description: '応募した募集の状況を確認',
+  },
+  {
+    href: '/reviews',
+    icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
+    title: '評価を書く',
+    description: '業務完了後の評価入力',
   },
 ];
 

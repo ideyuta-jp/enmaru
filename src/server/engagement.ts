@@ -1,5 +1,6 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
+import {hasReported} from '@/server/work-report';
 import type {EngagementSummary} from '@/types/Engagement';
 import {UserRole} from '@/types/User';
 
@@ -27,6 +28,7 @@ export async function getEngagementSummary(
         },
       },
       seeker: {select: {userId: true, displayName: true}},
+      workReports: {select: {reporter: true, completed: true}},
     },
   });
   if (!engagement) return null;
@@ -48,5 +50,7 @@ export async function getEngagementSummary(
     workTimeEnd: engagement.job.workTimeEnd,
     hourlyWage: engagement.job.hourlyWage,
     workContent: engagement.job.workContent,
+    seekerReported: hasReported(engagement.workReports, 'SEEKER'),
+    nurseryReported: hasReported(engagement.workReports, 'NURSERY'),
   };
 }

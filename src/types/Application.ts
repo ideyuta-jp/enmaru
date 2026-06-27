@@ -14,11 +14,6 @@ export interface SeekerApplication {
   appliedAt: string;
   engagementStatus: EngagementStatus;
   reviewStatus: ReviewStatus;
-  // Whether each party has filed its work-completion report. Both true is what
-  // moves the engagement to COMPLETED; the seeker view uses these to drive the
-  // start-work / report actions.
-  seekerReported: boolean;
-  nurseryReported: boolean;
   // Whether this seeker has already reviewed the nursery; drives the review CTA
   // once the engagement is COMPLETED.
   seekerReviewed: boolean;

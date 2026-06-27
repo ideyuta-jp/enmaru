@@ -43,4 +43,8 @@ export interface EngagementSummary {
   workTimeEnd: string; // 'HH:mm'
   hourlyWage: number | null;
   workContent: string;
+  // Whether each party has filed its work-completion report; drives the
+  // work-flow actions (start / report) shown on the detail page.
+  seekerReported: boolean;
+  nurseryReported: boolean;
 }

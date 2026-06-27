@@ -9,7 +9,6 @@ import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import StatusChip from '@/components/StatusChip';
-import WorkFlowActions from '@/components/WorkFlowActions';
 import {listNurseryMatches} from '@/server/match';
 import {EngagementStatus} from '@/types/Engagement';
 import type {NurseryMatch} from '@/types/Match';
@@ -163,37 +162,27 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
       </Box>
     )}
 
-    <Box sx={{display: 'flex', gap: 1.5, mt: 1}}>
-      <Typography variant="caption" color="text.secondary">
-        応募日: {new Date(match.appliedAt).toLocaleDateString('ja-JP')}
-      </Typography>
-      {match.lineContactOk && (
-        <Typography variant="caption" sx={{color: '#2E7D32'}}>
-          LINE連絡OK
-        </Typography>
-      )}
-    </Box>
-
     <Box
       sx={{
-        mt: 1.5,
+        mt: 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 1,
       }}
     >
-      <WorkFlowActions
-        engagementId={match.id}
-        engagementStatus={match.engagementStatus}
-        viewerParty="NURSERY"
-        seekerReported={match.seekerReported}
-        nurseryReported={match.nurseryReported}
-        viewerReviewed={match.nurseryReviewed}
-        reviewHref={`/nursery/reviews/${match.id}`}
-      />
+      <Box sx={{display: 'flex', gap: 1.5, alignItems: 'center'}}>
+        <Typography variant="caption" color="text.secondary">
+          応募日: {new Date(match.appliedAt).toLocaleDateString('ja-JP')}
+        </Typography>
+        {match.lineContactOk && (
+          <Typography variant="caption" sx={{color: '#2E7D32'}}>
+            LINE連絡OK
+          </Typography>
+        )}
+      </Box>
       <Button
-        href={`/nursery/chat/${match.id}`}
+        href={`/nursery/engagements/${match.id}`}
         variant="outlined"
         size="small"
         sx={{borderColor: '#F4A7B9', color: '#F4A7B9', flexShrink: 0}}
