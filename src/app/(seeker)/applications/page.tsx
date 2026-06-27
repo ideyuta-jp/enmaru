@@ -106,7 +106,7 @@ export default async function ApplicationsPage() {
                       flexShrink: 0,
                     }}
                   >
-                    チャット
+                    詳細・チャット
                   </Button>
                 </Box>
               </Box>
