@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {usePathname} from 'next/navigation';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -65,7 +66,11 @@ interface Props {
 
 export default function Header({role = null}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
   const navItems = getNavItems(role);
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + '/');
 
   function handleLogout() {
     // Server Action: ends the Logto session and redirects to the base URL.
@@ -108,7 +113,11 @@ export default function Header({role = null}: Props) {
                 href={item.href}
                 color="inherit"
                 size="small"
-                sx={{fontSize: '0.875rem', color: '#666666'}}
+                sx={{
+                  fontSize: '0.875rem',
+                  color: isActive(item.href) ? '#F4A7B9' : '#666666',
+                  fontWeight: isActive(item.href) ? 700 : 400,
+                }}
               >
                 {item.label}
               </Button>
@@ -224,6 +233,14 @@ export default function Header({role = null}: Props) {
                 component={Link}
                 href={item.href}
                 onClick={() => setDrawerOpen(false)}
+                selected={isActive(item.href)}
+                sx={{
+                  '&.Mui-selected': {
+                    bgcolor: '#FFF0F3',
+                    color: '#F4A7B9',
+                    '&:hover': {bgcolor: '#FFF0F3'},
+                  },
+                }}
               >
                 <ListItemText
                   primary={item.label}
