@@ -5,7 +5,6 @@ import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
-import Link from 'next/link';
 
 import Footer from '@/components/Footer';
 import PageContainer from '@/components/PageContainer';
@@ -40,7 +39,6 @@ export default function TermsPage() {
 
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
           <Button
-            component={Link}
             href="/terms/seeker"
             variant="outlined"
             fullWidth
@@ -64,7 +62,6 @@ export default function TermsPage() {
           </Button>
 
           <Button
-            component={Link}
             href="/terms/nursery"
             variant="outlined"
             fullWidth
