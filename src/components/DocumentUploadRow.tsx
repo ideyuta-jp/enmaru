@@ -1,12 +1,13 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {uploadDocument} from '@/server/document-actions';
@@ -26,18 +27,22 @@ const STATUS_STYLE: Record<SeekerDocumentStatus, {bg: string; color: string}> =
     REJECTED: {bg: '#FFEBEE', color: '#C62828'},
   };
 
-export default function DocumentUploadRow({doc}: {doc: MyDocument}) {
+interface Props {
+  doc: MyDocument;
+  required?: boolean;
+}
+
+export default function DocumentUploadRow({doc, required = false}: Props) {
   const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!file) {
-      setError('ファイルを選択してください。');
-      return;
-    }
+  const isApproved = doc.status === SeekerDocumentStatus.APPROVED;
+
+  // The file picker is opened by the styled button below; uploading starts as
+  // soon as a file is chosen (no separate submit step).
+  async function handleFileSelected(file: File) {
     // Reject oversize files before sending, so the user gets a clear message
     // (and we never hit the Server Action body limit). The server re-checks.
     if (file.size > MAX_DOCUMENT_BYTES) {
@@ -55,7 +60,6 @@ export default function DocumentUploadRow({doc}: {doc: MyDocument}) {
         setError(result.message);
         return;
       }
-      setFile(null);
       router.refresh();
     } catch {
       setError('アップロードに失敗しました。時間をおいて再度お試しください。');
@@ -70,21 +74,37 @@ export default function DocumentUploadRow({doc}: {doc: MyDocument}) {
         p: 2,
         bgcolor: '#FAFAFA',
         borderRadius: 2,
-        border: '1px solid #E0E0E0',
+        border: '1px solid',
+        borderColor:
+          doc.status === SeekerDocumentStatus.REJECTED ? '#FFCDD2' : '#E0E0E0',
       }}
     >
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: 1,
           mb: 1,
-          flexWrap: 'wrap',
         }}
       >
-        <Typography variant="subtitle2" sx={{fontWeight: 700}}>
-          {DOCUMENT_TYPE_LABEL[doc.documentType]}
-        </Typography>
+        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+          <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+            {DOCUMENT_TYPE_LABEL[doc.documentType]}
+          </Typography>
+          {required && (
+            <Chip
+              label="必須"
+              size="small"
+              sx={{
+                fontSize: '0.65rem',
+                height: 18,
+                bgcolor: '#FCE4EC',
+                color: '#C62828',
+              }}
+            />
+          )}
+        </Box>
         {doc.status ? (
           <Chip
             label={DOCUMENT_STATUS_LABEL[doc.status]}
@@ -102,16 +122,6 @@ export default function DocumentUploadRow({doc}: {doc: MyDocument}) {
             sx={{bgcolor: '#F9F9F9', color: '#AAAAAA', fontSize: '0.7rem'}}
           />
         )}
-        {doc.id && (
-          <MuiLink
-            href={`/api/seeker-documents/${doc.id}/file`}
-            target="_blank"
-            rel="noopener"
-            sx={{fontSize: '0.75rem'}}
-          >
-            提出済みファイルを表示
-          </MuiLink>
-        )}
       </Box>
 
       {doc.status === SeekerDocumentStatus.REJECTED && doc.rejectionReason && (
@@ -125,24 +135,49 @@ export default function DocumentUploadRow({doc}: {doc: MyDocument}) {
 
       <ErrorAlert message={error} />
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ALLOWED_DOCUMENT_MIME_TYPES.join(',')}
+        style={{display: 'none'}}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileSelected(file);
+          e.target.value = '';
+        }}
+      />
       <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap'}}
+        sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}
       >
-        <input
-          type="file"
-          accept={ALLOWED_DOCUMENT_MIME_TYPES.join(',')}
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          style={{fontSize: '0.8rem'}}
-        />
-        <Button type="submit" variant="contained" size="small" disabled={busy}>
+        <Button
+          size="small"
+          variant={doc.status ? 'outlined' : 'contained'}
+          startIcon={<UploadFileIcon />}
+          disabled={busy || isApproved}
+          onClick={() => fileInputRef.current?.click()}
+          sx={{fontSize: '0.75rem'}}
+        >
           {busy
             ? 'アップロード中...'
             : doc.status
               ? '再アップロード'
               : 'アップロード'}
         </Button>
+        {doc.id && (
+          <MuiLink
+            href={`/api/seeker-documents/${doc.id}/file`}
+            target="_blank"
+            rel="noopener"
+            sx={{fontSize: '0.75rem'}}
+          >
+            提出済みファイルを表示
+          </MuiLink>
+        )}
+        {isApproved && (
+          <Typography variant="caption" color="text.secondary">
+            認証済みのため変更できません
+          </Typography>
+        )}
       </Box>
     </Box>
   );
