@@ -140,6 +140,25 @@ export default function RegisterForm() {
           {loading ? '登録中...' : '登録を完了する'}
         </Button>
       </Box>
+
+      {/* Onboarding notice only; capturing lineUserId from the friend-add is a
+          separate follow-up. */}
+      <Box
+        sx={{
+          mt: 3,
+          p: 2,
+          bgcolor: '#F9F9F9',
+          borderRadius: 2,
+          border: '1px solid #E0E0E0',
+        }}
+      >
+        <Typography variant="body2" sx={{fontWeight: 600, mb: 0.5}}>
+          📱 LINE友だち追加のお願い
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          マッチング通知や業務連絡をLINEでお届けします。登録後にLINE公式アカウントを友だち追加してください。
+        </Typography>
+      </Box>
     </>
   );
 }
