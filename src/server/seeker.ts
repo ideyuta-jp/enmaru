@@ -6,7 +6,7 @@ import type {SeekerDashboard, SeekerProfileInput} from '@/types/Seeker';
 
 // The current seeker's profile as form-ready input, or null if they have no
 // profile yet. Maps the stored row (nullable text) to the form shape (empty
-// strings), so the page can hand it straight to the edit form.
+// strings). Used by both the edit form and the read-only profile preview page.
 export async function getSeekerProfileInput(): Promise<SeekerProfileInput | null> {
   const user = await getCurrentUser();
   if (!user) return null;

@@ -263,18 +263,23 @@ export default function SeekerProfileForm({initial}: Props) {
           }
         />
 
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={saving}
-          sx={{
-            py: 1.25,
-            alignSelf: {xs: 'stretch', md: 'flex-start'},
-            minWidth: {md: 200},
-          }}
-        >
-          {saving ? '保存中...' : '保存する'}
-        </Button>
+        <Box sx={{display: 'flex', gap: 1.5, flexWrap: 'wrap'}}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving}
+            sx={{py: 1.25, flexGrow: {xs: 1, md: 0}, minWidth: {md: 200}}}
+          >
+            {saving ? '保存中...' : '保存する'}
+          </Button>
+          <Button
+            href="/profile/preview"
+            variant="outlined"
+            sx={{py: 1.25, flexGrow: {xs: 1, md: 0}}}
+          >
+            プレビューを表示
+          </Button>
+        </Box>
       </Box>
     </>
   );
