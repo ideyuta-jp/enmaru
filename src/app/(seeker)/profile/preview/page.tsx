@@ -29,6 +29,10 @@ export default async function ProfilePreviewPage() {
           プロフィールプレビュー
         </SectionHeading>
 
+        {/* TODO: This seeker card replicates the MatchCard layout in
+            (nursery)/nursery/applications/page.tsx. Extract a shared
+            SeekerProfileCard used by both so this preview cannot drift
+            from the real nursery-facing card. */}
         <Box
           sx={{
             p: {xs: 2, md: 3},
