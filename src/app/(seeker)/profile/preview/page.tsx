@@ -5,10 +5,11 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
+
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {getSeekerProfileInput} from '@/server/seeker';
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default async function ProfilePreviewPage() {
 
   return (
     <>
-      <Header role="SEEKER" />
+      <SessionHeader />
       <PageContainer maxWidth="sm">
         <SectionHeading subtitle="マッチング成立後、保育園にはこのように見えます">
           プロフィールプレビュー
@@ -83,7 +84,9 @@ export default async function ProfilePreviewPage() {
                     >
                       ブランク期間
                     </Typography>
-                    <Typography variant="body2">{profile.blankYears}</Typography>
+                    <Typography variant="body2">
+                      {profile.blankYears}
+                    </Typography>
                   </Box>
                 )}
                 {profile.experience && (
@@ -105,11 +108,7 @@ export default async function ProfilePreviewPage() {
           )}
         </Box>
 
-        <Button
-          href="/profile"
-          variant="outlined"
-          sx={{mt: 3}}
-        >
+        <Button href="/profile" variant="outlined" sx={{mt: 3}}>
           ← プロフィール編集に戻る
         </Button>
       </PageContainer>

@@ -5,7 +5,6 @@ import {useRouter} from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import NextLink from 'next/link';
 import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
@@ -274,7 +273,6 @@ export default function SeekerProfileForm({initial}: Props) {
             {saving ? '保存中...' : '保存する'}
           </Button>
           <Button
-            component={NextLink}
             href="/profile/preview"
             variant="outlined"
             sx={{py: 1.25, flexGrow: {xs: 1, md: 0}}}
