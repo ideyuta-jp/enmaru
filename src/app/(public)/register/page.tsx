@@ -15,13 +15,14 @@ export const dynamic = 'force-dynamic';
 
 // Registration runs after Logto authenticates the person (Logto owns the
 // credential step). Three cases:
-//   - not signed in   -> hand off to Logto via /login (no intermediate screen);
-//                        a brand-new account returns here authenticated
+//   - not signed in   -> hand off to Logto's sign-up via /signup (a direct hit
+//                        here means they still need an account); a brand-new
+//                        account returns here authenticated
 //   - signed in, new   -> pick role + agree to terms (RegisterForm)
 //   - already a User   -> nothing to do, go to the dashboard
 export default async function RegisterPage() {
   const {isAuthenticated} = await getAuthContext();
-  if (!isAuthenticated) redirect('/login');
+  if (!isAuthenticated) redirect('/signup');
 
   const user = await getCurrentUser();
   if (user) redirect(landingPathForRole(user.role));
