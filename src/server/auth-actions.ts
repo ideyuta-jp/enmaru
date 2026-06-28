@@ -11,8 +11,12 @@ import {logtoCallbackUrl, logtoConfig} from '@/lib/logto';
 // handlers). Kept in their own 'use server' file so client components can import
 // them without dragging server-only modules (Prisma, etc.) into the client
 // bundle. Both redirect the browser to Logto.
-export async function signIn() {
-  await logtoSignIn(logtoConfig, {redirectUri: logtoCallbackUrl});
+//
+// `firstScreen` selects which Logto-hosted screen opens first: 'signIn' for the
+// login entry, 'register' for the sign-up entry (both are valid Logto
+// FirstScreen values).
+export async function signIn(firstScreen: 'signIn' | 'register' = 'signIn') {
+  await logtoSignIn(logtoConfig, {redirectUri: logtoCallbackUrl, firstScreen});
 }
 
 export async function signOut() {

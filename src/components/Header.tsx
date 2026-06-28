@@ -180,7 +180,7 @@ export default function Header({role = null, email = null}: Props) {
                 </Button>
                 <Button
                   component="a"
-                  href="/register"
+                  href="/signup"
                   variant="contained"
                   size="small"
                   sx={{fontSize: '0.8rem'}}
@@ -294,7 +294,7 @@ export default function Header({role = null, email = null}: Props) {
               </Button>
               <Button
                 component="a"
-                href="/register"
+                href="/signup"
                 variant="contained"
                 fullWidth
                 onClick={() => setDrawerOpen(false)}

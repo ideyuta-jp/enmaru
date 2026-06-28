@@ -251,7 +251,7 @@ export default function Home() {
           >
             <Button
               component="a"
-              href="/register"
+              href="/signup"
               variant="contained"
               size="large"
               sx={{
@@ -348,7 +348,7 @@ export default function Home() {
                   </Typography>
                   <Button
                     component="a"
-                    href="/register"
+                    href="/signup"
                     variant="contained"
                     fullWidth
                     sx={{py: 1.25}}
@@ -386,7 +386,7 @@ export default function Home() {
                   </Typography>
                   <Button
                     component="a"
-                    href="/register"
+                    href="/signup"
                     variant="outlined"
                     fullWidth
                     sx={{py: 1.25, borderColor: '#F4A7B9', color: '#F4A7B9'}}
@@ -552,7 +552,7 @@ export default function Home() {
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
             <Button
               component="a"
-              href="/register"
+              href="/signup"
               variant="contained"
               size="large"
               fullWidth
