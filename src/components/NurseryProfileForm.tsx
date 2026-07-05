@@ -10,6 +10,7 @@ import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
@@ -170,11 +171,17 @@ export default function NurseryProfileForm({initial}: Props) {
       </SectionHeading>
 
       <ErrorAlert message={error} />
-      {saved && (
-        <Alert severity="success" sx={{mb: 2}}>
+
+      <Snackbar
+        open={saved}
+        autoHideDuration={3000}
+        onClose={() => setSaved(false)}
+        anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+      >
+        <Alert severity="success" onClose={() => setSaved(false)}>
           保存しました
         </Alert>
-      )}
+      </Snackbar>
 
       <Box
         component="form"

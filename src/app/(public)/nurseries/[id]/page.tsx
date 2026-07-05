@@ -111,7 +111,7 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                   key={tag}
                   label={tag}
                   size="small"
-                  sx={{bgcolor: '#F0F4FF', color: '#3D5AFE', fontSize: '0.75rem'}}
+                  sx={{bgcolor: '#FFF0F3', color: '#F05A22', fontSize: '0.75rem'}}
                 />
               ))}
             </Box>
