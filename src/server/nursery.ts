@@ -14,6 +14,49 @@ import type {
   PublicNurseryDetail,
 } from '@/types/Nursery';
 
+type NurseryPublicFields = Pick<
+  NurseryProfile,
+  | 'id'
+  | 'nurseryName'
+  | 'prefecture'
+  | 'city'
+  | 'featureTags'
+  | 'featureNote'
+  | 'receptionTags'
+  | 'receptionNote'
+  | 'joinReason'
+  | 'idealPartner'
+  | 'homepageUrl'
+  | 'instagramUrl'
+  | 'twitterUrl'
+  | 'facebookUrl'
+  | 'otherSnsUrl'
+>;
+
+function toPublicNursery(
+  n: NurseryPublicFields,
+  rating: import('@/types/Nursery').NurseryRating | null,
+): PublicNursery {
+  return {
+    id: n.id,
+    nurseryName: n.nurseryName,
+    prefecture: n.prefecture,
+    city: n.city,
+    featureTags: n.featureTags,
+    featureNote: n.featureNote,
+    receptionTags: n.receptionTags,
+    receptionNote: n.receptionNote,
+    joinReason: n.joinReason,
+    idealPartner: n.idealPartner,
+    homepageUrl: n.homepageUrl,
+    instagramUrl: n.instagramUrl,
+    twitterUrl: n.twitterUrl,
+    facebookUrl: n.facebookUrl,
+    otherSnsUrl: n.otherSnsUrl,
+    rating,
+  };
+}
+
 // Published nurseries for the public list. Maps to the public projection only —
 // address / phone / contactName are never included (personal-info boundary).
 // Ratings come from published reviews, fetched in bulk to avoid an N+1.
@@ -25,14 +68,7 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
 
   const ratings = await getNurseryRatings(nurseries.map((n) => n.id));
 
-  return nurseries.map((n) => ({
-    id: n.id,
-    nurseryName: n.nurseryName,
-    area: n.area,
-    concept: n.concept,
-    policy: n.policy,
-    rating: ratings.get(n.id) ?? null,
-  }));
+  return nurseries.map((n) => toPublicNursery(n, ratings.get(n.id) ?? null));
 }
 
 // Assemble a nursery's public detail (profile + open postings + rating and
@@ -40,7 +76,7 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
 // render exactly the same projection. Independent queries run together to cut
 // round-trips.
 async function buildNurseryDetail(
-  n: Pick<NurseryProfile, 'id' | 'nurseryName' | 'area' | 'concept' | 'policy'>,
+  n: NurseryPublicFields,
 ): Promise<PublicNurseryDetail> {
   const [rating, jobPostings, reviews] = await Promise.all([
     getNurseryRating(n.id),
@@ -49,12 +85,7 @@ async function buildNurseryDetail(
   ]);
 
   return {
-    id: n.id,
-    nurseryName: n.nurseryName,
-    area: n.area,
-    concept: n.concept,
-    policy: n.policy,
-    rating,
+    ...toPublicNursery(n, rating),
     jobPostings,
     reviews,
   };
@@ -90,12 +121,24 @@ export async function getNurseryProfileInput(): Promise<NurseryProfileInput | nu
 
   return {
     nurseryName: p.nurseryName,
-    area: p.area,
-    address: p.address ?? '',
-    contactName: p.contactName,
+    postalCode: p.postalCode ?? '',
+    prefecture: p.prefecture ?? '',
+    city: p.city ?? '',
+    addressLine: p.addressLine ?? '',
     phone: p.phone ?? '',
-    concept: p.concept ?? '',
-    policy: p.policy ?? '',
+    contactName: p.contactName,
+    homepageUrl: p.homepageUrl ?? '',
+    instagramUrl: p.instagramUrl ?? '',
+    twitterUrl: p.twitterUrl ?? '',
+    facebookUrl: p.facebookUrl ?? '',
+    otherSnsUrl: p.otherSnsUrl ?? '',
+    featureTags: p.featureTags,
+    featureNote: p.featureNote ?? '',
+    receptionTags: p.receptionTags,
+    receptionNote: p.receptionNote ?? '',
+    joinReason: p.joinReason ?? '',
+    idealPartner: p.idealPartner ?? '',
+    additionalNotes: p.additionalNotes ?? '',
     isPublished: p.isPublished,
   };
 }

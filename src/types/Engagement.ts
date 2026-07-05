@@ -36,7 +36,7 @@ export interface EngagementSummary {
   reviewStatus: ReviewStatus;
   jobTitle: string;
   nurseryName: string;
-  area: string;
+  nurseryCity: string | null;
   seekerName: string;
   workDate: string; // ISO 8601
   workTimeStart: string; // 'HH:mm'

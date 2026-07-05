@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Rating from '@mui/material/Rating';
 import Typography from '@mui/material/Typography';
@@ -33,6 +34,7 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
 
   const {detail: nursery, isOwnerPreview} = result;
   const rating = nursery.rating;
+  const location = [nursery.prefecture, nursery.city].filter(Boolean).join(' ');
 
   return (
     <>
@@ -50,12 +52,14 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
           >
             {nursery.nurseryName}
           </Typography>
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5}}>
-            <LocationOnIcon sx={{fontSize: 16, color: '#AAAAAA'}} />
-            <Typography variant="body2" color="text.secondary">
-              {nursery.area}
-            </Typography>
-          </Box>
+          {location && (
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5}}>
+              <LocationOnIcon sx={{fontSize: 16, color: '#AAAAAA'}} />
+              <Typography variant="body2" color="text.secondary">
+                {location}
+              </Typography>
+            </Box>
+          )}
           {rating && rating.count > 0 && (
             <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
               <Rating
@@ -77,20 +81,62 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
 
         <Divider sx={{mb: 3}} />
 
-        {nursery.concept && (
+        {nursery.featureTags.length > 0 && (
           <Box sx={{mb: 3}}>
-            <SectionHeading>コンセプト</SectionHeading>
+            <SectionHeading>園の特徴</SectionHeading>
+            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: nursery.featureNote ? 1.5 : 0}}>
+              {nursery.featureTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  sx={{bgcolor: '#FFF0F3', color: '#F05A22', fontSize: '0.75rem'}}
+                />
+              ))}
+            </Box>
+            {nursery.featureNote && (
+              <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
+                {nursery.featureNote}
+              </Typography>
+            )}
+          </Box>
+        )}
+
+        {nursery.receptionTags.length > 0 && (
+          <Box sx={{mb: 3}}>
+            <SectionHeading>一緒に働く先生を受け入れる際に大切にしていること</SectionHeading>
+            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: nursery.receptionNote ? 1.5 : 0}}>
+              {nursery.receptionTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  sx={{bgcolor: '#F0F4FF', color: '#3D5AFE', fontSize: '0.75rem'}}
+                />
+              ))}
+            </Box>
+            {nursery.receptionNote && (
+              <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
+                {nursery.receptionNote}
+              </Typography>
+            )}
+          </Box>
+        )}
+
+        {nursery.joinReason && (
+          <Box sx={{mb: 3}}>
+            <SectionHeading>えんまーるに参加した理由</SectionHeading>
             <Typography variant="body1" sx={{whiteSpace: 'pre-wrap'}}>
-              {nursery.concept}
+              {nursery.joinReason}
             </Typography>
           </Box>
         )}
 
-        {nursery.policy && (
+        {nursery.idealPartner && (
           <Box sx={{mb: 3}}>
-            <SectionHeading>保育方針</SectionHeading>
+            <SectionHeading>こんな方とご縁があれば嬉しい</SectionHeading>
             <Typography variant="body1" sx={{whiteSpace: 'pre-wrap'}}>
-              {nursery.policy}
+              {nursery.idealPartner}
             </Typography>
           </Box>
         )}
@@ -153,9 +199,6 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                     >
                       {job.workContent}
                     </Typography>
-                    {/* The apply page enforces eligibility (closed / already
-                        applied / required documents) and the form blocks
-                        ineligible submissions, so the button always links out. */}
                     <Button
                       href={`/applications/new?jobId=${job.id}`}
                       variant="contained"

@@ -6,6 +6,8 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import TextField from '@mui/material/TextField';
@@ -16,9 +18,88 @@ import SectionHeading from '@/components/SectionHeading';
 import {saveNurseryProfile} from '@/server/nursery-actions';
 import {EMPTY_NURSERY_PROFILE, type NurseryProfileInput} from '@/types/Nursery';
 
+const FEATURE_TAGS = [
+  'のびのび保育',
+  'モンテッソーリ',
+  '自然遊び重視',
+  '少人数制',
+  '異年齢保育',
+  '英語教育',
+  '食育重視',
+  '音楽・体操',
+  '行事が充実',
+  'アットホーム',
+];
+
+const RECEPTION_TAGS = [
+  '事前にしっかりご説明します',
+  '疑問には丁寧にお答えします',
+  'スタッフ全員でサポートします',
+  '初めての方も安心してお越しいただけます',
+  'ミスがあっても温かくフォローします',
+  '無理なく自分らしく働いていただけます',
+  '子どもとの時間を一緒に楽しみます',
+  '子どものペースを大切にしています',
+  'コミュニケーションを大切にしています',
+  '笑顔でお迎えします',
+];
+
 interface Props {
-  // The nursery's existing profile, or null when creating one for the first time.
   initial: NurseryProfileInput | null;
+}
+
+interface ZipcloudResult {
+  address1: string;
+  address2: string;
+  address3: string;
+}
+
+function TagSelector({
+  tags,
+  selected,
+  onChange,
+  max = 3,
+}: {
+  tags: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  max?: number;
+}) {
+  function toggle(tag: string) {
+    if (selected.includes(tag)) {
+      onChange(selected.filter((t) => t !== tag));
+    } else if (selected.length < max) {
+      onChange([...selected, tag]);
+    }
+  }
+
+  return (
+    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75}}>
+      {tags.map((tag) => {
+        const active = selected.includes(tag);
+        const disabled = !active && selected.length >= max;
+        return (
+          <Chip
+            key={tag}
+            label={tag}
+            onClick={() => toggle(tag)}
+            size="small"
+            sx={{
+              cursor: disabled ? 'default' : 'pointer',
+              bgcolor: active ? '#F05A22' : disabled ? '#F5F5F5' : '#FAFAFA',
+              color: active ? '#FFFFFF' : disabled ? '#BBBBBB' : '#444444',
+              border: '1px solid',
+              borderColor: active ? '#F05A22' : '#E0E0E0',
+              fontSize: '0.75rem',
+              '&:hover': {
+                bgcolor: active ? '#D94D19' : disabled ? '#F5F5F5' : '#F0F0F0',
+              },
+            }}
+          />
+        );
+      })}
+    </Box>
+  );
 }
 
 export default function NurseryProfileForm({initial}: Props) {
@@ -27,8 +108,40 @@ export default function NurseryProfileForm({initial}: Props) {
     initial ?? EMPTY_NURSERY_PROFILE,
   );
   const [saving, setSaving] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  function set<K extends keyof NurseryProfileInput>(
+    key: K,
+    value: NurseryProfileInput[K],
+  ) {
+    setForm((prev) => ({...prev, [key]: value}));
+  }
+
+  async function handlePostalCodeBlur() {
+    const raw = form.postalCode.replace(/-/g, '');
+    if (raw.length !== 7) return;
+    setZipLoading(true);
+    try {
+      const res = await fetch(
+        `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${raw}`,
+      );
+      const json = await res.json();
+      if (json.results) {
+        const r: ZipcloudResult = json.results[0];
+        setForm((prev) => ({
+          ...prev,
+          prefecture: r.address1,
+          city: r.address2 + r.address3,
+        }));
+      }
+    } catch {
+      // silently ignore — user can fill in manually
+    } finally {
+      setZipLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,8 +165,8 @@ export default function NurseryProfileForm({initial}: Props) {
 
   return (
     <>
-      <SectionHeading subtitle="公開情報と非公開情報があります">
-        園プロフィール編集
+      <SectionHeading subtitle="作成完了後は公開ボタンを押してください。">
+        園プロフィール作成
       </SectionHeading>
 
       <ErrorAlert message={error} />
@@ -68,92 +181,215 @@ export default function NurseryProfileForm({initial}: Props) {
         onSubmit={handleSubmit}
         sx={{display: 'flex', flexDirection: 'column', gap: 3}}
       >
+        {/* 1. 基本情報 */}
         <Box>
-          <Typography
-            variant="subtitle1"
-            sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}
-          >
+          <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}>
             基本情報（公開）
           </Typography>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
             <TextField
               label="園名"
               value={form.nurseryName}
-              onChange={(e) => setForm({...form, nurseryName: e.target.value})}
+              onChange={(e) => set('nurseryName', e.target.value)}
               size="small"
               required
             />
+            <Box sx={{display: 'flex', gap: 1, alignItems: 'flex-start'}}>
+              <TextField
+                label="郵便番号"
+                value={form.postalCode}
+                onChange={(e) => set('postalCode', e.target.value)}
+                onBlur={handlePostalCodeBlur}
+                size="small"
+                placeholder="例：850-0001"
+                sx={{width: 160}}
+                slotProps={{
+                  input: {
+                    endAdornment: zipLoading ? (
+                      <CircularProgress size={16} sx={{mr: 0.5}} />
+                    ) : null,
+                  },
+                }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{mt: 1.2}}>
+                入力すると住所を自動補完します
+              </Typography>
+            </Box>
+            <Box sx={{display: 'flex', gap: 1}}>
+              <TextField
+                label="都道府県"
+                value={form.prefecture}
+                onChange={(e) => set('prefecture', e.target.value)}
+                size="small"
+                sx={{flex: 1}}
+              />
+              <TextField
+                label="市区町村"
+                value={form.city}
+                onChange={(e) => set('city', e.target.value)}
+                size="small"
+                sx={{flex: 2}}
+              />
+            </Box>
             <TextField
-              label="エリア"
-              value={form.area}
-              onChange={(e) => setForm({...form, area: e.target.value})}
+              label="それ以降の住所"
+              value={form.addressLine}
+              onChange={(e) => set('addressLine', e.target.value)}
               size="small"
-              required
-              placeholder="例：長崎市"
-            />
-          </Box>
-        </Box>
-
-        <Divider />
-
-        <Box>
-          <Typography
-            variant="subtitle1"
-            sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}
-          >
-            連絡先情報（マッチング成立後に開示）
-          </Typography>
-          <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <TextField
-              label="住所"
-              value={form.address}
-              onChange={(e) => setForm({...form, address: e.target.value})}
-              size="small"
-            />
-            <TextField
-              label="担当者名"
-              value={form.contactName}
-              onChange={(e) => setForm({...form, contactName: e.target.value})}
-              size="small"
-              required
+              placeholder="例：大手1丁目1番地"
             />
             <TextField
               label="電話番号"
               value={form.phone}
-              onChange={(e) => setForm({...form, phone: e.target.value})}
+              onChange={(e) => set('phone', e.target.value)}
               size="small"
               type="tel"
+              placeholder="例：095-123-4567"
+            />
+            <TextField
+              label="担当者名"
+              value={form.contactName}
+              onChange={(e) => set('contactName', e.target.value)}
+              size="small"
+              required
             />
           </Box>
         </Box>
 
         <Divider />
 
+        {/* 2. SNS・URL */}
         <Box>
-          <Typography
-            variant="subtitle1"
-            sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}
-          >
-            コンセプト・保育方針（公開）
+          <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}>
+            ホームページ・SNSリンク（任意・公開）
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+            それぞれ個別に入力してください
           </Typography>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
             <TextField
-              label="コンセプト"
-              value={form.concept}
-              onChange={(e) => setForm({...form, concept: e.target.value})}
+              label="ホームページURL"
+              value={form.homepageUrl}
+              onChange={(e) => set('homepageUrl', e.target.value)}
               size="small"
-              multiline
-              rows={3}
-              placeholder="園のコンセプトや特色を教えてください"
+              type="url"
+              placeholder="https://"
             />
             <TextField
-              label="保育方針"
-              value={form.policy}
-              onChange={(e) => setForm({...form, policy: e.target.value})}
+              label="Instagram"
+              value={form.instagramUrl}
+              onChange={(e) => set('instagramUrl', e.target.value)}
+              size="small"
+              placeholder="https://www.instagram.com/..."
+            />
+            <TextField
+              label="X（Twitter）"
+              value={form.twitterUrl}
+              onChange={(e) => set('twitterUrl', e.target.value)}
+              size="small"
+              placeholder="https://x.com/..."
+            />
+            <TextField
+              label="Facebook"
+              value={form.facebookUrl}
+              onChange={(e) => set('facebookUrl', e.target.value)}
+              size="small"
+              placeholder="https://www.facebook.com/..."
+            />
+            <TextField
+              label="その他SNS"
+              value={form.otherSnsUrl}
+              onChange={(e) => set('otherSnsUrl', e.target.value)}
+              size="small"
+              placeholder="https://"
+            />
+          </Box>
+        </Box>
+
+        <Divider />
+
+        {/* 3. 園の特徴タグ */}
+        <Box>
+          <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}>
+            園の特徴・大切にしていること（公開）
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+            最大3つまで選択できます（選択中: {form.featureTags.length}/3）
+          </Typography>
+          <TagSelector
+            tags={FEATURE_TAGS}
+            selected={form.featureTags}
+            onChange={(v) => set('featureTags', v)}
+          />
+          <TextField
+            label="補足テキスト（任意）"
+            value={form.featureNote}
+            onChange={(e) => set('featureNote', e.target.value)}
+            size="small"
+            multiline
+            rows={2}
+            sx={{mt: 1.5, width: '100%'}}
+          />
+        </Box>
+
+        <Divider />
+
+        {/* 4. 受け入れ方針タグ */}
+        <Box>
+          <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}>
+            一緒に働く先生を受け入れる際に大切にしていること（公開）
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+            最大3つまで選択できます（選択中: {form.receptionTags.length}/3）
+          </Typography>
+          <TagSelector
+            tags={RECEPTION_TAGS}
+            selected={form.receptionTags}
+            onChange={(v) => set('receptionTags', v)}
+          />
+          <TextField
+            label="補足テキスト（任意）"
+            value={form.receptionNote}
+            onChange={(e) => set('receptionNote', e.target.value)}
+            size="small"
+            multiline
+            rows={2}
+            sx={{mt: 1.5, width: '100%'}}
+          />
+        </Box>
+
+        <Divider />
+
+        {/* 5. 園からのメッセージ */}
+        <Box>
+          <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}>
+            園からのメッセージ（公開）
+          </Typography>
+          <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+            <TextField
+              label="えんまーるに参加した理由"
+              value={form.joinReason}
+              onChange={(e) => set('joinReason', e.target.value)}
               size="small"
               multiline
               rows={3}
-              placeholder="保育への姿勢や大切にしていることを教えてください"
+            />
+            <TextField
+              label="こんな方とご縁があれば嬉しい"
+              value={form.idealPartner}
+              onChange={(e) => set('idealPartner', e.target.value)}
+              size="small"
+              multiline
+              rows={3}
+              placeholder="どんな方とのご縁があると良いか希望をお書きください"
+            />
+            <TextField
+              label="備考・補足事項"
+              value={form.additionalNotes}
+              onChange={(e) => set('additionalNotes', e.target.value)}
+              size="small"
+              multiline
+              rows={3}
             />
           </Box>
         </Box>
@@ -164,9 +400,7 @@ export default function NurseryProfileForm({initial}: Props) {
           control={
             <Checkbox
               checked={form.isPublished}
-              onChange={(e) =>
-                setForm({...form, isPublished: e.target.checked})
-              }
+              onChange={(e) => set('isPublished', e.target.checked)}
               size="small"
               sx={{color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}}}
             />
