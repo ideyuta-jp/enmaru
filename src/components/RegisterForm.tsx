@@ -63,6 +63,9 @@ export default function RegisterForm() {
         <Typography variant="body2" color="text.secondary">
           えんまーるへようこそ。区分を選んで登録を完了してください。
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+          ご希望の登録区分をお選びください
+        </Typography>
       </Box>
 
       <ErrorAlert message={error} />
@@ -81,8 +84,8 @@ export default function RegisterForm() {
               }}
             />
           }
-          title="保育士"
-          description="仕事を探している保育士・保育経験者"
+          title="保育士・保育補助希望の方"
+          description="午前だけ・週1回から。自分の「好き」や「得意」を活かして、希望のスタイルで働けます。"
         />
         <RoleCard
           selected={role === UserRole.NURSERY}
@@ -95,8 +98,8 @@ export default function RegisterForm() {
               }}
             />
           }
-          title="保育園"
-          description="スポットサポートを募集している保育施設"
+          title="保育園・施設運営の方"
+          description="日々の保育や行事の準備、休憩・お休みの確保まで、「保育バディ」がお手伝いします。"
         />
       </Box>
 

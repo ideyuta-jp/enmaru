@@ -337,14 +337,14 @@ export default function Home() {
                     variant="h3"
                     sx={{fontSize: '1.125rem', fontWeight: 700, mb: 1}}
                   >
-                    保育士・保育士希望の方
+                    保育士・保育補助希望の方
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{mb: 2.5, lineHeight: 1.7}}
                   >
-                    ブランクがある方も歓迎。午前だけ・週1など、希望のスタイルで働けます。
+                    午前だけ・週1回から。自分の「好き」や「得意」を活かして、希望のスタイルで働けます。
                   </Typography>
                   <Button
                     component="a"
@@ -375,14 +375,14 @@ export default function Home() {
                     variant="h3"
                     sx={{fontSize: '1.125rem', fontWeight: 700, mb: 1}}
                   >
-                    保育園・保育施設の方
+                    保育園・施設運営の方
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{mb: 2.5, lineHeight: 1.7}}
                   >
-                    行事の準備・急な欠員対応など、必要なときにサポートスタッフを確保できます。
+                    日々の保育や行事の準備、休憩・お休みの確保まで、「保育バディ」がお手伝いします。
                   </Typography>
                   <Button
                     component="a"
