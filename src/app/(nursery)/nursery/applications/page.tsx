@@ -132,9 +132,13 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
             （{match.seekerRealName}）
           </Typography>
         </Typography>
-        {match.seekerPreferredStyle.length > 0 && (
+        {(match.seekerPreferredPeriod.length > 0 ||
+          match.seekerPreferredTimeSlot.length > 0) && (
           <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5}}>
-            {match.seekerPreferredStyle.map((s) => (
+            {[
+              ...match.seekerPreferredPeriod,
+              ...match.seekerPreferredTimeSlot,
+            ].map((s) => (
               <Chip
                 key={s}
                 label={s}

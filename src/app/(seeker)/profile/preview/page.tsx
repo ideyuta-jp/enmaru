@@ -18,9 +18,37 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+const LabeledBlock = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <Box>
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      sx={{display: 'block', mb: 0.25}}
+    >
+      {label}
+    </Typography>
+    {children}
+  </Box>
+);
+
 export default async function ProfilePreviewPage() {
   const profile = await getSeekerProfileInput();
   if (!profile) redirect('/profile');
+
+  const preferredArea = [profile.preferredPrefecture, profile.preferredCity]
+    .filter(Boolean)
+    .join(' ');
+
+  const allPreferredStyle = [
+    ...profile.preferredPeriod,
+    ...profile.preferredTimeSlot,
+  ];
 
   return (
     <>
@@ -45,6 +73,7 @@ export default async function ProfilePreviewPage() {
             gap: 2,
           }}
         >
+          {/* 名前・エリア・勤務スタイルチップ */}
           <Box>
             <Typography variant="subtitle1" sx={{fontWeight: 700}}>
               {profile.displayName}
@@ -57,9 +86,18 @@ export default async function ProfilePreviewPage() {
                 （{profile.realName}）
               </Typography>
             </Typography>
-            {profile.preferredStyle.length > 0 && (
+            {preferredArea && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{display: 'block', mt: 0.25}}
+              >
+                希望エリア: {preferredArea}
+              </Typography>
+            )}
+            {allPreferredStyle.length > 0 && (
               <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.75}}>
-                {profile.preferredStyle.map((s) => (
+                {allPreferredStyle.map((s) => (
                   <Chip
                     key={s}
                     label={s}
@@ -71,37 +109,139 @@ export default async function ProfilePreviewPage() {
             )}
           </Box>
 
+          {/* 資格・経験 */}
+          {(profile.licenses.length > 0 || profile.experienceYears) && (
+            <>
+              <Divider />
+              <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                {profile.licenses.length > 0 && (
+                  <LabeledBlock label="保有資格">
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 0.5,
+                        flexWrap: 'wrap',
+                        mt: 0.25,
+                      }}
+                    >
+                      {profile.licenses.map((l) => (
+                        <Chip
+                          key={l}
+                          label={l}
+                          size="small"
+                          sx={{fontSize: '0.65rem', height: 20}}
+                        />
+                      ))}
+                    </Box>
+                  </LabeledBlock>
+                )}
+                {profile.experienceYears && (
+                  <LabeledBlock label="保育経験">
+                    <Typography variant="body2">
+                      {profile.experienceYears}
+                    </Typography>
+                  </LabeledBlock>
+                )}
+              </Box>
+            </>
+          )}
+
+          {/* 得意分野 */}
+          {(profile.skills.length > 0 || profile.skillsNote) && (
+            <>
+              <Divider />
+              <Box>
+                <LabeledBlock label="得意分野">
+                  {profile.skills.length > 0 && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 0.5,
+                        flexWrap: 'wrap',
+                        mt: 0.25,
+                        mb: profile.skillsNote ? 0.75 : 0,
+                      }}
+                    >
+                      {profile.skills.map((s) => (
+                        <Chip
+                          key={s}
+                          label={s}
+                          size="small"
+                          sx={{fontSize: '0.65rem', height: 20}}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                  {profile.skillsNote && (
+                    <Typography
+                      variant="body2"
+                      sx={{whiteSpace: 'pre-wrap', mt: 0.5}}
+                    >
+                      {profile.skillsNote}
+                    </Typography>
+                  )}
+                </LabeledBlock>
+              </Box>
+            </>
+          )}
+
+          {/* 大切にしていること */}
+          {profile.values && (
+            <>
+              <Divider />
+              <LabeledBlock label="大切にしていること">
+                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
+                  {profile.values}
+                </Typography>
+              </LabeledBlock>
+            </>
+          )}
+
+          {/* 自己紹介 */}
+          {profile.bio && (
+            <>
+              <Divider />
+              <LabeledBlock label="自己紹介">
+                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
+                  {profile.bio}
+                </Typography>
+              </LabeledBlock>
+            </>
+          )}
+
+          {/* 園の方へひとこと */}
+          {profile.messageToNursery && (
+            <>
+              <Divider />
+              <LabeledBlock label="園の方へひとこと">
+                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
+                  {profile.messageToNursery}
+                </Typography>
+              </LabeledBlock>
+            </>
+          )}
+
+          {/* ブランク期間・職務経歴（マッチング相手のみ） */}
           {(profile.blankYears || profile.experience) && (
             <>
               <Divider />
               <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                <Typography variant="caption" color="text.secondary">
+                  以下はマッチング成立後に開示されます
+                </Typography>
                 {profile.blankYears && (
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{display: 'block', mb: 0.25}}
-                    >
-                      ブランク期間
-                    </Typography>
+                  <LabeledBlock label="ブランク期間">
                     <Typography variant="body2">
                       {profile.blankYears}
                     </Typography>
-                  </Box>
+                  </LabeledBlock>
                 )}
                 {profile.experience && (
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{display: 'block', mb: 0.25}}
-                    >
-                      職務経歴
-                    </Typography>
+                  <LabeledBlock label="職務経歴">
                     <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
                       {profile.experience}
                     </Typography>
-                  </Box>
+                  </LabeledBlock>
                 )}
               </Box>
             </>
