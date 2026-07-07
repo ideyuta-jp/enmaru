@@ -73,7 +73,7 @@ export async function listAllMatches(): Promise<AdminMatch[]> {
   const engagements = await prisma.engagement.findMany({
     include: {
       job: {
-        include: {nursery: {select: {nurseryName: true, area: true}}},
+        include: {nursery: {select: {nurseryName: true, city: true}}},
       },
       seeker: {select: {displayName: true, realName: true}},
     },
@@ -89,7 +89,7 @@ export async function listAllMatches(): Promise<AdminMatch[]> {
     jobTitle: e.job.title,
     workDate: e.job.workDate.toISOString().slice(0, 10),
     nurseryName: e.job.nursery.nurseryName,
-    nurseryArea: e.job.nursery.area,
+    nurseryCity: e.job.nursery.city,
     seekerDisplayName: e.seeker.displayName,
     seekerRealName: e.seeker.realName,
   }));

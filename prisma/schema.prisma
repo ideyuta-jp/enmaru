@@ -147,13 +147,36 @@ model NurseryProfile {
   id          String   @id @default(cuid())
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id])
+
+  // 基本情報（公開）
   nurseryName String
-  area        String
-  address     String?
-  contactName String
+  postalCode  String?
+  prefecture  String?
+  city        String?
+  addressLine String?
   phone       String?
-  concept     String?
-  policy      String?
+  contactName String
+
+  // SNS・URL（公開）
+  homepageUrl  String?
+  instagramUrl String?
+  twitterUrl   String?
+  facebookUrl  String?
+  otherSnsUrl  String?
+
+  // 園の特徴（公開）
+  featureTags String[]
+  featureNote String?
+
+  // 受け入れ方針（公開）
+  receptionTags String[]
+  receptionNote String?
+
+  // 園からのメッセージ（公開）
+  joinReason      String?
+  idealPartner    String?
+  additionalNotes String?
+
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

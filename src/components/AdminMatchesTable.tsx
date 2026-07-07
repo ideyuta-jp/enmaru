@@ -137,7 +137,7 @@ export default function AdminMatchesTable({initialMatches}: Props) {
                         {match.nurseryName}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {match.nurseryArea}
+                        {match.nurseryCity ?? '—'}
                       </Typography>
                     </TableCell>
                     <TableCell>

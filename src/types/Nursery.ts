@@ -7,14 +7,35 @@ export interface NurseryRating {
   count: number;
 }
 
-// The public-facing subset of a nursery profile (no address / contact details).
+// The public-facing subset of a nursery profile (no contact details).
 export interface PublicNursery {
   id: string;
   nurseryName: string;
-  area: string;
-  concept: string | null;
-  policy: string | null;
+  prefecture: string | null;
+  city: string | null;
+  featureTags: string[];
+  featureNote: string | null;
+  receptionTags: string[];
+  receptionNote: string | null;
+  joinReason: string | null;
+  idealPartner: string | null;
+  additionalNotes: string | null;
+  homepageUrl: string | null;
+  instagramUrl: string | null;
+  twitterUrl: string | null;
+  facebookUrl: string | null;
+  otherSnsUrl: string | null;
   rating: NurseryRating | null;
+}
+
+// Display string for a nursery's location. Prefecture and city are the only
+// address parts in the public projection, so this is the single definition of
+// how a nursery's location renders (cards, detail page).
+export function formatNurseryLocation(nursery: {
+  prefecture: string | null;
+  city: string | null;
+}): string {
+  return [nursery.prefecture, nursery.city].filter(Boolean).join(' ');
 }
 
 // A single published review of a nursery, as shown on its detail page.
@@ -32,29 +53,52 @@ export interface PublicNurseryDetail extends PublicNursery {
   reviews: NurseryReview[];
 }
 
-// The editable shape of a nursery's own profile — form state + prefill. Unlike
-// PublicNursery this includes the non-public fields (address / contactName /
-// phone). Text fields are plain strings (empty = unset); the server maps empty
-// to null when persisting.
+// The editable shape of a nursery's own profile — form state + prefill.
+// Text fields are plain strings (empty = unset); the server maps empty to null
+// when persisting. Tag fields are string arrays.
 export interface NurseryProfileInput {
   nurseryName: string;
-  area: string;
-  address: string;
-  contactName: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  addressLine: string;
   phone: string;
-  concept: string;
-  policy: string;
+  contactName: string;
+  homepageUrl: string;
+  instagramUrl: string;
+  twitterUrl: string;
+  facebookUrl: string;
+  otherSnsUrl: string;
+  featureTags: string[];
+  featureNote: string;
+  receptionTags: string[];
+  receptionNote: string;
+  joinReason: string;
+  idealPartner: string;
+  additionalNotes: string;
   isPublished: boolean;
 }
 
 export const EMPTY_NURSERY_PROFILE: NurseryProfileInput = {
   nurseryName: '',
-  area: '',
-  address: '',
-  contactName: '',
+  postalCode: '',
+  prefecture: '',
+  city: '',
+  addressLine: '',
   phone: '',
-  concept: '',
-  policy: '',
+  contactName: '',
+  homepageUrl: '',
+  instagramUrl: '',
+  twitterUrl: '',
+  facebookUrl: '',
+  otherSnsUrl: '',
+  featureTags: [],
+  featureNote: '',
+  receptionTags: [],
+  receptionNote: '',
+  joinReason: '',
+  idealPartner: '',
+  additionalNotes: '',
   isPublished: false,
 };
 
