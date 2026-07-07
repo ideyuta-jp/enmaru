@@ -37,7 +37,7 @@ export interface AdminMatch {
   jobTitle: string;
   workDate: string;
   nurseryName: string;
-  nurseryArea: string;
+  nurseryCity: string | null;
   seekerDisplayName: string;
   seekerRealName: string | null;
 }

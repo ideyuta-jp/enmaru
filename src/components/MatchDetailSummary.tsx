@@ -57,7 +57,8 @@ export default function MatchDetailSummary({
             color="text.secondary"
             sx={{display: 'block', mb: 0.5}}
           >
-            📍 {summary.nurseryName}（{summary.area}）
+            📍 {summary.nurseryName}
+            {summary.nurseryCity ? `（${summary.nurseryCity}）` : ''}
           </Typography>
         )}
         <Typography

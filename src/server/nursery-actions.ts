@@ -6,6 +6,7 @@ import type {ActionResult} from '@/types/ActionResult';
 import type {NurseryProfileInput} from '@/types/Nursery';
 import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
+import {isHttpUrl} from '@/utils/url';
 
 // Create or update the current nursery's profile. Guarded to NURSERY. Keyed by
 // userId, so the same action serves both first save and edits.
@@ -15,20 +16,46 @@ export async function saveNurseryProfile(
   const user = await requireRole([UserRole.NURSERY]);
 
   const nurseryName = input.nurseryName.trim();
-  const area = input.area.trim();
   const contactName = input.contactName.trim();
-  if (!nurseryName || !area || !contactName) {
-    return {ok: false, message: '園名・エリア・担当者名は必須です。'};
+  if (!nurseryName || !contactName) {
+    return {ok: false, message: '園名・担当者名は必須です。'};
+  }
+
+  // These are rendered as hrefs on the public page; the form's type="url" is
+  // client-side only, so the scheme allowlist must be enforced here.
+  const linkUrls = {
+    homepageUrl: blankToNull(input.homepageUrl),
+    instagramUrl: blankToNull(input.instagramUrl),
+    twitterUrl: blankToNull(input.twitterUrl),
+    facebookUrl: blankToNull(input.facebookUrl),
+    otherSnsUrl: blankToNull(input.otherSnsUrl),
+  };
+  const hasInvalidUrl = Object.values(linkUrls).some(
+    (url) => url !== null && !isHttpUrl(url),
+  );
+  if (hasInvalidUrl) {
+    return {
+      ok: false,
+      message: 'URLはhttp://またはhttps://から始まる形式で入力してください。',
+    };
   }
 
   const data = {
     nurseryName,
-    area,
-    contactName,
-    address: blankToNull(input.address),
+    postalCode: blankToNull(input.postalCode),
+    prefecture: blankToNull(input.prefecture),
+    city: blankToNull(input.city),
+    addressLine: blankToNull(input.addressLine),
     phone: blankToNull(input.phone),
-    concept: blankToNull(input.concept),
-    policy: blankToNull(input.policy),
+    contactName,
+    ...linkUrls,
+    featureTags: input.featureTags,
+    featureNote: blankToNull(input.featureNote),
+    receptionTags: input.receptionTags,
+    receptionNote: blankToNull(input.receptionNote),
+    joinReason: blankToNull(input.joinReason),
+    idealPartner: blankToNull(input.idealPartner),
+    additionalNotes: blankToNull(input.additionalNotes),
     isPublished: input.isPublished,
   };
 

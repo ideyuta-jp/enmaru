@@ -48,7 +48,8 @@ const NAV_CARDS = [
     href: '/nursery/reviews',
     icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
     title: '保育バディへの評価・レビュー',
-    description: '今後のマッチングや次回以降の参考に向けて評価します（※保育士さんには公開されず、事務局のみで安全に管理されます）',
+    description:
+      '今後のマッチングや次回以降の参考に向けて評価します（※保育士さんには公開されず、事務局のみで安全に管理されます）',
   },
 ];
 
