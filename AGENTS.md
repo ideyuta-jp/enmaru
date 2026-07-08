@@ -20,14 +20,16 @@ Hard rules — violations have shipped PRs that carried other branches' files an
 rolled back merged fixes (details:
 [`docs/conventions/repo.md`](docs/conventions/repo.md)):
 
-- Cut every work branch from freshly pulled `dev`
-  (`git fetch origin && git switch -c <branch> origin/dev`). Never branch from
-  another feature branch unless the PR is explicitly stacked and its body says
-  so.
-- Stage only the files that belong to the change. Never `git add -A` /
-  `git add .` in a working tree that may hold unrelated edits.
-- Before opening a PR, run `git diff origin/dev --stat` and confirm every
-  listed file belongs to this change. Anything unrelated: stop and remove it.
+- Start every work item with `pnpm work:start <type>/<issue>-<slug>`. It
+  fetches, guarantees a clean working tree (leftovers are stashed or removed —
+  interactively, or abort without a TTY), and branches from `origin/dev`. Do
+  not hand-roll branch creation. Branching from another feature branch is
+  allowed only for an explicitly stacked PR that says so in its body.
+- Keep the working tree owned by exactly one work item. Files that should
+  never be tracked belong in `.gitignore`; check `git status` before staging.
+- Before opening a PR, run `git fetch origin && git diff origin/dev --stat`
+  and confirm every listed file belongs to this change. Anything unrelated:
+  stop and remove it.
 - A PR ships at most one new migration. Finalize the schema, then run
   `pnpm db:migrate` once; if iteration created several migration directories,
   squash them before review

@@ -18,6 +18,6 @@ typecheck / unit, but not feature behavior. -->
 
 <!-- See docs/conventions/repo.md for the reasoning behind each item. -->
 
-- [ ] Branch was cut from freshly pulled `dev` (not from another feature branch)
+- [ ] Branch was started with `pnpm work:start` (or cut from freshly pulled `dev` on a clean tree)
 - [ ] `git diff origin/dev --stat` lists only files that belong to this change
 - [ ] At most one new migration directory (squashed if iteration created several)

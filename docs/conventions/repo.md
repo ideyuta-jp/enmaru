@@ -25,37 +25,48 @@ Branches use a `<type>/<description>` form. Common types:
 When the work has a related issue, prefix the description with the issue number
 for traceability: `feature/12-reservation-list`, `chore/5-implementation-policy-docs`.
 
-## Cutting a branch
+## Starting a work item
 
-Always cut a work branch from a freshly pulled `dev`:
+Start every work item with:
 
 ```bash
-git fetch origin
-git switch -c feature/12-reservation-list origin/dev
+pnpm work:start feature/12-reservation-list
 ```
 
-Never branch from another feature branch, and never commit from a working tree
-that still holds another branch's edits. A branch cut from stale or foreign
-state drags other PRs' files into yours — migrations, `schema.prisma` state,
-and pre-review copies of files a merged PR already fixed, which a merge would
-then silently roll back. If two PRs genuinely must stack, set the dependent
-PR's base branch accordingly and say so in its body.
+The script fetches origin, checks that the working tree is clean, and creates
+the branch from `origin/dev`. If the tree holds leftovers (edits or untracked
+files from earlier work), it lists them and asks — stash, delete (with a
+confirmation), or abort. Without a TTY it never deletes: it aborts, or stashes
+when run as `pnpm work:start --stash <branch>`.
+
+This is a mechanism, not a memo. A dirty working tree is how other work items'
+files end up committed into your branch: `git status` noise gets swept into a
+commit, and the PR then carries foreign migrations, `schema.prisma` state, or
+pre-review copies of files a merged PR already fixed — which a merge would
+silently roll back. Keeping the tree owned by exactly one work item at a time
+(and `.gitignore`-ing what should never be tracked) is what makes bulk staging
+like `git add -A` safe to use.
+
+If two PRs genuinely must stack, branch from the parent, set the dependent
+PR's base branch accordingly, and say so in its body. After the parent merges
+(squash), re-home the child with `git rebase --onto origin/dev <last-parent-commit>`.
 
 Before opening the PR, verify the branch contains only your change:
 
 ```bash
+git fetch origin
 git diff origin/dev --stat
 ```
 
-Every listed file must belong to this PR. Anything unrelated means the branch
-was cut or staged wrong — fix that before asking for review.
+Every listed file must belong to this PR. Anything unrelated means the tree
+was dirty when the work started — fix that before asking for review.
 
 ## Commits
 
 - Small, focused commits; imperative mood for the subject line.
-- Stage explicitly (`git add <paths>`), never `git add -A` / `git add .` from a
-  working tree that may hold unrelated edits — that is how foreign files end up
-  committed (see "Cutting a branch").
+- Check `git status` before staging. Bulk staging (`git add -A`) is fine only
+  because the working tree holds nothing but this work item (see "Starting a
+  work item") — if unexpected files show up, resolve them first.
 - Separate subject and body with a blank line; the body explains _why_ and _how_.
 - Prefix the subject with an emoji to categorize the change:
 
