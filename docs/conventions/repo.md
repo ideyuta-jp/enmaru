@@ -47,9 +47,47 @@ silently roll back. Keeping the tree owned by exactly one work item at a time
 (and `.gitignore`-ing what should never be tracked) is what makes bulk staging
 like `git add -A` safe to use.
 
-If two PRs genuinely must stack, branch from the parent, set the dependent
-PR's base branch accordingly, and say so in its body. After the parent merges
-(squash), re-home the child with `git rebase --onto origin/dev <last-parent-commit>`.
+## Dependent work: serialize, don't stack
+
+When new work depends on a PR that is not merged yet, **wait: finish the
+parent through review and merge, then start the child from the updated
+`dev`** (with `pnpm work:start`, which enforces exactly that). Do not stack a
+branch on top of an unmerged branch.
+
+Why: an open PR is an unvalidated foundation. Review will change it — and the
+child keeps embedding the pre-fix version:
+
+```mermaid
+flowchart TB
+  subgraph NG["Stacked on an unreviewed parent"]
+    direction LR
+    B((dev)) --> P["parent P1..P3<br/>(under review)"]
+    P --> C["child C1..C2"]
+    B --> S["S = parent squash-merged,<br/>review fixes included"]
+    C --- W["child still embeds the pre-fix parent:<br/>re-homing needs rebase --onto + conflict<br/>resolution; merging as-is rolls the fixes back"]
+  end
+  classDef plain fill:#FFFFFF,stroke:#171A31,color:#171A31
+  classDef bad fill:#FFFFFF,stroke:#F05A22,color:#171A31
+  class B,P,C,S plain
+  class W bad
+```
+
+The safe flow costs only waiting, and the wait buys a reviewed foundation:
+
+```mermaid
+flowchart LR
+  A["pnpm work:start<br/>(parent branch)"] --> B2["parent PR"] --> C2["review + fixes"] --> D2["merge to dev"]
+  D2 --> E2["pnpm work:start<br/>(child branch, from updated dev)"] --> F2["child PR"]
+  classDef plain fill:#FFFFFF,stroke:#171A31,color:#171A31
+  class A,B2,C2,D2,E2,F2 plain
+```
+
+If two PRs genuinely must stack (rare — treat it as an expert-mode exception),
+branch from the parent, set the dependent PR's base branch accordingly, and
+say so in its body. After the parent merges (squash), re-home the child with
+`git rebase --onto origin/dev <last-parent-commit>` — the boundary argument
+replays only the commits after it (the child's own) onto `dev`, dropping the
+parent's pre-fix commits that the squash already superseded.
 
 Before opening the PR, verify the branch contains only your change:
 

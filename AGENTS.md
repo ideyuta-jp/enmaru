@@ -23,8 +23,11 @@ rolled back merged fixes (details:
 - Start every work item with `pnpm work:start <type>/<issue>-<slug>`. It
   fetches, guarantees a clean working tree (leftovers are stashed or removed —
   interactively, or abort without a TTY), and branches from `origin/dev`. Do
-  not hand-roll branch creation. Branching from another feature branch is
-  allowed only for an explicitly stacked PR that says so in its body.
+  not hand-roll branch creation.
+- Dependent work is serialized: wait for the parent PR to be reviewed and
+  merged, then start the child from the updated `dev`. Stacking on an
+  unmerged branch is an expert-mode exception — declare it in the PR body
+  (see docs/conventions/repo.md "Dependent work").
 - Keep the working tree owned by exactly one work item. Files that should
   never be tracked belong in `.gitignore`; check `git status` before staging.
 - Before opening a PR, run `git fetch origin && git diff origin/dev --stat`
