@@ -13,6 +13,42 @@ verified on the dev deploy, `dev` is promoted to `main` to release. So merging a
 work PR is _not_ releasing — promoting `dev` → `main` is. There is no release tag.
 Keep both branches deployable: CI green, verified behavior.
 
+## The development flow, end to end
+
+Every work item follows the same steps, whether a human or a coding agent is
+driving. This is the spine; each step's detail lives in the sections below.
+
+```bash
+# 1. Open a terminal at the repository
+cd <your enmaru checkout>
+
+# 2. Start the work item: fetches, guarantees a clean working tree
+#    (prompts about leftovers), then branches from origin/dev
+pnpm work:start feature/<issue>-<slug>
+
+# 3. Develop, checking behavior as you go
+pnpm dev                        # http://localhost:3000
+
+# 4. Only when the schema changed — finalize it first, then run once
+pnpm db:migrate
+
+# 5. Run the exact gate CI runs
+./cmd check
+
+# 6. Commit (look at what you are staging first)
+git status
+git add -A                      # safe: the tree holds only this work item
+git commit                      # emoji-prefixed subject; see Commits
+
+# 7. Exit gate: every listed file must belong to this work item
+git fetch origin
+git diff origin/dev --stat
+
+# 8. Push, open the PR against dev, and request review
+git push -u origin feature/<issue>-<slug>
+gh pr create --base dev         # the template's checklist guides the rest
+```
+
 ## Branch naming
 
 Branches use a `<type>/<description>` form. Common types:
