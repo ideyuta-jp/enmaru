@@ -96,8 +96,13 @@ git fetch origin
 git diff origin/dev --stat
 ```
 
-Every listed file must belong to this PR. Anything unrelated means the tree
-was dirty when the work started — fix that before asking for review.
+This gate is designed for the coding agent, not for human attention: the agent
+knows the work item's scope, so it can judge each listed path against it
+("this is a seeker PR — why is a nursery migration in the list?") and report
+anything it cannot explain. Anything unrelated means the tree was dirty when
+the work started — fix that before asking for review. The check is file-level;
+foreign edits inside a file you also touched are not its job (a clean tree at
+start plus serialized work prevents those, and review remains the last net).
 
 ## Commits
 

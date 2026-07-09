@@ -31,8 +31,9 @@ rolled back merged fixes (details:
 - Keep the working tree owned by exactly one work item. Files that should
   never be tracked belong in `.gitignore`; check `git status` before staging.
 - Before opening a PR, run `git fetch origin && git diff origin/dev --stat`
-  and confirm every listed file belongs to this change. Anything unrelated:
-  stop and remove it.
+  and judge every listed file against the work item's scope. This gate is
+  yours to run — do not delegate it to the human. Anything you cannot explain
+  from the issue: stop, report it, and remove it.
 - A PR ships at most one new migration. Finalize the schema, then run
   `pnpm db:migrate` once; if iteration created several migration directories,
   squash them before review
