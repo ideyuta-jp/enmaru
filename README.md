@@ -110,6 +110,8 @@ Find the right document by the question you have:
   - [Architecture](docs/architecture.md) — system diagram, tiers, directory roles
 - **Where does this new code go?**
   - [Design](docs/design.md) — roles, data-flow patterns, dependency direction
+- **How do I develop a change, end to end?**
+  - [Development](docs/development.md) — from starting a task to requesting review
 - **What conventions does the project follow?**
   - [Conventions](docs/conventions/index.md) — coding, repo, docs
 - **How is the project tested?**
