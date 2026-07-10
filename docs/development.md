@@ -15,8 +15,9 @@ kebab-case; starting it with the issue number is recommended
 (`feature/130-preview-button`).
 
 The command fetches, makes sure the working tree is clean — leftovers from
-earlier work are listed and you choose stash / delete / abort — and branches
-from `origin/dev`. Nothing is ever deleted without your confirmation.
+earlier work are listed and you choose stash / delete / abort — and creates
+the branch **at the tip of `origin/dev`. Every work branch starts there, no
+exception.** Nothing is ever deleted without your confirmation.
 
 ## 2. Develop
 
@@ -50,4 +51,6 @@ git push -u origin <branch>
 gh pr create --base dev
 ```
 
-Fill in the template, tick its checklist, and request a review.
+Fill in the template, tick its checklist, and request a review. Before the
+PR opens, the branch history is squashed into reviewable commits — when a
+coding agent drives the work, the agent does this.

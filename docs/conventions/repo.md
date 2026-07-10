@@ -38,7 +38,8 @@ pnpm work:start feature/12-reservation-list
 ```
 
 The script fetches origin, checks that the working tree is clean, and creates
-the branch from `origin/dev`. If the tree holds leftovers (edits or untracked
+the branch **at the tip of `origin/dev` — every work branch starts there, no
+exception**. If the tree holds leftovers (edits or untracked
 files from earlier work), it lists them and asks — stash, delete (with a
 confirmation), or abort. Without a TTY it never deletes: it aborts, or stashes
 when run as `pnpm work:start --stash <branch>`.
@@ -132,9 +133,12 @@ start plus serialized work prevents those, and review remains the last net).
 | `🗑️`  | Removal                 |
 | `🚧`  | Work in progress        |
 
-Keep history readable on `main`. On a working branch, commit however you need to
-while working — but before merging, clean up the history (squash, rebase, reword)
-so that what lands reads as a coherent set of meaningful commits.
+Keep history readable. On a working branch, commit however you need to while
+working — but **before requesting review**, clean up the history (squash,
+rebase, reword) so the reviewer sees a coherent set of meaningful commits:
+one commit per logical change, often just one. Iteration noise (typo fixes,
+formatting passes, "wip") never reaches review. When a coding agent drives
+the work, this cleanup is the agent's job.
 
 ## Database migrations
 
