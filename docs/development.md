@@ -6,7 +6,7 @@ each step live in [`conventions/repo.md`](conventions/repo.md).
 ## 1. Start the work item
 
 ```bash
-cd <your enmaru checkout>
+cd </path/to/enmaru>
 pnpm work:start <type>/<name>
 ```
 
