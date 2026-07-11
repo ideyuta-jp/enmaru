@@ -1,5 +1,13 @@
 // Shared date/time formatting. Pure, tier-neutral helpers (no I/O, no React).
 
+// 'HH:mm' -> minutes since midnight, for duration math (a lexicographic
+// compare can order times but cannot measure a duration such as the job
+// form's 1-hour minimum).
+export function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
 // "M/D HH:mm" in Japanese locale — the timestamp shown on chat bubbles and
 // notification rows. Accepts an ISO string or a Date.
 export function formatDateTime(value: string | Date): string {

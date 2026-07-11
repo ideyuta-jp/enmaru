@@ -16,6 +16,11 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
+import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
+import {PickerDay, type PickerDayProps} from '@mui/x-date-pickers/PickerDay';
+import dayjs, {type Dayjs} from 'dayjs';
 
 import CheckboxGroup from '@/components/CheckboxGroup';
 import TagSelector from '@/components/TagSelector';
@@ -25,6 +30,7 @@ import {
   type SeekerDocumentType,
 } from '@/types/Document';
 import type {JobInput} from '@/types/Job';
+import {toMinutes} from '@/utils/date';
 
 const TITLE_CHIPS = [
   '午前中の保育補助',
@@ -83,6 +89,39 @@ const SECTION_LABEL_SX = {
   color: '#666666',
   mb: 0.75,
 };
+
+interface SelectableDayProps extends PickerDayProps {
+  // Injected via slotProps.day — the multi-selected dates to paint.
+  selectedDates?: string[];
+}
+
+// DateCalendar's day cell, painted from the form's multi-date selection.
+// DateCalendar itself only models a single value, so its built-in selection
+// stays suppressed (selected={false}) and both the paint and the ARIA state
+// come from selectedDates instead. Declared at top level so the slot keeps a
+// stable component identity — an inline slot function would remount every day
+// cell on each JobForm re-render (i.e. on every keystroke elsewhere in the
+// form).
+function SelectableDay({selectedDates = [], ...props}: SelectableDayProps) {
+  const key = (props.day as Dayjs).format('YYYY-MM-DD');
+  const selected = selectedDates.includes(key);
+  return (
+    <PickerDay
+      {...props}
+      selected={false}
+      aria-selected={selected}
+      sx={{
+        ...(selected && {
+          // !important because PickerDay's own state styles (hover/focus)
+          // otherwise out-specify this sx override.
+          bgcolor: '#F05A22 !important',
+          color: '#FFFFFF !important',
+          borderRadius: '50%',
+        }),
+      }}
+    />
+  );
+}
 
 interface SuggestionChipRowProps {
   options: string[];
@@ -181,6 +220,9 @@ interface Props {
   onCancel: () => void;
   saving: boolean;
   submitLabel: string;
+  // The edit form updates exactly one posting, so it locks the calendar to a
+  // single date; the create form fans out one posting per selected date.
+  singleDate?: boolean;
 }
 
 export default function JobForm({
@@ -190,16 +232,11 @@ export default function JobForm({
   onCancel,
   saving,
   submitLabel,
+  singleDate = false,
 }: Props) {
   const [timeError, setTimeError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-
-  // Today's calendar date in JST. toISOString() would give the UTC date, which
-  // lags Japan by 9 hours around midnight and would let "yesterday" through.
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tokyo',
-  }).format(new Date());
 
   function set<K extends keyof JobInput>(key: K, value: JobInput[K]) {
     setForm((prev) => ({...prev, [key]: value}));
@@ -223,6 +260,17 @@ export default function JobForm({
     }));
   }
 
+  function toggleDate(date: Dayjs) {
+    const key = date.format('YYYY-MM-DD');
+    setForm((prev) => {
+      if (singleDate) return {...prev, workDates: [key]};
+      const next = prev.workDates.includes(key)
+        ? prev.workDates.filter((d) => d !== key)
+        : [...prev.workDates, key].sort();
+      return {...prev, workDates: next};
+    });
+  }
+
   const workContentMissing =
     form.workContentTags.length === 0 && !form.workContentNote.trim();
 
@@ -237,20 +285,24 @@ export default function JobForm({
     const hasEmpty =
       !form.title ||
       workContentMissing ||
-      !form.workDate ||
+      form.workDates.length === 0 ||
       !form.workTimeStart ||
       !form.workTimeEnd;
-    // Both sides are zero-padded ISO-shaped strings ('YYYY-MM-DD' / 'HH:mm'),
-    // so a lexicographic compare orders them (same trick as job-actions.ts).
-    const isPastDate = form.workDate && form.workDate < today;
-    const hasTimeError =
-      form.workTimeStart &&
-      form.workTimeEnd &&
-      form.workTimeEnd <= form.workTimeStart;
+    // Duration in minutes — ordering alone isn't enough since a posting must
+    // be at least one hour long (mirrors job-actions.ts).
+    const timeDiff =
+      form.workTimeStart && form.workTimeEnd
+        ? toMinutes(form.workTimeEnd) - toMinutes(form.workTimeStart)
+        : null;
+    const hasTimeError = timeDiff !== null && timeDiff < 60;
 
-    if (hasEmpty || isPastDate || hasTimeError) {
+    if (hasEmpty || hasTimeError) {
       if (hasTimeError)
-        setTimeError('終了時刻は開始時刻より後に設定してください');
+        setTimeError(
+          timeDiff <= 0
+            ? '終了時刻は開始時刻より後に設定してください'
+            : '勤務時間は1時間以上に設定してください',
+        );
       // Defer to the next tick: the error classes queried below are set by the
       // re-render that setSubmitted(true) triggers, so they are not in the DOM
       // yet in this handler.
@@ -341,31 +393,69 @@ export default function JobForm({
         <FormLabel component="legend" sx={{...SECTION_LABEL_SX, mb: 1}}>
           勤務日・勤務時間 *
         </FormLabel>
+        <Box sx={{mb: 2}}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 0.5}}
+          >
+            勤務日 *{!singleDate && '（複数選択可）'}
+          </Typography>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DateCalendar
+              disablePast
+              // Open on the month of the prefilled date (the edit flow's
+              // posting can be months away); default to the current month
+              // when nothing is selected yet. Only read at mount, so the view
+              // never jumps while picking.
+              referenceDate={
+                form.workDates.length > 0 ? dayjs(form.workDates[0]) : undefined
+              }
+              onChange={(date: Dayjs | null) => date && toggleDate(date)}
+              slots={{day: SelectableDay}}
+              slotProps={{
+                day: {selectedDates: form.workDates} as SelectableDayProps,
+              }}
+              sx={{
+                width: '100%',
+                maxWidth: 360,
+                mx: 0,
+                border:
+                  submitted && form.workDates.length === 0
+                    ? '1px solid #d32f2f'
+                    : '1px solid #E0E0E0',
+                borderRadius: 1,
+              }}
+            />
+          </LocalizationProvider>
+          {submitted && form.workDates.length === 0 && (
+            <FormHelperText error sx={{mx: 0, mt: 0.5}}>
+              勤務日を選択してください
+            </FormHelperText>
+          )}
+          {form.workDates.length > 0 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'block', mt: 0.5}}
+            >
+              {!singleDate && `${form.workDates.length}日選択中`}
+              {!singleDate &&
+                form.workDates.length > 1 &&
+                `（${form.workDates.length}件の募集が作成されます）`}
+              {singleDate && form.workDates[0]}
+            </Typography>
+          )}
+        </Box>
+
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {xs: '1fr', sm: '1fr 1fr 1fr'},
+            gridTemplateColumns: {xs: '1fr', sm: '1fr 1fr'},
             gap: 2,
-            alignItems: 'end',
+            maxWidth: 360,
           }}
         >
-          <TextField
-            label="勤務日"
-            type="date"
-            value={form.workDate}
-            onChange={(e) => set('workDate', e.target.value)}
-            required
-            size="small"
-            slotProps={{inputLabel: {shrink: true}}}
-            error={submitted && (!form.workDate || form.workDate < today)}
-            helperText={
-              submitted && !form.workDate
-                ? '入力してください'
-                : submitted && form.workDate < today
-                  ? '過去の日付は指定できません'
-                  : undefined
-            }
-          />
           <TimeSelect
             label="開始時刻 *"
             value={form.workTimeStart}

@@ -54,7 +54,7 @@ export interface JobInput {
   title: string;
   workContentTags: string[];
   workContentNote: string;
-  workDate: string; // 'YYYY-MM-DD'
+  workDates: string[]; // ['YYYY-MM-DD', ...]
   workTimeStart: string; // 'HH:mm'
   workTimeEnd: string;
   hourlyWage: string;
@@ -90,7 +90,7 @@ export const EMPTY_JOB: JobInput = {
   title: '',
   workContentTags: [],
   workContentNote: '',
-  workDate: '',
+  workDates: [],
   workTimeStart: '',
   workTimeEnd: '',
   hourlyWage: '',
@@ -116,7 +116,7 @@ export function toJobInput(job: Job): JobInput {
     title: job.title,
     workContentTags: job.workContentTags,
     workContentNote: job.workContentNote ?? '',
-    workDate: job.workDate,
+    workDates: [job.workDate],
     workTimeStart: job.workTimeStart,
     workTimeEnd: job.workTimeEnd,
     hourlyWage: job.hourlyWage?.toString() ?? '',
