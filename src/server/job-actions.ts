@@ -4,7 +4,11 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import type {ActionResult} from '@/types/ActionResult';
 import {ALL_DOCUMENT_TYPES, type SeekerDocumentType} from '@/types/Document';
-import type {JobInput, JobStatus} from '@/types/Job';
+import {
+  encodeTransportationExpense,
+  type JobInput,
+  type JobStatus,
+} from '@/types/Job';
 import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
 
@@ -14,9 +18,20 @@ function parseJobInput(
   input: JobInput,
 ): {ok: true; data: ValidJob} | {ok: false; message: string} {
   const title = input.title.trim();
-  const workContent = input.workContent.trim();
-  if (!title || !workContent || !input.workDate) {
+  const workContentNote = input.workContentNote.trim();
+  // Work content needs at least one of the tag selection and the free note.
+  const hasWorkContent = input.workContentTags.length > 0 || !!workContentNote;
+  if (!title || !hasWorkContent || !input.workDate) {
     return {ok: false, message: 'タイトル・勤務内容・勤務日は必須です。'};
+  }
+  // Backstop for the form's inline past-date check. Compare calendar dates in
+  // JST (the service's locale) — the server clock may run in UTC, and
+  // toISOString-style UTC dates lag Japan by 9 hours around midnight.
+  const todayJst = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tokyo',
+  }).format(new Date());
+  if (input.workDate < todayJst) {
+    return {ok: false, message: '過去の日付は指定できません。'};
   }
   if (!input.workTimeStart || !input.workTimeEnd) {
     return {ok: false, message: '勤務時間（開始・終了）は必須です。'};
@@ -45,12 +60,20 @@ function parseJobInput(
     ok: true,
     data: {
       title,
-      workContent,
+      workContentTags: input.workContentTags,
+      workContentNote: workContentNote || null,
       workDate: new Date(input.workDate),
       workTimeStart: input.workTimeStart,
       workTimeEnd: input.workTimeEnd,
       hourlyWage,
-      targetPerson: blankToNull(input.targetPerson),
+      qualification: input.qualification,
+      transportationExpense: encodeTransportationExpense(
+        input.transportationExpense,
+      ),
+      transportationExpenseNote: blankToNull(input.transportationExpenseNote),
+      dresscode: blankToNull(input.dresscode),
+      targetPersonTags: input.targetPersonTags,
+      targetPersonNote: blankToNull(input.targetPersonNote),
       remarks: blankToNull(input.remarks),
       requiredDocuments,
     },
@@ -59,12 +82,18 @@ function parseJobInput(
 
 interface ValidJob {
   title: string;
-  workContent: string;
+  workContentTags: string[];
+  workContentNote: string | null;
   workDate: Date;
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number | null;
-  targetPerson: string | null;
+  qualification: string[];
+  transportationExpense: boolean | null;
+  transportationExpenseNote: string | null;
+  dresscode: string | null;
+  targetPersonTags: string[];
+  targetPersonNote: string | null;
   remarks: string | null;
   requiredDocuments: SeekerDocumentType[];
 }

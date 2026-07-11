@@ -23,6 +23,7 @@ import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {getNurseryDetailForViewer} from '@/server/nursery';
+import {formatTagsWithNote} from '@/types/Job';
 import {formatNurseryLocation} from '@/types/Nursery';
 import {isHttpUrl} from '@/utils/url';
 
@@ -334,7 +335,10 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                       color="text.secondary"
                       sx={{mb: 1.5, fontSize: '0.8rem'}}
                     >
-                      {job.workContent}
+                      {formatTagsWithNote(
+                        job.workContentTags,
+                        job.workContentNote,
+                      )}
                     </Typography>
                     <Button
                       href={`/applications/new?jobId=${job.id}`}

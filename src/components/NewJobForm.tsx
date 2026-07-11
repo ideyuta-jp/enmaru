@@ -1,6 +1,8 @@
 'use client';
 
 import {useState} from 'react';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
 import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
@@ -14,6 +16,7 @@ export default function NewJobForm() {
   const [form, setForm] = useState<JobInput>(EMPTY_JOB);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +28,8 @@ export default function NewJobForm() {
         setError(result.message);
         return;
       }
-      router.push('/nursery/jobs');
+      setToast(true);
+      setTimeout(() => router.push('/nursery/jobs'), 1500);
     } catch {
       setError('作成に失敗しました。時間をおいて再度お試しください。');
     } finally {
@@ -45,6 +49,16 @@ export default function NewJobForm() {
         saving={saving}
         submitLabel="作成する"
       />
+      <Snackbar
+        open={toast}
+        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+        autoHideDuration={1500}
+        onClose={() => setToast(false)}
+      >
+        <Alert severity="success" onClose={() => setToast(false)}>
+          募集を作成しました
+        </Alert>
+      </Snackbar>
     </>
   );
 }

@@ -172,9 +172,9 @@ model SeekerProfile {
 }
 
 model NurseryProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 
   // 基本情報（公開）
   nurseryName String
@@ -231,22 +231,36 @@ model NurseryPhoto {
 // ---------------------------------------------------------------------------
 
 model JobPosting {
-  id                String               @id @default(cuid())
-  nurseryId         String
-  nursery           NurseryProfile       @relation(fields: [nurseryId], references: [id])
-  title             String
-  workContent       String
-  workDate          DateTime
-  workTimeStart     String // 'HH:mm'
-  workTimeEnd       String // 'HH:mm'
-  hourlyWage        Int? // null = undecided
-  targetPerson      String?
-  remarks           String?
+  id                        String               @id @default(cuid())
+  nurseryId                 String
+  nursery                   NurseryProfile       @relation(fields: [nurseryId], references: [id])
+  title                     String
+  // Work content is a tag selection plus a free note, stored separately —
+  // packing both into one delimited string lets free text collide with the
+  // tag delimiter (same tags+note shape as SeekerProfile.skills/skillsNote).
+  // At least one of the two is required (enforced in server/job-actions.ts).
+  workContentTags           String[]             @default([])
+  workContentNote           String?
+  workDate                  DateTime
+  workTimeStart             String // 'HH:mm'
+  workTimeEnd               String // 'HH:mm'
+  hourlyWage                Int? // null = undecided
+  // Same tags+note split as workContent above (both parts optional here).
+  targetPersonTags          String[]             @default([])
+  targetPersonNote          String?
+  remarks                   String?
   // Documents this posting requires to be verified before a seeker may apply.
-  requiredDocuments SeekerDocumentType[] @default([])
-  status            JobStatus            @default(OPEN)
-  postedAt          DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  requiredDocuments         SeekerDocumentType[] @default([])
+  // 募集に必要な資格（例: "保育士資格必須", "幼稚園教諭免許可", "資格不問"）
+  qualification             String[]             @default([])
+  // 交通費: true=あり / false=なし / null=未設定
+  transportationExpense     Boolean?
+  transportationExpenseNote String?
+  // 勤務時の服装
+  dresscode                 String?
+  status                    JobStatus            @default(OPEN)
+  postedAt                  DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
 
   engagements Engagement[]
 }

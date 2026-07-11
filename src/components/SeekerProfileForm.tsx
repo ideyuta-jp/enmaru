@@ -10,7 +10,6 @@ import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import FormGroup from '@mui/material/FormGroup';
 import FormLabel from '@mui/material/FormLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -18,6 +17,7 @@ import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
+import CheckboxGroup from '@/components/CheckboxGroup';
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
 import TagSelector from '@/components/TagSelector';
@@ -79,58 +79,6 @@ const NG_OPTIONS = [
 const CHECKBOX_SX = {color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}};
 const TAG_SELECTED_COLOR = '#F4A7B9';
 const TAG_SELECTED_HOVER_COLOR = '#E0899E';
-
-interface CheckboxTagGroupProps {
-  label: string;
-  options: string[];
-  selected: string[];
-  onToggle: (value: string) => void;
-  note?: string;
-}
-
-function CheckboxTagGroup({
-  label,
-  options,
-  selected,
-  onToggle,
-  note,
-}: CheckboxTagGroupProps) {
-  return (
-    <FormControl component="fieldset" fullWidth>
-      <FormLabel
-        component="legend"
-        sx={{fontSize: '0.8rem', fontWeight: 700, color: '#666666', mb: 0.5}}
-      >
-        {label}
-      </FormLabel>
-      {note && (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{display: 'block', mb: 0.5}}
-        >
-          {note}
-        </Typography>
-      )}
-      <FormGroup row>
-        {options.map((opt) => (
-          <FormControlLabel
-            key={opt}
-            control={
-              <Checkbox
-                checked={selected.includes(opt)}
-                onChange={() => onToggle(opt)}
-                size="small"
-                sx={CHECKBOX_SX}
-              />
-            }
-            label={<Typography variant="body2">{opt}</Typography>}
-          />
-        ))}
-      </FormGroup>
-    </FormControl>
-  );
-}
 
 interface LabeledSelectProps {
   label: string;
@@ -365,7 +313,7 @@ export default function SeekerProfileForm({initial}: Props) {
         <Box>
           {sectionLabel('資格・経験')}
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <CheckboxTagGroup
+            <CheckboxGroup
               label="保有資格（公開・複数選択可）"
               options={LICENSE_OPTIONS}
               selected={form.licenses}
@@ -437,13 +385,13 @@ export default function SeekerProfileForm({initial}: Props) {
           {sectionLabel('希望勤務スタイル')}
           {visibilityNote('公開')}
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <CheckboxTagGroup
+            <CheckboxGroup
               label="期間・働き方（複数選択可）"
               options={PERIOD_OPTIONS}
               selected={form.preferredPeriod}
               onToggle={(v) => toggle('preferredPeriod', v)}
             />
-            <CheckboxTagGroup
+            <CheckboxGroup
               label="時間帯（複数選択可）"
               options={TIME_SLOT_OPTIONS}
               selected={form.preferredTimeSlot}
