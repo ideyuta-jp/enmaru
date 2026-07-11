@@ -26,6 +26,7 @@ export interface PublicNursery {
   facebookUrl: string | null;
   otherSnsUrl: string | null;
   rating: NurseryRating | null;
+  mainPhotoId: string | null;
 }
 
 // Display string for a nursery's location. Prefecture and city are the only
@@ -51,6 +52,7 @@ export interface NurseryReview {
 export interface PublicNurseryDetail extends PublicNursery {
   jobPostings: Job[];
   reviews: NurseryReview[];
+  photos: {id: string}[];
 }
 
 // The editable shape of a nursery's own profile — form state + prefill.

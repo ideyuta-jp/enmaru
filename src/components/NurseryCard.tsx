@@ -32,6 +32,14 @@ export default function NurseryCard({nursery, href}: Props) {
         href={href}
         sx={{height: '100%', alignItems: 'flex-start'}}
       >
+        {nursery.mainPhotoId && (
+          <Box
+            component="img"
+            src={`/api/nursery-photos/${nursery.mainPhotoId}/file`}
+            alt={nursery.nurseryName}
+            sx={{width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', display: 'block'}}
+          />
+        )}
         <CardContent sx={{p: {xs: 2, md: 3}}}>
           <Typography
             variant="h3"

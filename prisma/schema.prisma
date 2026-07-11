@@ -185,6 +185,17 @@ model NurseryProfile {
   // an Engagement keeps only jobId + seekerId (the nursery is derived via the
   // posting), so there is no redundant nurseryId to keep in sync.
   jobPostings JobPosting[]
+  photos      NurseryPhoto[]
+}
+
+model NurseryPhoto {
+  id         String         @id @default(cuid())
+  nurseryId  String
+  nursery    NurseryProfile @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+  fileKey    String
+  isMain     Boolean        @default(false)
+  order      Int            @default(0)
+  uploadedAt DateTime       @default(now())
 }
 
 // ---------------------------------------------------------------------------
