@@ -2,6 +2,7 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import {hasReported} from '@/server/work-report';
 import type {EngagementSummary} from '@/types/Engagement';
+import {formatTagsWithNote} from '@/types/Job';
 import {UserRole} from '@/types/User';
 
 // The read-only context shown above the chat (stage + posting details). Returns
@@ -19,7 +20,8 @@ export async function getEngagementSummary(
       job: {
         select: {
           title: true,
-          workContent: true,
+          workContentTags: true,
+          workContentNote: true,
           workDate: true,
           workTimeStart: true,
           workTimeEnd: true,
@@ -49,7 +51,12 @@ export async function getEngagementSummary(
     workTimeStart: engagement.job.workTimeStart,
     workTimeEnd: engagement.job.workTimeEnd,
     hourlyWage: engagement.job.hourlyWage,
-    workContent: engagement.job.workContent,
+    // The summary keeps a single display string; the tags+note split only
+    // matters to the edit form.
+    workContent: formatTagsWithNote(
+      engagement.job.workContentTags,
+      engagement.job.workContentNote,
+    ),
     seekerReported: hasReported(engagement.workReports, 'SEEKER'),
     nurseryReported: hasReported(engagement.workReports, 'NURSERY'),
   };

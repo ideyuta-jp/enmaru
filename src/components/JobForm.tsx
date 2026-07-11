@@ -1,6 +1,6 @@
 'use client';
 
-import {useRef, useState} from 'react';
+import {useRef, useState, type Dispatch, type SetStateAction} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -17,6 +17,8 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
+import CheckboxGroup from '@/components/CheckboxGroup';
+import TagSelector from '@/components/TagSelector';
 import {
   ALL_DOCUMENT_TYPES,
   DOCUMENT_TYPE_LABEL,
@@ -73,9 +75,108 @@ for (let h = 6; h <= 22; h++) {
   if (h < 22) TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:30`);
 }
 
+const CHECKBOX_SX = {color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}};
+
+const SECTION_LABEL_SX = {
+  fontSize: '0.875rem',
+  fontWeight: 700,
+  color: '#666666',
+  mb: 0.75,
+};
+
+interface SuggestionChipRowProps {
+  options: string[];
+  value: string;
+  onSelect: (value: string) => void;
+}
+
+// Single-select suggestion chips that replace a text field's whole value.
+// Clicking the chip that matches the current value highlights it; free edits
+// in the field simply leave every chip unhighlighted.
+function SuggestionChipRow({options, value, onSelect}: SuggestionChipRowProps) {
+  return (
+    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1}}>
+      {options.map((chip) => (
+        <Chip
+          key={chip}
+          label={chip}
+          size="small"
+          onClick={() => onSelect(chip)}
+          sx={{
+            cursor: 'pointer',
+            bgcolor: value === chip ? '#F05A22' : '#F5F5F5',
+            color: value === chip ? '#FFFFFF' : '#555555',
+            fontSize: '0.75rem',
+            '&:hover': {
+              bgcolor: value === chip ? '#D94D19' : '#EBEBEB',
+            },
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
+interface TimeSelectProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  submitted: boolean;
+  // Extra error shown under the select (used for the end-time ordering error).
+  extraError?: string | null;
+}
+
+function TimeSelect({
+  label,
+  value,
+  onChange,
+  submitted,
+  extraError = null,
+}: TimeSelectProps) {
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{display: 'block', mb: 0.5}}
+      >
+        {label}
+      </Typography>
+      <Select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        size="small"
+        fullWidth
+        displayEmpty
+        error={submitted && (!value || extraError !== null)}
+      >
+        <MenuItem value="" disabled>
+          選択してください
+        </MenuItem>
+        {TIME_OPTIONS.map((t) => (
+          <MenuItem key={t} value={t}>
+            {t}
+          </MenuItem>
+        ))}
+      </Select>
+      {submitted && !value && (
+        <FormHelperText error sx={{mx: 0, mt: 0.5}}>
+          選択してください
+        </FormHelperText>
+      )}
+      {extraError && (
+        <FormHelperText error sx={{mx: 0, mt: 0.5}}>
+          {extraError}
+        </FormHelperText>
+      )}
+    </Box>
+  );
+}
+
 interface Props {
   form: JobInput;
-  setForm: (form: JobInput) => void;
+  setForm: Dispatch<SetStateAction<JobInput>>;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   saving: boolean;
@@ -94,8 +195,40 @@ export default function JobForm({
   const [submitted, setSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Today's calendar date in JST. toISOString() would give the UTC date, which
+  // lags Japan by 9 hours around midnight and would let "yesterday" through.
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tokyo',
+  }).format(new Date());
 
+  function set<K extends keyof JobInput>(key: K, value: JobInput[K]) {
+    setForm((prev) => ({...prev, [key]: value}));
+  }
+
+  function toggleRequiredDocument(type: SeekerDocumentType) {
+    setForm((prev) => ({
+      ...prev,
+      requiredDocuments: prev.requiredDocuments.includes(type)
+        ? prev.requiredDocuments.filter((d) => d !== type)
+        : [...prev.requiredDocuments, type],
+    }));
+  }
+
+  function toggleQualification(value: string) {
+    setForm((prev) => ({
+      ...prev,
+      qualification: prev.qualification.includes(value)
+        ? prev.qualification.filter((q) => q !== value)
+        : [...prev.qualification, value],
+    }));
+  }
+
+  const workContentMissing =
+    form.workContentTags.length === 0 && !form.workContentNote.trim();
+
+  // Validate here so errors surface inline next to each field (and the page
+  // scrolls to the first one) instead of as a generic banner. The server
+  // (job-actions.ts) re-validates everything as the backstop.
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitted(true);
@@ -103,10 +236,12 @@ export default function JobForm({
 
     const hasEmpty =
       !form.title ||
-      !form.workContent ||
+      workContentMissing ||
       !form.workDate ||
       !form.workTimeStart ||
       !form.workTimeEnd;
+    // Both sides are zero-padded ISO-shaped strings ('YYYY-MM-DD' / 'HH:mm'),
+    // so a lexicographic compare orders them (same trick as job-actions.ts).
     const isPastDate = form.workDate && form.workDate < today;
     const hasTimeError =
       form.workTimeStart &&
@@ -116,6 +251,9 @@ export default function JobForm({
     if (hasEmpty || isPastDate || hasTimeError) {
       if (hasTimeError)
         setTimeError('終了時刻は開始時刻より後に設定してください');
+      // Defer to the next tick: the error classes queried below are set by the
+      // re-render that setSubmitted(true) triggers, so they are not in the DOM
+      // yet in this handler.
       setTimeout(() => {
         const first = formRef.current?.querySelector<HTMLElement>(
           '.Mui-error, [aria-invalid="true"]',
@@ -127,61 +265,13 @@ export default function JobForm({
     onSubmit(e);
   }
 
-  function toggleRequiredDocument(type: SeekerDocumentType) {
-    const has = form.requiredDocuments.includes(type);
-    setForm({
-      ...form,
-      requiredDocuments: has
-        ? form.requiredDocuments.filter((d) => d !== type)
-        : [...form.requiredDocuments, type],
-    });
-  }
-
-  function toggleQualification(value: string) {
-    const has = form.qualification.includes(value);
-    setForm({
-      ...form,
-      qualification: has
-        ? form.qualification.filter((q) => q !== value)
-        : [...form.qualification, value],
-    });
-  }
-
-  function toggleWorkContentTag(tag: string) {
-    const current = form.workContent
-      .split('・')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const has = current.includes(tag);
-    const next = has ? current.filter((t) => t !== tag) : [...current, tag];
-    setForm({...form, workContent: next.join('・')});
-  }
-
-  function toggleTargetPersonTag(tag: string) {
-    const current = form.targetPerson
-      .split('・')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const has = current.includes(tag);
-    const next = has ? current.filter((t) => t !== tag) : [...current, tag];
-    setForm({...form, targetPerson: next.join('・')});
-  }
-
-  const workContentTags = form.workContent
-    .split('・')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const targetPersonTags = form.targetPerson
-    .split('・')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
   return (
     <Box
       component="form"
       ref={formRef}
       onSubmit={handleSubmit}
+      // Suppress the browser's native validation UI — errors are rendered via
+      // MUI's error state and the scroll-to-first-error handling above.
       noValidate
       sx={{display: 'flex', flexDirection: 'column', gap: 3}}
     >
@@ -194,29 +284,15 @@ export default function JobForm({
         >
           候補から選んで入力できます
         </Typography>
-        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1}}>
-          {TITLE_CHIPS.map((chip) => (
-            <Chip
-              key={chip}
-              label={chip}
-              size="small"
-              onClick={() => setForm({...form, title: chip})}
-              sx={{
-                cursor: 'pointer',
-                bgcolor: form.title === chip ? '#F05A22' : '#F5F5F5',
-                color: form.title === chip ? '#FFFFFF' : '#555555',
-                fontSize: '0.75rem',
-                '&:hover': {
-                  bgcolor: form.title === chip ? '#D94D19' : '#EBEBEB',
-                },
-              }}
-            />
-          ))}
-        </Box>
+        <SuggestionChipRow
+          options={TITLE_CHIPS}
+          value={form.title}
+          onSelect={(v) => set('title', v)}
+        />
         <TextField
           label="タイトル"
           value={form.title}
-          onChange={(e) => setForm({...form, title: e.target.value})}
+          onChange={(e) => set('title', e.target.value)}
           required
           size="small"
           fullWidth
@@ -230,52 +306,29 @@ export default function JobForm({
 
       {/* 勤務内容 */}
       <Box>
-        <FormLabel
-          component="legend"
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: '#666666',
-            mb: 0.75,
-          }}
-        >
+        <FormLabel component="legend" sx={SECTION_LABEL_SX}>
           勤務内容 *
         </FormLabel>
-        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1}}>
-          {WORK_CONTENT_TAGS.map((tag) => (
-            <Chip
-              key={tag}
-              label={tag}
-              size="small"
-              onClick={() => toggleWorkContentTag(tag)}
-              sx={{
-                cursor: 'pointer',
-                bgcolor: workContentTags.includes(tag) ? '#F05A22' : '#F5F5F5',
-                color: workContentTags.includes(tag) ? '#FFFFFF' : '#555555',
-                fontSize: '0.75rem',
-                '&:hover': {
-                  bgcolor: workContentTags.includes(tag)
-                    ? '#D94D19'
-                    : '#EBEBEB',
-                },
-              }}
-            />
-          ))}
+        <Box sx={{mb: 1}}>
+          <TagSelector
+            tags={WORK_CONTENT_TAGS}
+            selected={form.workContentTags}
+            onChange={(v) => set('workContentTags', v)}
+          />
         </Box>
         <TextField
           label="補足・詳細（任意）"
-          value={form.workContent}
-          onChange={(e) => setForm({...form, workContent: e.target.value})}
-          required
+          value={form.workContentNote}
+          onChange={(e) => set('workContentNote', e.target.value)}
           size="small"
           multiline
           rows={2}
           fullWidth
-          placeholder="タグ選択後に補足があれば追記してください"
-          error={submitted && !form.workContent}
+          placeholder="タグ選択に加えて補足があれば追記してください"
+          error={submitted && workContentMissing}
           helperText={
-            submitted && !form.workContent
-              ? '勤務内容を入力するかタグを選択してください'
+            submitted && workContentMissing
+              ? 'タグを選択するか補足を入力してください'
               : undefined
           }
         />
@@ -285,10 +338,7 @@ export default function JobForm({
 
       {/* 勤務日・勤務時間 */}
       <Box>
-        <FormLabel
-          component="legend"
-          sx={{fontSize: '0.875rem', fontWeight: 700, color: '#666666', mb: 1}}
-        >
+        <FormLabel component="legend" sx={{...SECTION_LABEL_SX, mb: 1}}>
           勤務日・勤務時間 *
         </FormLabel>
         <Box
@@ -303,7 +353,7 @@ export default function JobForm({
             label="勤務日"
             type="date"
             value={form.workDate}
-            onChange={(e) => setForm({...form, workDate: e.target.value})}
+            onChange={(e) => set('workDate', e.target.value)}
             required
             size="small"
             slotProps={{inputLabel: {shrink: true}}}
@@ -316,81 +366,25 @@ export default function JobForm({
                   : undefined
             }
           />
-          <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{display: 'block', mb: 0.5}}
-            >
-              開始時刻 *
-            </Typography>
-            <Select
-              value={form.workTimeStart}
-              onChange={(e) => {
-                setTimeError(null);
-                setForm({...form, workTimeStart: e.target.value});
-              }}
-              required
-              size="small"
-              fullWidth
-              displayEmpty
-              error={submitted && !form.workTimeStart}
-            >
-              <MenuItem value="" disabled>
-                選択してください
-              </MenuItem>
-              {TIME_OPTIONS.map((t) => (
-                <MenuItem key={t} value={t}>
-                  {t}
-                </MenuItem>
-              ))}
-            </Select>
-            {submitted && !form.workTimeStart && (
-              <FormHelperText error sx={{mx: 0, mt: 0.5}}>
-                選択してください
-              </FormHelperText>
-            )}
-          </Box>
-          <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{display: 'block', mb: 0.5}}
-            >
-              終了時刻 *
-            </Typography>
-            <Select
-              value={form.workTimeEnd}
-              onChange={(e) => {
-                setTimeError(null);
-                setForm({...form, workTimeEnd: e.target.value});
-              }}
-              required
-              size="small"
-              fullWidth
-              displayEmpty
-              error={submitted && (!form.workTimeEnd || timeError !== null)}
-            >
-              <MenuItem value="" disabled>
-                選択してください
-              </MenuItem>
-              {TIME_OPTIONS.map((t) => (
-                <MenuItem key={t} value={t}>
-                  {t}
-                </MenuItem>
-              ))}
-            </Select>
-            {submitted && !form.workTimeEnd && (
-              <FormHelperText error sx={{mx: 0, mt: 0.5}}>
-                選択してください
-              </FormHelperText>
-            )}
-            {timeError && (
-              <FormHelperText error sx={{mx: 0, mt: 0.5}}>
-                {timeError}
-              </FormHelperText>
-            )}
-          </Box>
+          <TimeSelect
+            label="開始時刻 *"
+            value={form.workTimeStart}
+            onChange={(v) => {
+              setTimeError(null);
+              set('workTimeStart', v);
+            }}
+            submitted={submitted}
+          />
+          <TimeSelect
+            label="終了時刻 *"
+            value={form.workTimeEnd}
+            onChange={(v) => {
+              setTimeError(null);
+              set('workTimeEnd', v);
+            }}
+            submitted={submitted}
+            extraError={timeError}
+          />
         </Box>
       </Box>
 
@@ -401,7 +395,7 @@ export default function JobForm({
         label="時給（円・任意）"
         type="number"
         value={form.hourlyWage}
-        onChange={(e) => setForm({...form, hourlyWage: e.target.value})}
+        onChange={(e) => set('hourlyWage', e.target.value)}
         size="small"
         slotProps={{htmlInput: {min: 1}}}
         helperText="未定の場合は空欄のままにしてください"
@@ -410,59 +404,29 @@ export default function JobForm({
       <Divider />
 
       {/* 募集に必要な資格 */}
-      <Box>
-        <FormLabel
-          component="legend"
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: '#666666',
-            mb: 0.5,
-          }}
-        >
-          募集に必要な資格
-        </FormLabel>
-        <FormGroup>
-          {QUALIFICATION_OPTIONS.map((opt) => (
-            <FormControlLabel
-              key={opt}
-              control={
-                <Checkbox
-                  checked={form.qualification.includes(opt)}
-                  onChange={() => toggleQualification(opt)}
-                  size="small"
-                  sx={{color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}}}
-                />
-              }
-              label={<span style={{fontSize: '0.875rem'}}>{opt}</span>}
-            />
-          ))}
-        </FormGroup>
-      </Box>
+      <CheckboxGroup
+        label="募集に必要な資格"
+        options={QUALIFICATION_OPTIONS}
+        selected={form.qualification}
+        onToggle={toggleQualification}
+        row={false}
+      />
 
       <Divider />
 
       {/* 交通費 */}
       <Box>
-        <FormLabel
-          component="legend"
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: '#666666',
-            mb: 0.5,
-          }}
-        >
+        <FormLabel component="legend" sx={{...SECTION_LABEL_SX, mb: 0.5}}>
           交通費
         </FormLabel>
         <RadioGroup
           value={form.transportationExpense}
           onChange={(e) =>
-            setForm({
-              ...form,
+            setForm((prev) => ({
+              ...prev,
               transportationExpense: e.target.value,
               transportationExpenseNote: '',
-            })
+            }))
           }
           row
         >
@@ -485,9 +449,7 @@ export default function JobForm({
           <TextField
             label="詳細（例：実費支給・上限500円）"
             value={form.transportationExpenseNote}
-            onChange={(e) =>
-              setForm({...form, transportationExpenseNote: e.target.value})
-            }
+            onChange={(e) => set('transportationExpenseNote', e.target.value)}
             size="small"
             fullWidth
             sx={{mt: 1}}
@@ -499,40 +461,18 @@ export default function JobForm({
 
       {/* 勤務時の服装 */}
       <Box>
-        <FormLabel
-          component="legend"
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: '#666666',
-            mb: 0.75,
-          }}
-        >
+        <FormLabel component="legend" sx={SECTION_LABEL_SX}>
           勤務時の服装（任意）
         </FormLabel>
-        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1}}>
-          {DRESSCODE_CHIPS.map((chip) => (
-            <Chip
-              key={chip}
-              label={chip}
-              size="small"
-              onClick={() => setForm({...form, dresscode: chip})}
-              sx={{
-                cursor: 'pointer',
-                bgcolor: form.dresscode === chip ? '#F05A22' : '#F5F5F5',
-                color: form.dresscode === chip ? '#FFFFFF' : '#555555',
-                fontSize: '0.75rem',
-                '&:hover': {
-                  bgcolor: form.dresscode === chip ? '#D94D19' : '#EBEBEB',
-                },
-              }}
-            />
-          ))}
-        </Box>
+        <SuggestionChipRow
+          options={DRESSCODE_CHIPS}
+          value={form.dresscode}
+          onSelect={(v) => set('dresscode', v)}
+        />
         <TextField
           label="自由入力（任意）"
           value={form.dresscode}
-          onChange={(e) => setForm({...form, dresscode: e.target.value})}
+          onChange={(e) => set('dresscode', e.target.value)}
           size="small"
           fullWidth
           placeholder="その他の服装規定があれば"
@@ -543,42 +483,20 @@ export default function JobForm({
 
       {/* 求める人物像 */}
       <Box>
-        <FormLabel
-          component="legend"
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: '#666666',
-            mb: 0.75,
-          }}
-        >
+        <FormLabel component="legend" sx={SECTION_LABEL_SX}>
           求める人物像（任意）
         </FormLabel>
-        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1}}>
-          {TARGET_PERSON_TAGS.map((tag) => (
-            <Chip
-              key={tag}
-              label={tag}
-              size="small"
-              onClick={() => toggleTargetPersonTag(tag)}
-              sx={{
-                cursor: 'pointer',
-                bgcolor: targetPersonTags.includes(tag) ? '#F05A22' : '#F5F5F5',
-                color: targetPersonTags.includes(tag) ? '#FFFFFF' : '#555555',
-                fontSize: '0.75rem',
-                '&:hover': {
-                  bgcolor: targetPersonTags.includes(tag)
-                    ? '#D94D19'
-                    : '#EBEBEB',
-                },
-              }}
-            />
-          ))}
+        <Box sx={{mb: 1}}>
+          <TagSelector
+            tags={TARGET_PERSON_TAGS}
+            selected={form.targetPersonTags}
+            onChange={(v) => set('targetPersonTags', v)}
+          />
         </Box>
         <TextField
           label="補足（任意）"
-          value={form.targetPerson}
-          onChange={(e) => setForm({...form, targetPerson: e.target.value})}
+          value={form.targetPersonNote}
+          onChange={(e) => set('targetPersonNote', e.target.value)}
           size="small"
           fullWidth
           multiline
@@ -590,10 +508,7 @@ export default function JobForm({
 
       {/* 応募に必要な書類 */}
       <Box>
-        <FormLabel
-          component="legend"
-          sx={{fontSize: '0.875rem', fontWeight: 700, color: '#666666'}}
-        >
+        <FormLabel component="legend" sx={{...SECTION_LABEL_SX, mb: 0}}>
           応募に必要な書類
         </FormLabel>
         <FormGroup row>
@@ -605,7 +520,7 @@ export default function JobForm({
                   checked={form.requiredDocuments.includes(type)}
                   onChange={() => toggleRequiredDocument(type)}
                   size="small"
-                  sx={{color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}}}
+                  sx={CHECKBOX_SX}
                 />
               }
               label={
@@ -624,7 +539,7 @@ export default function JobForm({
       <TextField
         label="備考・補足事項（任意）"
         value={form.remarks}
-        onChange={(e) => setForm({...form, remarks: e.target.value})}
+        onChange={(e) => set('remarks', e.target.value)}
         size="small"
         multiline
         rows={2}
