@@ -3,7 +3,8 @@ import {redirect} from 'next/navigation';
 import type {NextRequest} from 'next/server';
 
 import {logtoConfig} from '@/lib/logto';
-import {getCurrentUser, landingPathForRole} from '@/server/auth';
+import {getCurrentUser} from '@/server/auth';
+import {landingPathForRole} from '@/types/User';
 
 // Logto redirects here after the user completes the sign-in flow. We exchange
 // the authorization code for a session, then route by registration state:

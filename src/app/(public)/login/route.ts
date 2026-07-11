@@ -1,6 +1,7 @@
 import {redirect} from 'next/navigation';
 
-import {getCurrentUser, landingPathForRole} from '@/server/auth';
+import {getCurrentUser} from '@/server/auth';
+import {landingPathForRole} from '@/types/User';
 import {signIn} from '@/server/auth-actions';
 
 // GET /login hands off straight to Logto's hosted sign-in — no intermediate

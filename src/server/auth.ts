@@ -32,10 +32,3 @@ export async function requireRole(allowed: UserRole[]): Promise<User> {
   if (!allowed.includes(user.role)) redirect('/');
   return user;
 }
-
-// The home page a freshly signed-in user of each role should land on.
-export function landingPathForRole(role: UserRole): string {
-  if (role === UserRole.NURSERY) return '/nursery/mypage';
-  if (role === UserRole.ADMIN) return '/admin/matches';
-  return '/mypage';
-}
