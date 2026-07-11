@@ -87,18 +87,19 @@ repo; GitHub Actions only runs the quality-gate CI.
 
 ## Commands
 
-| Command                    | Description                                                          |
-| -------------------------- | -------------------------------------------------------------------- |
-| `pnpm dev`                 | Dev server (host)                                                    |
-| `pnpm build`               | `prisma generate` + production build                                 |
-| `pnpm lint`                | ESLint                                                               |
-| `pnpm format`              | Prettier (write)                                                     |
-| `pnpm typecheck`           | `tsc --noEmit`                                                       |
-| `pnpm db:migrate`          | Prisma migration (dev)                                               |
-| `pnpm db:studio`           | Prisma Studio                                                        |
-| `pnpm admin:grant <email>` | Grant the ADMIN role to a user ([operations.md](docs/operations.md)) |
-| `./cmd check`              | Full CI gate locally (format check, lint, typecheck, unit)           |
-| `./cmd test unit`          | Vitest unit tests                                                    |
+| Command                    | Description                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                 | Dev server (host)                                                                                                     |
+| `pnpm build`               | `prisma generate` + production build                                                                                  |
+| `pnpm lint`                | ESLint                                                                                                                |
+| `pnpm format`              | Prettier (write)                                                                                                      |
+| `pnpm typecheck`           | `tsc --noEmit`                                                                                                        |
+| `pnpm db:migrate`          | Prisma migration (dev)                                                                                                |
+| `pnpm db:studio`           | Prisma Studio                                                                                                         |
+| `pnpm admin:grant <email>` | Grant the ADMIN role to a user ([operations.md](docs/operations.md))                                                  |
+| `pnpm screenshot <path>`   | Screenshot a dev-server page in mobile + desktop sizes ([development.md](docs/development.md#screenshots-for-the-pr)) |
+| `./cmd check`              | Full CI gate locally (format check, lint, typecheck, unit)                                                            |
+| `./cmd test unit`          | Vitest unit tests                                                                                                     |
 
 ## Where to look next
 

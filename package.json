@@ -16,6 +16,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "admin:grant": "node --env-file=.env.local scripts/grant-admin.mjs",
+    "screenshot": "node --env-file=.env.local scripts/screenshot.mjs",
     "work:start": "node scripts/start-work.mjs",
     "postinstall": "prisma generate"
   },
