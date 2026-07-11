@@ -122,22 +122,50 @@ model User {
 }
 
 model SeekerProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
-  realName       String
-  displayName    String
-  license        Boolean  @default(false)
-  blankYears     String?
-  preferredArea  String?
-  preferredStyle String[] @default([])
-  bio            String?
-  experience     String?
-  skills         String?
-  ngConditions   String?
-  isPublished    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String @id @default(cuid())
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id])
+  realName    String
+  displayName String
+
+  // 希望エリア（公開）
+  preferredPrefecture String?
+  preferredCity       String?
+
+  // 資格・経験（公開）
+  licenses        String[] @default([])
+  experienceYears String?
+
+  // ブランク期間（マッチング相手のみ）
+  blankYears String?
+
+  // 得意分野（公開）
+  skills     String[] @default([])
+  skillsNote String?
+
+  // 職務経歴（マッチング相手のみ）
+  experience String?
+
+  // 希望勤務スタイル（公開）
+  preferredPeriod   String[] @default([])
+  preferredTimeSlot String[] @default([])
+
+  // 大切にしていること（公開）
+  values String?
+
+  // 自己紹介（公開）
+  bio String?
+
+  // 園の方へひとこと（公開）
+  messageToNursery String?
+
+  // NGな条件（非公開）
+  ngConditions     String[] @default([])
+  ngConditionsNote String?
+
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   engagements Engagement[]
   documents   SeekerDocument[]

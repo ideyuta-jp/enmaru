@@ -15,7 +15,8 @@ export interface NurseryMatch {
   workTimeEnd: string;
   seekerDisplayName: string;
   seekerRealName: string;
-  seekerPreferredStyle: string[];
+  seekerPreferredPeriod: string[];
+  seekerPreferredTimeSlot: string[];
   seekerBlankYears: string | null;
   seekerExperience: string | null;
   applyMessage: string | null;
