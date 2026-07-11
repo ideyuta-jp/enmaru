@@ -18,6 +18,7 @@ import XIcon from '@mui/icons-material/X';
 import {notFound} from 'next/navigation';
 
 import Footer from '@/components/Footer';
+import NurseryPhotoGallery from '@/components/NurseryPhotoGallery';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
@@ -52,6 +53,22 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
             これは未公開のプレビューです。保育士にはまだ表示されていません。公開すると一般に表示されます。
           </Alert>
         )}
+        {nursery.mainPhotoId && (
+          <Box
+            component="img"
+            src={`/api/nursery-photos/${nursery.mainPhotoId}/file`}
+            alt={nursery.nurseryName}
+            sx={{
+              width: '100%',
+              height: {xs: 200, sm: 300},
+              objectFit: 'cover',
+              display: 'block',
+              borderRadius: 2,
+              mb: 3,
+            }}
+          />
+        )}
+
         <Box sx={{mb: 3}}>
           <Typography
             variant="h1"
@@ -90,30 +107,39 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
 
         <Divider sx={{mb: 3}} />
 
-        {nursery.featureTags.length > 0 && (
+        {nursery.photos.length > 0 && (
+          <Box sx={{mb: 3}}>
+            <SectionHeading>園の写真</SectionHeading>
+            <NurseryPhotoGallery photos={nursery.photos} />
+          </Box>
+        )}
+
+        {(nursery.featureTags.length > 0 || nursery.featureNote) && (
           <Box sx={{mb: 3}}>
             <SectionHeading>園の特徴</SectionHeading>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 0.75,
-                mb: nursery.featureNote ? 1.5 : 0,
-              }}
-            >
-              {nursery.featureTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  label={tag}
-                  size="small"
-                  sx={{
-                    bgcolor: '#FFF0F3',
-                    color: '#F05A22',
-                    fontSize: '0.75rem',
-                  }}
-                />
-              ))}
-            </Box>
+            {nursery.featureTags.length > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.75,
+                  mb: nursery.featureNote ? 1.5 : 0,
+                }}
+              >
+                {nursery.featureTags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    label={tag}
+                    size="small"
+                    sx={{
+                      bgcolor: '#FFF0F3',
+                      color: '#F05A22',
+                      fontSize: '0.75rem',
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
             {nursery.featureNote && (
               <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
                 {nursery.featureNote}
@@ -122,32 +148,34 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
           </Box>
         )}
 
-        {nursery.receptionTags.length > 0 && (
+        {(nursery.receptionTags.length > 0 || nursery.receptionNote) && (
           <Box sx={{mb: 3}}>
             <SectionHeading>
               一緒に働く先生を受け入れる際に大切にしていること
             </SectionHeading>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 0.75,
-                mb: nursery.receptionNote ? 1.5 : 0,
-              }}
-            >
-              {nursery.receptionTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  label={tag}
-                  size="small"
-                  sx={{
-                    bgcolor: '#FFF0F3',
-                    color: '#F05A22',
-                    fontSize: '0.75rem',
-                  }}
-                />
-              ))}
-            </Box>
+            {nursery.receptionTags.length > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.75,
+                  mb: nursery.receptionNote ? 1.5 : 0,
+                }}
+              >
+                {nursery.receptionTags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    label={tag}
+                    size="small"
+                    sx={{
+                      bgcolor: '#FFF0F3',
+                      color: '#F05A22',
+                      fontSize: '0.75rem',
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
             {nursery.receptionNote && (
               <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
                 {nursery.receptionNote}

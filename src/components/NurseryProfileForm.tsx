@@ -14,6 +14,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
+import NurseryPhotoUpload from '@/components/NurseryPhotoUpload';
 import SectionHeading from '@/components/SectionHeading';
 import TagSelector from '@/components/TagSelector';
 import {saveNurseryProfile} from '@/server/nursery-actions';
@@ -48,9 +49,17 @@ const RECEPTION_TAGS = [
 
 interface Props {
   initial: NurseryProfileInput | null;
+  nurseryId?: string;
+  initialMainPhoto?: {id: string; order: number} | null;
+  initialSubPhotos?: {id: string; order: number}[];
 }
 
-export default function NurseryProfileForm({initial}: Props) {
+export default function NurseryProfileForm({
+  initial,
+  nurseryId,
+  initialMainPhoto,
+  initialSubPhotos,
+}: Props) {
   const router = useRouter();
   const [form, setForm] = useState<NurseryProfileInput>(
     initial ?? EMPTY_NURSERY_PROFILE,
@@ -208,6 +217,53 @@ export default function NurseryProfileForm({initial}: Props) {
         </Box>
 
         <Divider />
+
+        {nurseryId && (
+          <Box>
+            <Typography
+              variant="subtitle1"
+              sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}
+            >
+              メイン写真（任意・公開）
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'block', mb: 1.5}}
+            >
+              ※保育園一覧のカードに表示されます。１枚のみ設定可能です。推奨サイズ：横16:縦9（例：1280×720px
+              以上）
+            </Typography>
+            <NurseryPhotoUpload
+              initialPhotos={initialMainPhoto ? [initialMainPhoto] : []}
+              isMain
+              maxPhotos={1}
+            />
+          </Box>
+        )}
+
+        {nurseryId && <Divider />}
+
+        {nurseryId && (
+          <Box>
+            <Typography
+              variant="subtitle1"
+              sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}
+            >
+              サブ写真（任意・公開）
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'block', mb: 1.5}}
+            >
+              ※掲載したい写真（園舎、給食、行事の様子など）があれば教えてください。
+            </Typography>
+            <NurseryPhotoUpload initialPhotos={initialSubPhotos ?? []} />
+          </Box>
+        )}
+
+        {nurseryId && <Divider />}
 
         <Box>
           <Typography

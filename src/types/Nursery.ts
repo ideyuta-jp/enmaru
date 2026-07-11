@@ -26,6 +26,7 @@ export interface PublicNursery {
   facebookUrl: string | null;
   otherSnsUrl: string | null;
   rating: NurseryRating | null;
+  mainPhotoId: string | null;
 }
 
 // Display string for a nursery's location. Prefecture and city are the only
@@ -51,7 +52,23 @@ export interface NurseryReview {
 export interface PublicNurseryDetail extends PublicNursery {
   jobPostings: Job[];
   reviews: NurseryReview[];
+  photos: {id: string}[];
 }
+
+// Photo upload constraints, shared by the client pre-check and the
+// authoritative server-side validation (single source of truth across tiers,
+// same pattern as the document constants in types/Document.ts). HEIC is
+// omitted for the reason documented on ALLOWED_DOCUMENT_MIME_TYPES.
+export const MAX_NURSERY_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+export const ALLOWED_NURSERY_PHOTO_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
+// Sub-photo cap per nursery, shared by the server-side check and the client
+// UI that hides the upload tile once reached.
+export const MAX_NURSERY_SUB_PHOTOS = 5;
 
 // The editable shape of a nursery's own profile — form state + prefill.
 // Text fields are plain strings (empty = unset); the server maps empty to null
