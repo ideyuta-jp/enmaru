@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -19,8 +20,9 @@ import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
-import {CITIES_BY_PREFECTURE, PREFECTURES} from '@/constants/areas';
+import TagSelector from '@/components/TagSelector';
 import {saveSeekerProfile} from '@/server/seeker-actions';
+import {CITIES_BY_PREFECTURE, PREFECTURES} from '@/types/Area';
 import {EMPTY_SEEKER_PROFILE, type SeekerProfileInput} from '@/types/Seeker';
 
 const LICENSE_OPTIONS = ['保育士資格', '幼稚園教諭免許', '子育て支援員'];
@@ -75,6 +77,90 @@ const NG_OPTIONS = [
 ];
 
 const CHECKBOX_SX = {color: '#F4A7B9', '&.Mui-checked': {color: '#F4A7B9'}};
+const TAG_SELECTED_COLOR = '#F4A7B9';
+const TAG_SELECTED_HOVER_COLOR = '#E0899E';
+
+interface CheckboxTagGroupProps {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  note?: string;
+}
+
+function CheckboxTagGroup({
+  label,
+  options,
+  selected,
+  onToggle,
+  note,
+}: CheckboxTagGroupProps) {
+  return (
+    <FormControl component="fieldset" fullWidth>
+      <FormLabel
+        component="legend"
+        sx={{fontSize: '0.8rem', fontWeight: 700, color: '#666666', mb: 0.5}}
+      >
+        {label}
+      </FormLabel>
+      {note && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block', mb: 0.5}}
+        >
+          {note}
+        </Typography>
+      )}
+      <FormGroup row>
+        {options.map((opt) => (
+          <FormControlLabel
+            key={opt}
+            control={
+              <Checkbox
+                checked={selected.includes(opt)}
+                onChange={() => onToggle(opt)}
+                size="small"
+                sx={CHECKBOX_SX}
+              />
+            }
+            label={<Typography variant="body2">{opt}</Typography>}
+          />
+        ))}
+      </FormGroup>
+    </FormControl>
+  );
+}
+
+interface LabeledSelectProps {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function LabeledSelect({label, options, value, onChange}: LabeledSelectProps) {
+  return (
+    <FormControl size="small" sx={{maxWidth: 220}}>
+      <FormLabel sx={{fontSize: '0.8rem', color: '#666666', mb: 0.5}}>
+        {label}
+      </FormLabel>
+      <Select
+        displayEmpty
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        renderValue={(v) => v || '選択してください'}
+      >
+        <MenuItem value="">未選択</MenuItem>
+        {options.map((opt) => (
+          <MenuItem key={opt} value={opt}>
+            {opt}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
 
 interface Props {
   initial: SeekerProfileInput | null;
@@ -90,14 +176,23 @@ export default function SeekerProfileForm({initial}: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  function set<K extends keyof SeekerProfileInput>(
+    key: K,
+    value: SeekerProfileInput[K],
+  ) {
+    setForm((prev) => ({...prev, [key]: value}));
+  }
+
   function toggle(field: keyof SeekerProfileInput, value: string) {
-    const current = form[field] as string[];
-    setForm((prev) => ({
-      ...prev,
-      [field]: current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value],
-    }));
+    setForm((prev) => {
+      const current = prev[field] as string[];
+      return {
+        ...prev,
+        [field]: current.includes(value)
+          ? current.filter((v) => v !== value)
+          : [...current, value],
+      };
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -123,14 +218,26 @@ export default function SeekerProfileForm({initial}: Props) {
   async function handlePreview() {
     setPreviewing(true);
     setError(null);
+    // The preview page reads from the DB, so the form must be persisted before
+    // showing it. The tab is opened synchronously here because window.open
+    // after an await loses the user-gesture context and gets popup-blocked.
+    const previewTab = window.open('', '_blank');
     try {
       const result = await saveSeekerProfile(form);
       if (!result.ok) {
+        previewTab?.close();
         setError(result.message);
         return;
       }
-      window.open('/profile/preview', '_blank');
+      if (previewTab) {
+        previewTab.location.href = '/profile/preview';
+      } else {
+        // Popup blocked even for the synchronous open — fall back to same-tab
+        // navigation so the button still works.
+        router.push('/profile/preview');
+      }
     } catch {
+      previewTab?.close();
       setError('保存に失敗しました。時間をおいて再度お試しください。');
     } finally {
       setPreviewing(false);
@@ -164,6 +271,17 @@ export default function SeekerProfileForm({initial}: Props) {
 
       <ErrorAlert message={error} />
 
+      <Snackbar
+        open={saved}
+        autoHideDuration={3000}
+        onClose={() => setSaved(false)}
+        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+      >
+        <Alert severity="success" onClose={() => setSaved(false)}>
+          保存しました
+        </Alert>
+      </Snackbar>
+
       <Box
         component="form"
         onSubmit={handleSubmit}
@@ -176,7 +294,7 @@ export default function SeekerProfileForm({initial}: Props) {
             <TextField
               label="本名"
               value={form.realName}
-              onChange={(e) => setForm({...form, realName: e.target.value})}
+              onChange={(e) => set('realName', e.target.value)}
               size="small"
               required
               helperText="マッチング相手のみ — マッチング成立後に保育園に開示されます"
@@ -184,7 +302,7 @@ export default function SeekerProfileForm({initial}: Props) {
             <TextField
               label="表示名"
               value={form.displayName}
-              onChange={(e) => setForm({...form, displayName: e.target.value})}
+              onChange={(e) => set('displayName', e.target.value)}
               size="small"
               required
               helperText="公開 — 保育園の一覧に表示される名前です"
@@ -204,11 +322,11 @@ export default function SeekerProfileForm({initial}: Props) {
                 displayEmpty
                 value={form.preferredPrefecture}
                 onChange={(e) =>
-                  setForm({
-                    ...form,
+                  setForm((prev) => ({
+                    ...prev,
                     preferredPrefecture: e.target.value,
                     preferredCity: '',
-                  })
+                  }))
                 }
                 renderValue={(v) => v || '都道府県を選択'}
               >
@@ -224,9 +342,7 @@ export default function SeekerProfileForm({initial}: Props) {
               <Select
                 displayEmpty
                 value={form.preferredCity}
-                onChange={(e) =>
-                  setForm({...form, preferredCity: e.target.value})
-                }
+                onChange={(e) => set('preferredCity', e.target.value)}
                 renderValue={(v) => v || '市区町村を選択'}
                 disabled={!form.preferredPrefecture}
               >
@@ -249,65 +365,24 @@ export default function SeekerProfileForm({initial}: Props) {
         <Box>
           {sectionLabel('資格・経験')}
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <Box>
-              <FormLabel sx={{fontSize: '0.8rem', color: '#666666'}}>
-                保有資格（公開・複数選択可）
-              </FormLabel>
-              <FormGroup row sx={{mt: 0.5}}>
-                {LICENSE_OPTIONS.map((opt) => (
-                  <FormControlLabel
-                    key={opt}
-                    control={
-                      <Checkbox
-                        checked={form.licenses.includes(opt)}
-                        onChange={() => toggle('licenses', opt)}
-                        size="small"
-                        sx={CHECKBOX_SX}
-                      />
-                    }
-                    label={<Typography variant="body2">{opt}</Typography>}
-                  />
-                ))}
-              </FormGroup>
-            </Box>
-            <FormControl size="small" sx={{maxWidth: 220}}>
-              <FormLabel sx={{fontSize: '0.8rem', color: '#666666', mb: 0.5}}>
-                保育経験（公開）
-              </FormLabel>
-              <Select
-                displayEmpty
-                value={form.experienceYears}
-                onChange={(e) =>
-                  setForm({...form, experienceYears: e.target.value})
-                }
-                renderValue={(v) => v || '選択してください'}
-              >
-                <MenuItem value="">未選択</MenuItem>
-                {EXPERIENCE_YEARS_OPTIONS.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{maxWidth: 220}}>
-              <FormLabel sx={{fontSize: '0.8rem', color: '#666666', mb: 0.5}}>
-                ブランク期間（マッチング相手のみ）
-              </FormLabel>
-              <Select
-                displayEmpty
-                value={form.blankYears}
-                onChange={(e) => setForm({...form, blankYears: e.target.value})}
-                renderValue={(v) => v || '選択してください'}
-              >
-                <MenuItem value="">未選択</MenuItem>
-                {BLANK_YEARS_OPTIONS.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <CheckboxTagGroup
+              label="保有資格（公開・複数選択可）"
+              options={LICENSE_OPTIONS}
+              selected={form.licenses}
+              onToggle={(v) => toggle('licenses', v)}
+            />
+            <LabeledSelect
+              label="保育経験（公開）"
+              options={EXPERIENCE_YEARS_OPTIONS}
+              value={form.experienceYears}
+              onChange={(v) => set('experienceYears', v)}
+            />
+            <LabeledSelect
+              label="ブランク期間（マッチング相手のみ）"
+              options={BLANK_YEARS_OPTIONS}
+              value={form.blankYears}
+              onChange={(v) => set('blankYears', v)}
+            />
           </Box>
         </Box>
 
@@ -317,30 +392,19 @@ export default function SeekerProfileForm({initial}: Props) {
         <Box>
           {sectionLabel('あなたの「好き」や「得意」を活かせる分野')}
           {visibilityNote('公開')}
-          <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2}}>
-            {SKILLS_OPTIONS.map((opt) => (
-              <Chip
-                key={opt}
-                label={opt}
-                size="small"
-                clickable
-                onClick={() => toggle('skills', opt)}
-                variant={form.skills.includes(opt) ? 'filled' : 'outlined'}
-                sx={{
-                  fontSize: '0.75rem',
-                  ...(form.skills.includes(opt) && {
-                    bgcolor: '#F4A7B9',
-                    color: '#fff',
-                    borderColor: '#F4A7B9',
-                  }),
-                }}
-              />
-            ))}
+          <Box sx={{mb: 2}}>
+            <TagSelector
+              tags={SKILLS_OPTIONS}
+              selected={form.skills}
+              onChange={(v) => set('skills', v)}
+              selectedColor={TAG_SELECTED_COLOR}
+              selectedHoverColor={TAG_SELECTED_HOVER_COLOR}
+            />
           </Box>
           <TextField
             label="補足（任意）"
             value={form.skillsNote}
-            onChange={(e) => setForm({...form, skillsNote: e.target.value})}
+            onChange={(e) => set('skillsNote', e.target.value)}
             size="small"
             multiline
             rows={2}
@@ -357,7 +421,7 @@ export default function SeekerProfileForm({initial}: Props) {
           {visibilityNote('マッチング相手のみ')}
           <TextField
             value={form.experience}
-            onChange={(e) => setForm({...form, experience: e.target.value})}
+            onChange={(e) => set('experience', e.target.value)}
             size="small"
             multiline
             rows={3}
@@ -373,71 +437,19 @@ export default function SeekerProfileForm({initial}: Props) {
           {sectionLabel('希望勤務スタイル')}
           {visibilityNote('公開')}
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <FormControl component="fieldset" fullWidth>
-              <FormLabel
-                component="legend"
-                sx={{
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#666666',
-                  mb: 0.5,
-                }}
-              >
-                期間・働き方（複数選択可）
-              </FormLabel>
-              <FormGroup row>
-                {PERIOD_OPTIONS.map((opt) => (
-                  <FormControlLabel
-                    key={opt}
-                    control={
-                      <Checkbox
-                        checked={form.preferredPeriod.includes(opt)}
-                        onChange={() => toggle('preferredPeriod', opt)}
-                        size="small"
-                        sx={CHECKBOX_SX}
-                      />
-                    }
-                    label={<Typography variant="body2">{opt}</Typography>}
-                  />
-                ))}
-              </FormGroup>
-            </FormControl>
-            <FormControl component="fieldset" fullWidth>
-              <FormLabel
-                component="legend"
-                sx={{
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#666666',
-                  mb: 0.5,
-                }}
-              >
-                時間帯（複数選択可）
-              </FormLabel>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{display: 'block', mb: 0.5}}
-              >
-                ※施設によって前後する場合があります
-              </Typography>
-              <FormGroup row>
-                {TIME_SLOT_OPTIONS.map((opt) => (
-                  <FormControlLabel
-                    key={opt}
-                    control={
-                      <Checkbox
-                        checked={form.preferredTimeSlot.includes(opt)}
-                        onChange={() => toggle('preferredTimeSlot', opt)}
-                        size="small"
-                        sx={CHECKBOX_SX}
-                      />
-                    }
-                    label={<Typography variant="body2">{opt}</Typography>}
-                  />
-                ))}
-              </FormGroup>
-            </FormControl>
+            <CheckboxTagGroup
+              label="期間・働き方（複数選択可）"
+              options={PERIOD_OPTIONS}
+              selected={form.preferredPeriod}
+              onToggle={(v) => toggle('preferredPeriod', v)}
+            />
+            <CheckboxTagGroup
+              label="時間帯（複数選択可）"
+              options={TIME_SLOT_OPTIONS}
+              selected={form.preferredTimeSlot}
+              onToggle={(v) => toggle('preferredTimeSlot', v)}
+              note="※施設によって前後する場合があります"
+            />
           </Box>
         </Box>
 
@@ -475,7 +487,7 @@ export default function SeekerProfileForm({initial}: Props) {
           <TextField
             label="または自由に入力"
             value={VALUES_CHIPS.includes(form.values) ? '' : form.values}
-            onChange={(e) => setForm({...form, values: e.target.value})}
+            onChange={(e) => set('values', e.target.value)}
             size="small"
             fullWidth
             placeholder="大切にしていることを自由に記入してください"
@@ -490,7 +502,7 @@ export default function SeekerProfileForm({initial}: Props) {
           {visibilityNote('公開')}
           <TextField
             value={form.bio}
-            onChange={(e) => setForm({...form, bio: e.target.value})}
+            onChange={(e) => set('bio', e.target.value)}
             size="small"
             multiline
             rows={4}
@@ -507,9 +519,7 @@ export default function SeekerProfileForm({initial}: Props) {
           {visibilityNote('公開')}
           <TextField
             value={form.messageToNursery}
-            onChange={(e) =>
-              setForm({...form, messageToNursery: e.target.value})
-            }
+            onChange={(e) => set('messageToNursery', e.target.value)}
             size="small"
             multiline
             rows={3}
@@ -524,34 +534,19 @@ export default function SeekerProfileForm({initial}: Props) {
         <Box>
           {sectionLabel('NGな条件')}
           {visibilityNote('非公開 — 本人のみ閲覧できます')}
-          <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2}}>
-            {NG_OPTIONS.map((opt) => (
-              <Chip
-                key={opt}
-                label={opt}
-                size="small"
-                clickable
-                onClick={() => toggle('ngConditions', opt)}
-                variant={
-                  form.ngConditions.includes(opt) ? 'filled' : 'outlined'
-                }
-                sx={{
-                  fontSize: '0.75rem',
-                  ...(form.ngConditions.includes(opt) && {
-                    bgcolor: '#F4A7B9',
-                    color: '#fff',
-                    borderColor: '#F4A7B9',
-                  }),
-                }}
-              />
-            ))}
+          <Box sx={{mb: 2}}>
+            <TagSelector
+              tags={NG_OPTIONS}
+              selected={form.ngConditions}
+              onChange={(v) => set('ngConditions', v)}
+              selectedColor={TAG_SELECTED_COLOR}
+              selectedHoverColor={TAG_SELECTED_HOVER_COLOR}
+            />
           </Box>
           <TextField
             label="補足（任意）"
             value={form.ngConditionsNote}
-            onChange={(e) =>
-              setForm({...form, ngConditionsNote: e.target.value})
-            }
+            onChange={(e) => set('ngConditionsNote', e.target.value)}
             size="small"
             multiline
             rows={2}
@@ -566,9 +561,7 @@ export default function SeekerProfileForm({initial}: Props) {
           control={
             <Checkbox
               checked={form.isPublished}
-              onChange={(e) =>
-                setForm({...form, isPublished: e.target.checked})
-              }
+              onChange={(e) => set('isPublished', e.target.checked)}
               size="small"
               sx={CHECKBOX_SX}
             />
@@ -598,14 +591,6 @@ export default function SeekerProfileForm({initial}: Props) {
           </Button>
         </Box>
       </Box>
-
-      <Snackbar
-        open={saved}
-        autoHideDuration={3000}
-        onClose={() => setSaved(false)}
-        message="保存しました"
-        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-      />
     </>
   );
 }
