@@ -10,6 +10,7 @@ import {
   type JobStatus,
 } from '@/types/Job';
 import {UserRole} from '@/types/User';
+import {toMinutes} from '@/utils/date';
 import {blankToNull} from '@/utils/string';
 
 // Validate + normalize a posting form. Required fields mirror the non-null
@@ -83,13 +84,6 @@ function parseJobInput(
   };
 }
 
-// 'HH:mm' -> minutes since midnight, for duration math (a lexicographic
-// compare can order times but cannot measure the 1-hour minimum).
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
-
 // The date-independent part of a posting; createJob fans it out over the
 // selected dates.
 interface ValidJob {
@@ -109,8 +103,8 @@ interface ValidJob {
   requiredDocuments: SeekerDocumentType[];
 }
 
-// Create a posting for the signed-in nursery. Requires a nursery profile (a
-// posting belongs to one).
+// Create one posting per selected date for the signed-in nursery. Requires a
+// nursery profile (a posting belongs to one).
 export async function createJob(input: JobInput): Promise<ActionResult> {
   const user = await requireRole([UserRole.NURSERY]);
   const profile = await prisma.nurseryProfile.findUnique({
@@ -146,10 +140,15 @@ export async function updateJob(
   });
   if (!owned) return {ok: false, message: '対象の募集が見つかりません。'};
 
+  // The edit form locks its calendar to one date, but enforce the contract
+  // here rather than trusting the UI — extra dates would silently be dropped.
+  if (input.workDates.length !== 1) {
+    return {ok: false, message: '勤務日は1件のみ指定してください。'};
+  }
+
   const parsed = parseJobInput(input);
   if (!parsed.ok) return parsed;
 
-  // The edit form runs in single-date mode, so exactly one date arrives.
   await prisma.jobPosting.update({
     where: {id},
     data: {...parsed.data, workDate: new Date(input.workDates[0])},

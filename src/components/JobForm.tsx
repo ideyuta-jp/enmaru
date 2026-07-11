@@ -20,7 +20,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {PickerDay, type PickerDayProps} from '@mui/x-date-pickers/PickerDay';
-import type {Dayjs} from 'dayjs';
+import dayjs, {type Dayjs} from 'dayjs';
 
 import CheckboxGroup from '@/components/CheckboxGroup';
 import TagSelector from '@/components/TagSelector';
@@ -30,6 +30,7 @@ import {
   type SeekerDocumentType,
 } from '@/types/Document';
 import type {JobInput} from '@/types/Job';
+import {toMinutes} from '@/utils/date';
 
 const TITLE_CHIPS = [
   '午前中の保育補助',
@@ -89,11 +90,37 @@ const SECTION_LABEL_SX = {
   mb: 0.75,
 };
 
-// 'HH:mm' -> minutes since midnight, for duration math (a lexicographic
-// compare can order times but cannot measure the 1-hour minimum).
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
+interface SelectableDayProps extends PickerDayProps {
+  // Injected via slotProps.day — the multi-selected dates to paint.
+  selectedDates?: string[];
+}
+
+// DateCalendar's day cell, painted from the form's multi-date selection.
+// DateCalendar itself only models a single value, so its built-in selection
+// stays suppressed (selected={false}) and both the paint and the ARIA state
+// come from selectedDates instead. Declared at top level so the slot keeps a
+// stable component identity — an inline slot function would remount every day
+// cell on each JobForm re-render (i.e. on every keystroke elsewhere in the
+// form).
+function SelectableDay({selectedDates = [], ...props}: SelectableDayProps) {
+  const key = (props.day as Dayjs).format('YYYY-MM-DD');
+  const selected = selectedDates.includes(key);
+  return (
+    <PickerDay
+      {...props}
+      selected={false}
+      aria-selected={selected}
+      sx={{
+        ...(selected && {
+          // !important because PickerDay's own state styles (hover/focus)
+          // otherwise out-specify this sx override.
+          bgcolor: '#F05A22 !important',
+          color: '#FFFFFF !important',
+          borderRadius: '50%',
+        }),
+      }}
+    />
+  );
 }
 
 interface SuggestionChipRowProps {
@@ -377,28 +404,17 @@ export default function JobForm({
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DateCalendar
               disablePast
+              // Open on the month of the prefilled date (the edit flow's
+              // posting can be months away); default to the current month
+              // when nothing is selected yet. Only read at mount, so the view
+              // never jumps while picking.
+              referenceDate={
+                form.workDates.length > 0 ? dayjs(form.workDates[0]) : undefined
+              }
               onChange={(date: Dayjs | null) => date && toggleDate(date)}
-              slots={{
-                // Selection is multi-date, which DateCalendar doesn't model —
-                // it is kept in form.workDates and painted manually here, with
-                // the built-in single selection suppressed.
-                day: (props: PickerDayProps) => {
-                  const key = (props.day as Dayjs).format('YYYY-MM-DD');
-                  const selected = form.workDates.includes(key);
-                  return (
-                    <PickerDay
-                      {...props}
-                      selected={false}
-                      sx={{
-                        ...(selected && {
-                          bgcolor: '#F05A22 !important',
-                          color: '#FFFFFF !important',
-                          borderRadius: '50%',
-                        }),
-                      }}
-                    />
-                  );
-                },
+              slots={{day: SelectableDay}}
+              slotProps={{
+                day: {selectedDates: form.workDates} as SelectableDayProps,
               }}
               sx={{
                 width: '100%',
