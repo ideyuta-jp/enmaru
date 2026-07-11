@@ -49,7 +49,15 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
       <SessionHeader />
       <PageContainer maxWidth="md">
         {isOwnerPreview && (
-          <Alert severity="info" sx={{mb: 3}}>
+          <Alert
+            severity="info"
+            sx={{mb: 3}}
+            action={
+              <Button color="inherit" size="small" href="/nursery/profile">
+                編集画面に戻る
+              </Button>
+            }
+          >
             これは未公開のプレビューです。保育士にはまだ表示されていません。公開すると一般に表示されます。
           </Alert>
         )}

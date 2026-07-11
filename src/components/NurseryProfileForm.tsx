@@ -441,18 +441,33 @@ export default function NurseryProfileForm({
           }
         />
 
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={saving}
-          sx={{
-            py: 1.25,
-            alignSelf: {xs: 'stretch', md: 'flex-start'},
-            minWidth: {md: 200},
-          }}
-        >
-          {saving ? '保存中...' : '保存する'}
-        </Button>
+        <Box sx={{display: 'flex', gap: 1.5, flexWrap: 'wrap'}}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving}
+            sx={{
+              py: 1.25,
+              flex: {xs: '1 1 auto', md: '0 0 auto'},
+              minWidth: {md: 200},
+            }}
+          >
+            {saving ? '保存中...' : '保存する'}
+          </Button>
+          {nurseryId && (
+            <Button
+              variant="outlined"
+              href={`/nurseries/${nurseryId}`}
+              sx={{
+                py: 1.25,
+                flex: {xs: '1 1 auto', md: '0 0 auto'},
+                minWidth: {md: 160},
+              }}
+            >
+              プレビュー
+            </Button>
+          )}
+        </Box>
       </Box>
     </>
   );
