@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {useRouter} from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -15,7 +16,7 @@ import NextLink from 'next/link';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {registerCurrentUser} from '@/server/user';
-import {UserRole, type RegisterRole} from '@/types/User';
+import {landingPathForRole, UserRole, type RegisterRole} from '@/types/User';
 
 const TERMS_HREF: Record<RegisterRole, string> = {
   SEEKER: '/terms/seeker',
@@ -25,6 +26,7 @@ const TERMS_HREF: Record<RegisterRole, string> = {
 // The credential step already happened on Logto; here a signed-in user only
 // picks their role (RegisterRole — SEEKER / NURSERY) and agrees to the terms.
 export default function RegisterForm() {
+  const router = useRouter();
   const [role, setRole] = useState<RegisterRole | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,8 +45,15 @@ export default function RegisterForm() {
     setError(null);
     setLoading(true);
     try {
-      // On success this redirects, so control does not return here.
-      await registerCurrentUser(role);
+      const result = await registerCurrentUser(role);
+      if (!result.ok) {
+        setError(result.message);
+        setLoading(false);
+        return;
+      }
+      // Keep the button disabled while the landing page renders — re-enabling
+      // here would flash a clickable button during slow navigations.
+      router.push(landingPathForRole(role));
     } catch {
       setError('登録に失敗しました。時間をおいて再度お試しください。');
       setLoading(false);

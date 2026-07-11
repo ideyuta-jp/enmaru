@@ -4,7 +4,8 @@ import {redirect} from 'next/navigation';
 import PageContainer from '@/components/PageContainer';
 import RegisterForm from '@/components/RegisterForm';
 import {getAuthContext} from '@/lib/logto';
-import {getCurrentUser, landingPathForRole} from '@/server/auth';
+import {getCurrentUser} from '@/server/auth';
+import {landingPathForRole} from '@/types/User';
 
 export const metadata: Metadata = {
   title: '新規登録',
