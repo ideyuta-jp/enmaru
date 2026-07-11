@@ -119,6 +119,16 @@ Server Actions are the default mutation path. Route handlers are for callers tha
 are not this app's UI, or for cases where a URL is the contract (webhooks,
 redirects, downloads).
 
+Server Actions return `ActionResult` (`src/types/ActionResult.ts`) and leave
+navigation to the caller — the client checks `result.ok` and runs
+`router.push(...)` itself. Never end an action that a client component awaits
+with `redirect()`: this Next.js signals an action redirect by **rejecting** the
+awaited promise (navigation is handed off to the RedirectBoundary separately),
+so a client-side `catch` reads every success as a failure — the false
+"registration failed" bug of #81. `redirect()` inside an action is reserved for
+genuine auth bounces (e.g. the session died mid-form), where landing on the
+sign-in page matters more than the transient error state.
+
 ## One concept, many manifestations
 
 Roles are concept-neutral: a single domain concept appears once per role it needs.
