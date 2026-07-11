@@ -50,6 +50,10 @@ function parseJobInput(
       workTimeStart: input.workTimeStart,
       workTimeEnd: input.workTimeEnd,
       hourlyWage,
+      qualification: input.qualification,
+      transportationExpense: blankToNull(input.transportationExpense),
+      transportationExpenseNote: blankToNull(input.transportationExpenseNote),
+      dresscode: blankToNull(input.dresscode),
       targetPerson: blankToNull(input.targetPerson),
       remarks: blankToNull(input.remarks),
       requiredDocuments,
@@ -64,6 +68,10 @@ interface ValidJob {
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number | null;
+  qualification: string[];
+  transportationExpense: string | null;
+  transportationExpenseNote: string | null;
+  dresscode: string | null;
   targetPerson: string | null;
   remarks: string | null;
   requiredDocuments: SeekerDocumentType[];

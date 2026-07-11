@@ -21,6 +21,10 @@ export interface Job {
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number | null;
+  qualification: string[];
+  transportationExpense: string | null;
+  transportationExpenseNote: string | null;
+  dresscode: string | null;
   targetPerson: string | null;
   remarks: string | null;
   // Document types that must be verified before a seeker may apply.
@@ -38,6 +42,10 @@ export interface JobInput {
   workTimeStart: string; // 'HH:mm'
   workTimeEnd: string;
   hourlyWage: string;
+  qualification: string[];
+  transportationExpense: string; // '' | 'yes' | 'no'
+  transportationExpenseNote: string;
+  dresscode: string;
   targetPerson: string;
   remarks: string;
   requiredDocuments: SeekerDocumentType[];
@@ -50,6 +58,10 @@ export const EMPTY_JOB: JobInput = {
   workTimeStart: '',
   workTimeEnd: '',
   hourlyWage: '',
+  qualification: [],
+  transportationExpense: '',
+  transportationExpenseNote: '',
+  dresscode: '',
   targetPerson: '',
   remarks: '',
   // The baseline always-required documents; the nursery can add the stool test.
@@ -70,6 +82,10 @@ export function toJobInput(job: Job): JobInput {
     workTimeStart: job.workTimeStart,
     workTimeEnd: job.workTimeEnd,
     hourlyWage: job.hourlyWage?.toString() ?? '',
+    qualification: job.qualification,
+    transportationExpense: job.transportationExpense ?? '',
+    transportationExpenseNote: job.transportationExpenseNote ?? '',
+    dresscode: job.dresscode ?? '',
     targetPerson: job.targetPerson ?? '',
     remarks: job.remarks ?? '',
     requiredDocuments: job.requiredDocuments,
