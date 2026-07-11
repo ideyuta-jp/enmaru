@@ -100,6 +100,7 @@ export default function EditJobForm({jobId, initial, initialStatus}: Props) {
         onCancel={() => router.push('/nursery/jobs')}
         saving={saving}
         submitLabel="保存する"
+        singleDate
       />
       <Snackbar
         open={toast}

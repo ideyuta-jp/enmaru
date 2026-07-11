@@ -16,7 +16,8 @@ export default function NewJobForm() {
   const [form, setForm] = useState<JobInput>(EMPTY_JOB);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState(false);
+  // Holds the number of postings created, so the toast can say how many.
+  const [toast, setToast] = useState(0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +29,7 @@ export default function NewJobForm() {
         setError(result.message);
         return;
       }
-      setToast(true);
+      setToast(result.count ?? 1);
       setTimeout(() => router.push('/nursery/jobs'), 1500);
     } catch {
       setError('作成に失敗しました。時間をおいて再度お試しください。');
@@ -50,13 +51,13 @@ export default function NewJobForm() {
         submitLabel="作成する"
       />
       <Snackbar
-        open={toast}
+        open={toast > 0}
         anchorOrigin={{vertical: 'top', horizontal: 'right'}}
         autoHideDuration={1500}
-        onClose={() => setToast(false)}
+        onClose={() => setToast(0)}
       >
-        <Alert severity="success" onClose={() => setToast(false)}>
-          募集を作成しました
+        <Alert severity="success" onClose={() => setToast(0)}>
+          {toast > 1 ? `${toast}件の募集を作成しました` : '募集を作成しました'}
         </Alert>
       </Snackbar>
     </>
