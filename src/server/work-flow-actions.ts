@@ -153,7 +153,10 @@ export async function submitWorkReport(
       type: NotificationType.WORK_REPORT_FILED,
       title: '業務完了が報告されました',
       body: '相手が業務完了を報告しました。あなたも報告してください。',
-      linkUrl: party === 'SEEKER' ? '/nursery/applications' : '/applications',
+      linkUrl:
+        party === 'SEEKER'
+          ? `/nursery/engagements/${engagementId}`
+          : `/engagements/${engagementId}`,
     });
   }
 

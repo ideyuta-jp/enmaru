@@ -16,6 +16,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "admin:grant": "node --env-file=.env.local scripts/grant-admin.mjs",
+    "screenshot": "node --env-file=.env.local scripts/screenshot.mjs",
+    "work:start": "node scripts/start-work.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -23,13 +25,15 @@
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@logto/next": "^4.2.10",
     "@mui/icons-material": "^9.0.1",
     "@mui/material": "^9.0.1",
-    "@logto/next": "^4.2.10",
     "@mui/material-nextjs": "^9.0.1",
+    "@mui/x-date-pickers": "^9.9.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "dayjs": "^1.11.21",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -50,6 +54,7 @@
     "prettier": "^3.8.3",
     "prisma": "^7.8.0",
     "typescript": "^5",
+    "playwright": "^1.61.1",
     "vitest": "^4.1.7"
   }
 }

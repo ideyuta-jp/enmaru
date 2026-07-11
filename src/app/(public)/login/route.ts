@@ -1,6 +1,7 @@
 import {redirect} from 'next/navigation';
 
-import {getCurrentUser, landingPathForRole} from '@/server/auth';
+import {getCurrentUser} from '@/server/auth';
+import {landingPathForRole} from '@/types/User';
 import {signIn} from '@/server/auth-actions';
 
 // GET /login hands off straight to Logto's hosted sign-in — no intermediate
@@ -10,9 +11,8 @@ import {signIn} from '@/server/auth-actions';
 // users skip to their dashboard.
 //
 // Reached by the header sign-in button (a plain anchor: a hard navigation that,
-// unlike next/link, never client-routes into the external Logto redirect), by
-// the auth guards' redirect('/login'), and by /register forwarding its
-// unauthenticated visitors here.
+// unlike next/link, never client-routes into the external Logto redirect) and
+// by the auth guards' redirect('/login'). The sign-up counterpart is /signup.
 export async function GET() {
   const user = await getCurrentUser();
   if (user) redirect(landingPathForRole(user.role));

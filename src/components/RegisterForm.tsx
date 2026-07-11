@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {useRouter} from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -15,11 +16,17 @@ import NextLink from 'next/link';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {registerCurrentUser} from '@/server/user';
-import {UserRole, type RegisterRole} from '@/types/User';
+import {landingPathForRole, UserRole, type RegisterRole} from '@/types/User';
+
+const TERMS_HREF: Record<RegisterRole, string> = {
+  SEEKER: '/terms/seeker',
+  NURSERY: '/terms/nursery',
+};
 
 // The credential step already happened on Logto; here a signed-in user only
 // picks their role (RegisterRole — SEEKER / NURSERY) and agrees to the terms.
 export default function RegisterForm() {
+  const router = useRouter();
   const [role, setRole] = useState<RegisterRole | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,8 +45,15 @@ export default function RegisterForm() {
     setError(null);
     setLoading(true);
     try {
-      // On success this redirects, so control does not return here.
-      await registerCurrentUser(role);
+      const result = await registerCurrentUser(role);
+      if (!result.ok) {
+        setError(result.message);
+        setLoading(false);
+        return;
+      }
+      // Keep the button disabled while the landing page renders — re-enabling
+      // here would flash a clickable button during slow navigations.
+      router.push(landingPathForRole(role));
     } catch {
       setError('登録に失敗しました。時間をおいて再度お試しください。');
       setLoading(false);
@@ -57,6 +71,9 @@ export default function RegisterForm() {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           えんまーるへようこそ。区分を選んで登録を完了してください。
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+          ご希望の登録区分をお選びください
         </Typography>
       </Box>
 
@@ -76,8 +93,8 @@ export default function RegisterForm() {
               }}
             />
           }
-          title="保育士"
-          description="仕事を探している保育士・保育経験者"
+          title="保育士・保育補助希望の方"
+          description="午前だけ・週1回から。自分の「好き」や「得意」を活かして、希望のスタイルで働けます。"
         />
         <RoleCard
           selected={role === UserRole.NURSERY}
@@ -90,8 +107,8 @@ export default function RegisterForm() {
               }}
             />
           }
-          title="保育園"
-          description="スポットサポートを募集している保育施設"
+          title="保育園・施設運営の方"
+          description="日々の保育や行事の準備、休憩・お休みの確保まで、「保育バディ」がお手伝いします。"
         />
       </Box>
 
@@ -113,7 +130,7 @@ export default function RegisterForm() {
             <Typography variant="body2">
               <MuiLink
                 component={NextLink}
-                href="/terms"
+                href={role ? TERMS_HREF[role] : '/terms'}
                 target="_blank"
                 color="primary"
                 underline="hover"
@@ -134,6 +151,25 @@ export default function RegisterForm() {
         >
           {loading ? '登録中...' : '登録を完了する'}
         </Button>
+      </Box>
+
+      {/* Onboarding notice only; capturing lineUserId from the friend-add is a
+          separate follow-up. */}
+      <Box
+        sx={{
+          mt: 3,
+          p: 2,
+          bgcolor: '#F9F9F9',
+          borderRadius: 2,
+          border: '1px solid #E0E0E0',
+        }}
+      >
+        <Typography variant="body2" sx={{fontWeight: 600, mb: 0.5}}>
+          📱 LINE友だち追加のお願い
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          マッチング通知や業務連絡をLINEでお届けします。登録後にLINE公式アカウントを友だち追加してください。
+        </Typography>
       </Box>
     </>
   );

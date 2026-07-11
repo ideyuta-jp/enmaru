@@ -72,8 +72,8 @@ export async function sendChatMessage(
     title: 'メッセージが届きました',
     body: `${senderName}からメッセージが届いています。`,
     linkUrl: isSeeker
-      ? `/nursery/chat/${engagementId}`
-      : `/chat/${engagementId}`,
+      ? `/nursery/engagements/${engagementId}`
+      : `/engagements/${engagementId}`,
   });
   return {ok: true};
 }

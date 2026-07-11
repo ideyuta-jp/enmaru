@@ -5,14 +5,21 @@
 export interface SeekerProfileInput {
   realName: string;
   displayName: string;
-  license: boolean;
+  preferredPrefecture: string;
+  preferredCity: string;
+  licenses: string[];
+  experienceYears: string;
   blankYears: string;
-  preferredArea: string;
-  preferredStyle: string[];
-  bio: string;
+  skills: string[];
+  skillsNote: string;
   experience: string;
-  skills: string;
-  ngConditions: string;
+  preferredPeriod: string[];
+  preferredTimeSlot: string[];
+  values: string;
+  bio: string;
+  messageToNursery: string;
+  ngConditions: string[];
+  ngConditionsNote: string;
   isPublished: boolean;
 }
 
@@ -20,14 +27,21 @@ export interface SeekerProfileInput {
 export const EMPTY_SEEKER_PROFILE: SeekerProfileInput = {
   realName: '',
   displayName: '',
-  license: false,
+  preferredPrefecture: '',
+  preferredCity: '',
+  licenses: [],
+  experienceYears: '',
   blankYears: '',
-  preferredArea: '',
-  preferredStyle: [],
-  bio: '',
+  skills: [],
+  skillsNote: '',
   experience: '',
-  skills: '',
-  ngConditions: '',
+  preferredPeriod: [],
+  preferredTimeSlot: [],
+  values: '',
+  bio: '',
+  messageToNursery: '',
+  ngConditions: [],
+  ngConditionsNote: '',
   isPublished: false,
 };
 
@@ -38,4 +52,8 @@ export interface SeekerDashboard {
   displayName: string | null;
   applicationCount: number;
   activeEngagementCount: number;
+  // Baseline-document state for the mypage nudge. Both false when the seeker has
+  // no profile yet (documents are keyed to the profile).
+  hasMissingRequiredDocuments: boolean;
+  hasPendingDocuments: boolean;
 }

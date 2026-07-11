@@ -251,7 +251,7 @@ export default function Home() {
           >
             <Button
               component="a"
-              href="/register"
+              href="/signup"
               variant="contained"
               size="large"
               sx={{
@@ -270,7 +270,43 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 2. two audiences */}
+      {/* 2. About */}
+      <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
+        <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
+          <Typography
+            variant="h2"
+            sx={{
+              textAlign: 'center',
+              mb: 4,
+              fontSize: {xs: '1.25rem', md: '1.5rem'},
+            }}
+          >
+            えんまーるとは
+          </Typography>
+          <Grid container spacing={{xs: 3, md: 5}} sx={{alignItems: 'center'}}>
+            <Grid size={{xs: 12, md: 6}}>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{lineHeight: 2, textWrap: 'pretty'}}
+              >
+                えんまーるは、保育士と保育園をつなぐ保育専門のスポットマッチングサービスです。「また働きたいけど、いきなりフルタイムは不安」そんな声に応えて生まれました。午前のみ・単発・週1など、ライフスタイルに合わせた柔軟な働き方で、あなたにぴったりのご縁を結びます。子ども・保育士・保育園の笑顔がつながる良い循環をえんまーるはサポートします。
+              </Typography>
+            </Grid>
+            <Grid size={{xs: 12, md: 6}}>
+              <Image
+                src="/about-illustration.png"
+                alt="保育士・保育園・相互評価がつながる循環のイラスト"
+                width={600}
+                height={600}
+                style={{width: '100%', height: 'auto'}}
+              />
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* 3. Two audiences */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -301,18 +337,18 @@ export default function Home() {
                     variant="h3"
                     sx={{fontSize: '1.125rem', fontWeight: 700, mb: 1}}
                   >
-                    保育士・保育士希望の方
+                    保育士・保育補助希望の方
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{mb: 2.5, lineHeight: 1.7}}
                   >
-                    ブランクがある方も歓迎。午前だけ・週1など、希望のスタイルで働けます。
+                    午前だけ・週1回から。自分の「好き」や「得意」を活かして、希望のスタイルで働けます。
                   </Typography>
                   <Button
                     component="a"
-                    href="/register"
+                    href="/signup"
                     variant="contained"
                     fullWidth
                     sx={{py: 1.25}}
@@ -339,18 +375,18 @@ export default function Home() {
                     variant="h3"
                     sx={{fontSize: '1.125rem', fontWeight: 700, mb: 1}}
                   >
-                    保育園・保育施設の方
+                    保育園・施設運営の方
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{mb: 2.5, lineHeight: 1.7}}
                   >
-                    行事の準備・急な欠員対応など、必要なときにサポートスタッフを確保できます。
+                    日々の保育や行事の準備、休憩・お休みの確保まで、「保育バディ」がお手伝いします。
                   </Typography>
                   <Button
                     component="a"
-                    href="/register"
+                    href="/signup"
                     variant="outlined"
                     fullWidth
                     sx={{py: 1.25, borderColor: '#F4A7B9', color: '#F4A7B9'}}
@@ -364,7 +400,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 3. Features */}
+      {/* 4. Features */}
       <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
         <Container maxWidth="lg" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -402,7 +438,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 4. How it works */}
+      {/* 5. How it works */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}}}>
           <Typography
@@ -460,7 +496,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 5. Trust */}
+      {/* 6. Trust */}
       <Box sx={{bgcolor: '#FFFFFF', py: {xs: 5, md: 7}}}>
         <Container maxWidth="md" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
           <Typography
@@ -501,7 +537,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 6. CTA */}
+      {/* 7. CTA */}
       <Box sx={{bgcolor: '#F9F9F9', py: {xs: 5, md: 7}}}>
         <Container maxWidth="sm" sx={{px: {xs: 2, md: 3}, textAlign: 'center'}}>
           <Typography
@@ -516,7 +552,7 @@ export default function Home() {
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
             <Button
               component="a"
-              href="/register"
+              href="/signup"
               variant="contained"
               size="large"
               fullWidth

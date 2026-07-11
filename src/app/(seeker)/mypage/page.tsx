@@ -8,11 +8,13 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import FolderIcon from '@mui/icons-material/Folder';
 import SearchIcon from '@mui/icons-material/Search';
+import StarIcon from '@mui/icons-material/Star';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import SummaryCard from '@/components/SummaryCard';
 import {requireRole} from '@/server/auth';
 import {getSeekerDashboard} from '@/server/seeker';
@@ -21,8 +23,6 @@ import {UserRole} from '@/types/User';
 // Reads the session, so it renders per-request.
 export const dynamic = 'force-dynamic';
 
-// Reviews are entered per completed engagement from the application history, so
-// there is no standalone "評価を書く" entry here.
 const NAV_CARDS = [
   {
     href: '/profile',
@@ -42,15 +42,21 @@ const NAV_CARDS = [
     title: '応募履歴',
     description: '応募した募集の状況を確認',
   },
+  {
+    href: '/reviews',
+    icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
+    title: '評価を書く',
+    description: '業務完了後の評価入力',
+  },
 ];
 
 export default async function SeekerMypagePage() {
-  const user = await requireRole([UserRole.SEEKER]);
+  await requireRole([UserRole.SEEKER]);
   const dashboard = await getSeekerDashboard();
 
   return (
     <>
-      <Header role={user.role} />
+      <SessionHeader />
       <PageContainer>
         <Box sx={{mb: 3}}>
           <Typography
@@ -74,6 +80,34 @@ export default async function SeekerMypagePage() {
             </MuiLink>
           </Alert>
         )}
+
+        {dashboard.hasProfile && dashboard.hasMissingRequiredDocuments && (
+          <Alert
+            severity="warning"
+            icon={<FolderIcon />}
+            sx={{mb: 3}}
+            action={
+              <MuiLink
+                href="/documents"
+                underline="always"
+                variant="caption"
+                sx={{color: 'inherit', whiteSpace: 'nowrap'}}
+              >
+                書類管理へ
+              </MuiLink>
+            }
+          >
+            応募には健康診断書・履歴書の認証が必要です。
+          </Alert>
+        )}
+
+        {dashboard.hasProfile &&
+          !dashboard.hasMissingRequiredDocuments &&
+          dashboard.hasPendingDocuments && (
+            <Alert severity="info" icon={<FolderIcon />} sx={{mb: 3}}>
+              書類を確認中です。認証まで少々お待ちください。
+            </Alert>
+          )}
 
         <Box
           sx={{

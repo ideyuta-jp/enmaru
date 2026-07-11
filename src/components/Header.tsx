@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {usePathname} from 'next/navigation';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -29,9 +30,9 @@ interface NavItem {
 const SEEKER_NAV: NavItem[] = [
   {label: 'マイページ', href: '/mypage'},
   {label: 'プロフィール', href: '/profile'},
-  {label: '書類', href: '/documents'},
   {label: '保育園を探す', href: '/nurseries'},
   {label: '応募履歴', href: '/applications'},
+  {label: '書類管理', href: '/documents'},
 ];
 
 const NURSERY_NAV: NavItem[] = [
@@ -61,11 +62,16 @@ function getNavItems(role: UserRole | null): NavItem[] {
 
 interface Props {
   role?: UserRole | null;
+  email?: string | null;
 }
 
-export default function Header({role = null}: Props) {
+export default function Header({role = null, email = null}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
   const navItems = getNavItems(role);
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + '/');
 
   function handleLogout() {
     // Server Action: ends the Logto session and redirects to the base URL.
@@ -108,7 +114,11 @@ export default function Header({role = null}: Props) {
                 href={item.href}
                 color="inherit"
                 size="small"
-                sx={{fontSize: '0.875rem', color: '#666666'}}
+                sx={{
+                  fontSize: '0.875rem',
+                  color: isActive(item.href) ? '#F4A7B9' : '#666666',
+                  fontWeight: isActive(item.href) ? 700 : 400,
+                }}
               >
                 {item.label}
               </Button>
@@ -127,6 +137,19 @@ export default function Header({role = null}: Props) {
             {role ? (
               <>
                 <NotificationBell />
+                {email && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      maxWidth: 180,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {email}
+                  </Typography>
+                )}
                 <Button
                   variant="outlined"
                   size="small"
@@ -157,7 +180,7 @@ export default function Header({role = null}: Props) {
                 </Button>
                 <Button
                   component="a"
-                  href="/register"
+                  href="/signup"
                   variant="contained"
                   size="small"
                   sx={{fontSize: '0.8rem'}}
@@ -224,6 +247,14 @@ export default function Header({role = null}: Props) {
                 component={Link}
                 href={item.href}
                 onClick={() => setDrawerOpen(false)}
+                selected={isActive(item.href)}
+                sx={{
+                  '&.Mui-selected': {
+                    bgcolor: '#FFF0F3',
+                    color: '#F4A7B9',
+                    '&:hover': {bgcolor: '#FFF0F3'},
+                  },
+                }}
               >
                 <ListItemText
                   primary={item.label}
@@ -263,7 +294,7 @@ export default function Header({role = null}: Props) {
               </Button>
               <Button
                 component="a"
-                href="/register"
+                href="/signup"
                 variant="contained"
                 fullWidth
                 onClick={() => setDrawerOpen(false)}

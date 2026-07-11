@@ -13,7 +13,10 @@ export const JobStatus = {
 export interface Job {
   id: string;
   title: string;
-  workContent: string;
+  // Tag selection + free note, kept separate so free text can never collide
+  // with tag parsing. Compose for display with formatTagsWithNote.
+  workContentTags: string[];
+  workContentNote: string | null;
   // ISO date string (YYYY-MM-DD). Kept as a string so the type stays wire-shaped
   // and tier-neutral; format for display at the edge.
   workDate: string;
@@ -21,11 +24,27 @@ export interface Job {
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number | null;
-  targetPerson: string | null;
+  qualification: string[];
+  // true = paid, false = not paid, null = unset.
+  transportationExpense: boolean | null;
+  transportationExpenseNote: string | null;
+  dresscode: string | null;
+  // Same tags+note split as workContent (both parts optional).
+  targetPersonTags: string[];
+  targetPersonNote: string | null;
   remarks: string | null;
   // Document types that must be verified before a seeker may apply.
   requiredDocuments: SeekerDocumentType[];
   status: JobStatus;
+}
+
+// Compose a tags+note pair into one string for read-only display. The result
+// is never parsed back, so the delimiter is purely presentational.
+export function formatTagsWithNote(
+  tags: string[],
+  note: string | null,
+): string {
+  return [...tags, ...(note && note.trim() ? [note] : [])].join('・');
 }
 
 // The editable shape of a posting — what the create/edit form holds and sends.
@@ -33,24 +52,54 @@ export interface Job {
 // can bind directly; the server parses/validates and maps empty to null.
 export interface JobInput {
   title: string;
-  workContent: string;
-  workDate: string; // 'YYYY-MM-DD'
+  workContentTags: string[];
+  workContentNote: string;
+  workDates: string[]; // ['YYYY-MM-DD', ...]
   workTimeStart: string; // 'HH:mm'
   workTimeEnd: string;
   hourlyWage: string;
-  targetPerson: string;
+  qualification: string[];
+  transportationExpense: string; // '' | 'yes' | 'no'
+  transportationExpenseNote: string;
+  dresscode: string;
+  targetPersonTags: string[];
+  targetPersonNote: string;
   remarks: string;
   requiredDocuments: SeekerDocumentType[];
 }
 
+// The form's tri-state radio value <-> the DB's nullable boolean. The form
+// side stays stringly-typed for direct radio binding; the DB side keeps a
+// Boolean? so invalid values are unrepresentable (same encode/decode-in-types
+// pattern as documented in docs/conventions).
+export function encodeTransportationExpense(value: string): boolean | null {
+  if (value === 'yes') return true;
+  if (value === 'no') return false;
+  // Anything else (including '') means the radio was never chosen.
+  return null;
+}
+
+export function decodeTransportationExpense(
+  value: boolean | null,
+): '' | 'yes' | 'no' {
+  if (value === null) return '';
+  return value ? 'yes' : 'no';
+}
+
 export const EMPTY_JOB: JobInput = {
   title: '',
-  workContent: '',
-  workDate: '',
+  workContentTags: [],
+  workContentNote: '',
+  workDates: [],
   workTimeStart: '',
   workTimeEnd: '',
   hourlyWage: '',
-  targetPerson: '',
+  qualification: [],
+  transportationExpense: '',
+  transportationExpenseNote: '',
+  dresscode: '',
+  targetPersonTags: [],
+  targetPersonNote: '',
   remarks: '',
   // The baseline always-required documents; the nursery can add the stool test.
   requiredDocuments: [
@@ -65,12 +114,20 @@ export const EMPTY_JOB: JobInput = {
 export function toJobInput(job: Job): JobInput {
   return {
     title: job.title,
-    workContent: job.workContent,
-    workDate: job.workDate,
+    workContentTags: job.workContentTags,
+    workContentNote: job.workContentNote ?? '',
+    workDates: [job.workDate],
     workTimeStart: job.workTimeStart,
     workTimeEnd: job.workTimeEnd,
     hourlyWage: job.hourlyWage?.toString() ?? '',
-    targetPerson: job.targetPerson ?? '',
+    qualification: job.qualification,
+    transportationExpense: decodeTransportationExpense(
+      job.transportationExpense,
+    ),
+    transportationExpenseNote: job.transportationExpenseNote ?? '',
+    dresscode: job.dresscode ?? '',
+    targetPersonTags: job.targetPersonTags,
+    targetPersonNote: job.targetPersonNote ?? '',
     remarks: job.remarks ?? '',
     requiredDocuments: job.requiredDocuments,
   };

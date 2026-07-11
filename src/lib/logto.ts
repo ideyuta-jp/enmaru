@@ -1,10 +1,11 @@
 import {UserScope, type LogtoNextConfig} from '@logto/next';
 import {getLogtoContext, type LogtoContext} from '@logto/next/server-actions';
 
-// Logto Cloud configuration. Local dev points at a dev Logto tenant/app;
-// production values are set as Netlify env vars. `cookieSecret` encrypts the
-// session cookie and must be a long random string; `cookieSecure` requires
-// HTTPS, so it is only enabled in production.
+// Self-hosted Logto (OSS) configuration. Local dev and the dev deploy point at
+// the dev instance; production points at the pro instance. The endpoint and app
+// credentials come from env (.env.local locally, Netlify env vars in deploys).
+// `cookieSecret` encrypts the session cookie and must be a long random string;
+// `cookieSecure` requires HTTPS, so it is only enabled in production.
 export const logtoConfig: LogtoNextConfig = {
   endpoint: process.env.LOGTO_ENDPOINT ?? '',
   appId: process.env.LOGTO_APP_ID ?? '',

@@ -7,7 +7,7 @@ import Rating from '@mui/material/Rating';
 import Typography from '@mui/material/Typography';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 
-import type {PublicNursery} from '@/types/Nursery';
+import {formatNurseryLocation, type PublicNursery} from '@/types/Nursery';
 
 interface Props {
   nursery: PublicNursery;
@@ -32,6 +32,19 @@ export default function NurseryCard({nursery, href}: Props) {
         href={href}
         sx={{height: '100%', alignItems: 'flex-start'}}
       >
+        {nursery.mainPhotoId && (
+          <Box
+            component="img"
+            src={`/api/nursery-photos/${nursery.mainPhotoId}/file`}
+            alt={nursery.nurseryName}
+            sx={{
+              width: '100%',
+              aspectRatio: '16 / 9',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        )}
         <CardContent sx={{p: {xs: 2, md: 3}}}>
           <Typography
             variant="h3"
@@ -40,26 +53,32 @@ export default function NurseryCard({nursery, href}: Props) {
             {nursery.nurseryName}
           </Typography>
 
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5}}>
-            <LocationOnIcon sx={{fontSize: 16, color: '#AAAAAA'}} />
-            <Typography variant="body2" color="text.secondary">
-              {nursery.area}
-            </Typography>
-          </Box>
-
-          {nursery.concept && (
-            <Typography
-              variant="body2"
-              sx={{
-                mb: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
+          {(nursery.prefecture || nursery.city) && (
+            <Box
+              sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5}}
             >
-              {nursery.concept}
-            </Typography>
+              <LocationOnIcon sx={{fontSize: 16, color: '#AAAAAA'}} />
+              <Typography variant="body2" color="text.secondary">
+                {formatNurseryLocation(nursery)}
+              </Typography>
+            </Box>
+          )}
+
+          {nursery.featureTags.length > 0 && (
+            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5}}>
+              {nursery.featureTags.slice(0, 3).map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  sx={{
+                    bgcolor: '#FFF0F3',
+                    color: '#F05A22',
+                    fontSize: '0.7rem',
+                  }}
+                />
+              ))}
+            </Box>
           )}
 
           {rating && rating.count > 0 ? (

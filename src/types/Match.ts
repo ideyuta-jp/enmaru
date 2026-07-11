@@ -2,8 +2,9 @@ import type {EngagementStatus, ReviewStatus} from '@/types/Engagement';
 
 // An engagement as seen by a nursery in its application inbox. Every entry is a
 // matched Engagement (matching is immediate, so applying establishes the match),
-// so the seeker's real name is disclosed to the nursery here. State is carried as
-// the two real axes; StatusChip derives the single display badge from them.
+// so the seeker's real name, blank-years, and work experience are disclosed to
+// the nursery here. State is carried as the two real axes; StatusChip derives the
+// single display badge from them.
 export interface NurseryMatch {
   id: string;
   engagementStatus: EngagementStatus;
@@ -14,14 +15,13 @@ export interface NurseryMatch {
   workTimeEnd: string;
   seekerDisplayName: string;
   seekerRealName: string;
-  seekerPreferredStyle: string[];
+  seekerPreferredPeriod: string[];
+  seekerPreferredTimeSlot: string[];
+  seekerBlankYears: string | null;
+  seekerExperience: string | null;
   applyMessage: string | null;
   lineContactOk: boolean;
   appliedAt: string;
-  // Whether each party has filed its work-completion report; the nursery view
-  // uses these to drive its report action and waiting state.
-  seekerReported: boolean;
-  nurseryReported: boolean;
   // Whether this nursery has already reviewed the seeker; drives the review CTA
   // once the engagement is COMPLETED.
   nurseryReviewed: boolean;
@@ -38,7 +38,7 @@ export interface AdminMatch {
   jobTitle: string;
   workDate: string;
   nurseryName: string;
-  nurseryArea: string;
+  nurseryCity: string | null;
   seekerDisplayName: string;
   seekerRealName: string | null;
 }

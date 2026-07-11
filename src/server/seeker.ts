@@ -1,10 +1,12 @@
 import {prisma} from '@/lib/prisma';
+import {missingRequiredDocuments} from '@/server/application';
 import {getCurrentUser} from '@/server/auth';
+import {REQUIRED_SEEKER_DOCUMENT_TYPES} from '@/types/Document';
 import type {SeekerDashboard, SeekerProfileInput} from '@/types/Seeker';
 
 // The current seeker's profile as form-ready input, or null if they have no
 // profile yet. Maps the stored row (nullable text) to the form shape (empty
-// strings), so the page can hand it straight to the edit form.
+// strings). Used by both the edit form and the read-only profile preview page.
 export async function getSeekerProfileInput(): Promise<SeekerProfileInput | null> {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -15,14 +17,21 @@ export async function getSeekerProfileInput(): Promise<SeekerProfileInput | null
   return {
     realName: p.realName,
     displayName: p.displayName,
-    license: p.license,
+    preferredPrefecture: p.preferredPrefecture ?? '',
+    preferredCity: p.preferredCity ?? '',
+    licenses: p.licenses,
+    experienceYears: p.experienceYears ?? '',
     blankYears: p.blankYears ?? '',
-    preferredArea: p.preferredArea ?? '',
-    preferredStyle: p.preferredStyle,
-    bio: p.bio ?? '',
+    skills: p.skills,
+    skillsNote: p.skillsNote ?? '',
     experience: p.experience ?? '',
-    skills: p.skills ?? '',
-    ngConditions: p.ngConditions ?? '',
+    preferredPeriod: p.preferredPeriod,
+    preferredTimeSlot: p.preferredTimeSlot,
+    values: p.values ?? '',
+    bio: p.bio ?? '',
+    messageToNursery: p.messageToNursery ?? '',
+    ngConditions: p.ngConditions,
+    ngConditionsNote: p.ngConditionsNote ?? '',
     isPublished: p.isPublished,
   };
 }
@@ -41,13 +50,24 @@ export async function getSeekerDashboard(): Promise<SeekerDashboard> {
       displayName: null,
       applicationCount: 0,
       activeEngagementCount: 0,
+      hasMissingRequiredDocuments: false,
+      hasPendingDocuments: false,
     };
   }
 
-  const [applicationCount, activeEngagementCount] = await Promise.all([
+  const [
+    applicationCount,
+    activeEngagementCount,
+    missingDocuments,
+    pendingCount,
+  ] = await Promise.all([
     prisma.engagement.count({where: {seekerId: profile.id}}),
     prisma.engagement.count({
       where: {seekerId: profile.id, status: {in: ['MATCHED', 'WORKING']}},
+    }),
+    missingRequiredDocuments(profile.id, REQUIRED_SEEKER_DOCUMENT_TYPES),
+    prisma.seekerDocument.count({
+      where: {seekerId: profile.id, status: 'PENDING'},
     }),
   ]);
 
@@ -56,5 +76,7 @@ export async function getSeekerDashboard(): Promise<SeekerDashboard> {
     displayName: profile.displayName,
     applicationCount,
     activeEngagementCount,
+    hasMissingRequiredDocuments: missingDocuments.length > 0,
+    hasPendingDocuments: pendingCount > 0,
   };
 }

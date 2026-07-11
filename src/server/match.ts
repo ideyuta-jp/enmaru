@@ -1,13 +1,13 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
-import {hasReported} from '@/server/work-report';
 import type {AdminMatch, NurseryMatch} from '@/types/Match';
 import {UserRole} from '@/types/User';
 
 // Engagements on the signed-in nursery's postings (newest first) — its
 // application inbox. Every entry is a matched Engagement, so the seeker's real
-// name is disclosed to the nursery (matching is immediate; applying establishes
-// the match). Guarded to NURSERY; empty until the nursery has a profile.
+// name, blank-years, and work experience are disclosed to the nursery here
+// (matching is immediate; applying establishes the match). Guarded to NURSERY;
+// empty until the nursery has a profile.
 export async function listNurseryMatches(): Promise<NurseryMatch[]> {
   const user = await requireRole([UserRole.NURSERY]);
   const profile = await prisma.nurseryProfile.findUnique({
@@ -27,9 +27,15 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
         },
       },
       seeker: {
-        select: {displayName: true, realName: true, preferredStyle: true},
+        select: {
+          displayName: true,
+          realName: true,
+          preferredPeriod: true,
+          preferredTimeSlot: true,
+          blankYears: true,
+          experience: true,
+        },
       },
-      workReports: {select: {reporter: true, completed: true}},
       reviewNurseryToSeeker: {select: {id: true}},
     },
     orderBy: {createdAt: 'desc'},
@@ -45,12 +51,13 @@ export async function listNurseryMatches(): Promise<NurseryMatch[]> {
     workTimeEnd: e.job.workTimeEnd,
     seekerDisplayName: e.seeker.displayName,
     seekerRealName: e.seeker.realName,
-    seekerPreferredStyle: e.seeker.preferredStyle,
+    seekerPreferredPeriod: e.seeker.preferredPeriod,
+    seekerPreferredTimeSlot: e.seeker.preferredTimeSlot,
+    seekerBlankYears: e.seeker.blankYears,
+    seekerExperience: e.seeker.experience,
     applyMessage: e.applyMessage,
     lineContactOk: e.lineContactOk,
     appliedAt: e.createdAt.toISOString(),
-    seekerReported: hasReported(e.workReports, 'SEEKER'),
-    nurseryReported: hasReported(e.workReports, 'NURSERY'),
     nurseryReviewed: e.reviewNurseryToSeeker !== null,
   }));
 }
@@ -68,7 +75,7 @@ export async function listAllMatches(): Promise<AdminMatch[]> {
   const engagements = await prisma.engagement.findMany({
     include: {
       job: {
-        include: {nursery: {select: {nurseryName: true, area: true}}},
+        include: {nursery: {select: {nurseryName: true, city: true}}},
       },
       seeker: {select: {displayName: true, realName: true}},
     },
@@ -84,7 +91,7 @@ export async function listAllMatches(): Promise<AdminMatch[]> {
     jobTitle: e.job.title,
     workDate: e.job.workDate.toISOString().slice(0, 10),
     nurseryName: e.job.nursery.nurseryName,
-    nurseryArea: e.job.nursery.area,
+    nurseryCity: e.job.nursery.city,
     seekerDisplayName: e.seeker.displayName,
     seekerRealName: e.seeker.realName,
   }));

@@ -10,7 +10,7 @@ flowchart LR
 
     Neon@{ shape: cyl, label: "Neon<br/>(serverless PostgreSQL)" }
     R2@{ shape: cyl, label: "Cloudflare R2<br/>(object storage)" }
-    Logto@{ shape: rect, label: "Logto Cloud<br/>(auth)" }
+    Logto@{ shape: rect, label: "Logto<br/>(self-hosted, auth)" }
 
     Browser <--> Next
     Next <-- "Prisma<br/>(src/lib/prisma.ts)" --> Neon

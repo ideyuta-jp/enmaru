@@ -10,12 +10,13 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import BusinessIcon from '@mui/icons-material/Business';
+import StarIcon from '@mui/icons-material/Star';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import WorkIcon from '@mui/icons-material/Work';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import SummaryCard from '@/components/SummaryCard';
 import {requireRole} from '@/server/auth';
 import {getNurseryDashboard} from '@/server/nursery';
@@ -24,36 +25,41 @@ import {UserRole} from '@/types/User';
 // Reads the session, so it renders per-request.
 export const dynamic = 'force-dynamic';
 
-// Reviews are entered per completed engagement from the application inbox, so
-// there is no standalone "評価を書く" entry here.
 const NAV_CARDS = [
   {
     href: '/nursery/profile',
     icon: <BusinessIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
-    title: '園プロフィール',
-    description: '園の基本情報・コンセプト',
+    title: '園プロフィールの作成・公開',
+    description: '園の基本情報や魅力を登録し、まずは公開します',
   },
   {
     href: '/nursery/jobs',
     icon: <WorkIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
-    title: '募集管理',
-    description: 'スポット募集の作成・管理',
+    title: '求人募集の作成・公開',
+    description: '単発（スポット）・短期など、具体的なお手伝い内容を発行します',
   },
   {
     href: '/nursery/applications',
     icon: <AssignmentIndIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
-    title: '応募管理',
-    description: '届いた応募の確認',
+    title: '応募者の確認（マッチング）',
+    description: '保育士さんから届いた応募をチェックできます',
+  },
+  {
+    href: '/nursery/reviews',
+    icon: <StarIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
+    title: '保育バディへの評価・レビュー',
+    description:
+      '今後のマッチングや次回以降の参考に向けて評価します（※保育士さんには公開されず、事務局のみで安全に管理されます）',
   },
 ];
 
 export default async function NurseryMypagePage() {
-  const user = await requireRole([UserRole.NURSERY]);
+  await requireRole([UserRole.NURSERY]);
   const dashboard = await getNurseryDashboard();
 
   return (
     <>
-      <Header role={user.role} />
+      <SessionHeader />
       <PageContainer>
         <Box
           sx={{

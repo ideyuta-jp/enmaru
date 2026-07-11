@@ -23,3 +23,28 @@ export const ReviewStatus = {
   PARTIAL: 'PARTIAL',
   DONE: 'DONE',
 } as const;
+
+// Read-only context shown above the chat: the engagement's current stage and the
+// posting details, so each party can recall what the engagement is about. The
+// chat panel polls the messages (ChatThread) separately, so this is fetched once
+// on page load and kept out of the polled payload.
+export interface EngagementSummary {
+  // The viewer's side, so the header can show the counterpart: a seeker sees the
+  // nursery + city, a nursery sees the seeker's name.
+  viewerParty: 'SEEKER' | 'NURSERY';
+  engagementStatus: EngagementStatus;
+  reviewStatus: ReviewStatus;
+  jobTitle: string;
+  nurseryName: string;
+  nurseryCity: string | null;
+  seekerName: string;
+  workDate: string; // ISO 8601
+  workTimeStart: string; // 'HH:mm'
+  workTimeEnd: string; // 'HH:mm'
+  hourlyWage: number | null;
+  workContent: string;
+  // Whether each party has filed its work-completion report; drives the
+  // work-flow actions (start / report) shown on the detail page.
+  seekerReported: boolean;
+  nurseryReported: boolean;
+}

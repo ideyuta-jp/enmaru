@@ -17,13 +17,14 @@
 | ORM             | Prisma 7 (`prisma-client` generator + `@prisma/adapter-neon`) |
 | Database        | Neon (serverless PostgreSQL)                                  |
 | Storage         | Cloudflare R2 (S3-compatible, `@aws-sdk/client-s3`)           |
-| Auth            | Logto Cloud (`@logto/next`)                                   |
+| Auth            | Logto (self-hosted OSS, `@logto/next`)                        |
 | Lint / Format   | ESLint + Prettier                                             |
 | Unit test       | Vitest + Testing Library (jsdom)                              |
 | CI              | GitHub Actions (format / lint / typecheck / unit)             |
 
 There is no Docker: the app runs on the host locally (`pnpm dev`) and on Netlify's managed
-runtime in production. The database, storage, and auth are managed cloud services.
+runtime in production. The database and storage are managed cloud services; auth runs
+on a self-hosted Logto (OSS) instance (deployed separately from this repo).
 
 The directory layout and the rules for where new code lands are documented in
 [`docs/architecture.md`](docs/architecture.md) and [`docs/design.md`](docs/design.md).
@@ -32,8 +33,8 @@ The directory layout and the rules for where new code lands are documented in
 
 - Node.js 24 (see `.nvmrc`)
 - pnpm via corepack: `corepack enable`
-- Accounts for the managed services: **Neon** (a dev branch), **Cloudflare R2** (a dev
-  bucket), and **Logto Cloud** (a dev tenant/app)
+- Access to: **Neon** (a dev branch), **Cloudflare R2** (a dev bucket), and the dev
+  **Logto** instance (self-hosted) — its endpoint and app credentials
 
 ## Setup
 
@@ -86,18 +87,19 @@ repo; GitHub Actions only runs the quality-gate CI.
 
 ## Commands
 
-| Command                    | Description                                                          |
-| -------------------------- | -------------------------------------------------------------------- |
-| `pnpm dev`                 | Dev server (host)                                                    |
-| `pnpm build`               | `prisma generate` + production build                                 |
-| `pnpm lint`                | ESLint                                                               |
-| `pnpm format`              | Prettier (write)                                                     |
-| `pnpm typecheck`           | `tsc --noEmit`                                                       |
-| `pnpm db:migrate`          | Prisma migration (dev)                                               |
-| `pnpm db:studio`           | Prisma Studio                                                        |
-| `pnpm admin:grant <email>` | Grant the ADMIN role to a user ([operations.md](docs/operations.md)) |
-| `./cmd check`              | Full CI gate locally (format check, lint, typecheck, unit)           |
-| `./cmd test unit`          | Vitest unit tests                                                    |
+| Command                    | Description                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                 | Dev server (host)                                                                                                     |
+| `pnpm build`               | `prisma generate` + production build                                                                                  |
+| `pnpm lint`                | ESLint                                                                                                                |
+| `pnpm format`              | Prettier (write)                                                                                                      |
+| `pnpm typecheck`           | `tsc --noEmit`                                                                                                        |
+| `pnpm db:migrate`          | Prisma migration (dev)                                                                                                |
+| `pnpm db:studio`           | Prisma Studio                                                                                                         |
+| `pnpm admin:grant <email>` | Grant the ADMIN role to a user ([operations.md](docs/operations.md))                                                  |
+| `pnpm screenshot <path>`   | Screenshot a dev-server page in mobile + desktop sizes ([development.md](docs/development.md#screenshots-for-the-pr)) |
+| `./cmd check`              | Full CI gate locally (format check, lint, typecheck, unit)                                                            |
+| `./cmd test unit`          | Vitest unit tests                                                                                                     |
 
 ## Where to look next
 
@@ -109,6 +111,8 @@ Find the right document by the question you have:
   - [Architecture](docs/architecture.md) — system diagram, tiers, directory roles
 - **Where does this new code go?**
   - [Design](docs/design.md) — roles, data-flow patterns, dependency direction
+- **How do I develop a change, end to end?**
+  - [Development](docs/development.md) — from starting a task to requesting review
 - **What conventions does the project follow?**
   - [Conventions](docs/conventions/index.md) — coding, repo, docs
 - **How is the project tested?**

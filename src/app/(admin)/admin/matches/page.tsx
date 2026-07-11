@@ -1,7 +1,7 @@
 import AdminMatchesTable from '@/components/AdminMatchesTable';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
+import SessionHeader from '@/components/SessionHeader';
 import {listAllMatches} from '@/server/match';
 
 export default async function AdminMatchesPage() {
@@ -9,7 +9,7 @@ export default async function AdminMatchesPage() {
 
   return (
     <>
-      <Header role="ADMIN" />
+      <SessionHeader />
       <PageContainer maxWidth="lg">
         <AdminMatchesTable initialMatches={matches} />
       </PageContainer>

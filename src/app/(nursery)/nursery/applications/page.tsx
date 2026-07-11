@@ -5,11 +5,10 @@ import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import StatusChip from '@/components/StatusChip';
-import WorkFlowActions from '@/components/WorkFlowActions';
 import {listNurseryMatches} from '@/server/match';
 import {EngagementStatus} from '@/types/Engagement';
 import type {NurseryMatch} from '@/types/Match';
@@ -27,7 +26,7 @@ export default async function NurseryApplicationsPage() {
 
   return (
     <>
-      <Header role="NURSERY" />
+      <SessionHeader />
       <PageContainer>
         <SectionHeading subtitle="保育士の本名はマッチング成立後に開示されます">
           応募管理
@@ -83,6 +82,26 @@ export default async function NurseryApplicationsPage() {
   );
 }
 
+// A caption label above a (possibly multi-line) value, used for the apply
+// message and the disclosed seeker fields in a match card.
+const LabeledText = ({label, value}: {label: string; value: string}) => (
+  <Box>
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      sx={{display: 'block', mb: 0.25}}
+    >
+      {label}
+    </Typography>
+    <Typography
+      variant="body2"
+      sx={{fontSize: '0.8rem', whiteSpace: 'pre-wrap'}}
+    >
+      {value}
+    </Typography>
+  </Box>
+);
+
 const MatchCard = ({match}: {match: NurseryMatch}) => (
   <Box
     sx={{
@@ -113,9 +132,13 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
             （{match.seekerRealName}）
           </Typography>
         </Typography>
-        {match.seekerPreferredStyle.length > 0 && (
+        {(match.seekerPreferredPeriod.length > 0 ||
+          match.seekerPreferredTimeSlot.length > 0) && (
           <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5}}>
-            {match.seekerPreferredStyle.map((s) => (
+            {[
+              ...match.seekerPreferredPeriod,
+              ...match.seekerPreferredTimeSlot,
+            ].map((s) => (
               <Chip
                 key={s}
                 label={s}
@@ -137,6 +160,28 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
       {match.workTimeStart}〜{match.workTimeEnd}
     </Typography>
 
+    {(match.seekerBlankYears || match.seekerExperience) && (
+      <Box
+        sx={{
+          mt: 1,
+          p: 1,
+          bgcolor: '#FFFFFF',
+          borderRadius: 1,
+          border: '1px solid #F0F0F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.75,
+        }}
+      >
+        {match.seekerBlankYears && (
+          <LabeledText label="ブランク期間" value={match.seekerBlankYears} />
+        )}
+        {match.seekerExperience && (
+          <LabeledText label="職務経歴" value={match.seekerExperience} />
+        )}
+      </Box>
+    )}
+
     {match.applyMessage && (
       <Box
         sx={{
@@ -147,58 +192,36 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
           border: '1px solid #F0F0F0',
         }}
       >
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{display: 'block', mb: 0.25}}
-        >
-          応募メッセージ
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{fontSize: '0.8rem', whiteSpace: 'pre-wrap'}}
-        >
-          {match.applyMessage}
-        </Typography>
+        <LabeledText label="応募メッセージ" value={match.applyMessage} />
       </Box>
     )}
 
-    <Box sx={{display: 'flex', gap: 1.5, mt: 1}}>
-      <Typography variant="caption" color="text.secondary">
-        応募日: {new Date(match.appliedAt).toLocaleDateString('ja-JP')}
-      </Typography>
-      {match.lineContactOk && (
-        <Typography variant="caption" sx={{color: '#2E7D32'}}>
-          LINE連絡OK
-        </Typography>
-      )}
-    </Box>
-
     <Box
       sx={{
-        mt: 1.5,
+        mt: 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 1,
       }}
     >
-      <WorkFlowActions
-        engagementId={match.id}
-        engagementStatus={match.engagementStatus}
-        viewerParty="NURSERY"
-        seekerReported={match.seekerReported}
-        nurseryReported={match.nurseryReported}
-        viewerReviewed={match.nurseryReviewed}
-        reviewHref={`/nursery/reviews/${match.id}`}
-      />
+      <Box sx={{display: 'flex', gap: 1.5, alignItems: 'center'}}>
+        <Typography variant="caption" color="text.secondary">
+          応募日: {new Date(match.appliedAt).toLocaleDateString('ja-JP')}
+        </Typography>
+        {match.lineContactOk && (
+          <Typography variant="caption" sx={{color: '#2E7D32'}}>
+            LINE連絡OK
+          </Typography>
+        )}
+      </Box>
       <Button
-        href={`/nursery/chat/${match.id}`}
+        href={`/nursery/engagements/${match.id}`}
         variant="outlined"
         size="small"
         sx={{borderColor: '#F4A7B9', color: '#F4A7B9', flexShrink: 0}}
       >
-        チャット
+        詳細・チャット
       </Button>
     </Box>
   </Box>

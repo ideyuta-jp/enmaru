@@ -1,4 +1,9 @@
-import {GetObjectCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 // Cloudflare R2 is S3-compatible. The region is always "auto" and the endpoint
 // points at the account's R2 gateway. Credentials are an R2 API token
@@ -38,6 +43,11 @@ export async function putObject(
       ContentType: contentType,
     }),
   );
+}
+
+// Remove an object. No-ops silently if the key does not exist.
+export async function deleteObject(key: string): Promise<void> {
+  await r2.send(new DeleteObjectCommand({Bucket: R2_BUCKET, Key: key}));
 }
 
 // Fetch an object as a web ReadableStream plus its content type, for streaming

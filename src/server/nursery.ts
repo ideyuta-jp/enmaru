@@ -1,5 +1,6 @@
 import type {NurseryProfile} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
+import {getObjectStream} from '@/lib/storage';
 import {getCurrentUser} from '@/server/auth';
 import {listOpenJobsByNursery} from '@/server/job';
 import {
@@ -10,12 +11,61 @@ import {
 import type {
   NurseryDashboard,
   NurseryProfileInput,
+  NurseryRating,
   PublicNursery,
   PublicNurseryDetail,
 } from '@/types/Nursery';
 
+type NurseryPublicFields = Pick<
+  NurseryProfile,
+  | 'id'
+  | 'nurseryName'
+  | 'prefecture'
+  | 'city'
+  | 'featureTags'
+  | 'featureNote'
+  | 'receptionTags'
+  | 'receptionNote'
+  | 'joinReason'
+  | 'idealPartner'
+  | 'additionalNotes'
+  | 'homepageUrl'
+  | 'instagramUrl'
+  | 'twitterUrl'
+  | 'facebookUrl'
+  | 'otherSnsUrl'
+>;
+
+function toPublicNursery(
+  n: NurseryPublicFields,
+  rating: NurseryRating | null,
+  mainPhotoId: string | null = null,
+): PublicNursery {
+  return {
+    id: n.id,
+    nurseryName: n.nurseryName,
+    prefecture: n.prefecture,
+    city: n.city,
+    featureTags: n.featureTags ?? [],
+    featureNote: n.featureNote,
+    receptionTags: n.receptionTags ?? [],
+    receptionNote: n.receptionNote,
+    joinReason: n.joinReason,
+    idealPartner: n.idealPartner,
+    additionalNotes: n.additionalNotes,
+    homepageUrl: n.homepageUrl,
+    instagramUrl: n.instagramUrl,
+    twitterUrl: n.twitterUrl,
+    facebookUrl: n.facebookUrl,
+    otherSnsUrl: n.otherSnsUrl,
+    rating,
+    mainPhotoId,
+  };
+}
+
 // Published nurseries for the public list. Maps to the public projection only —
-// address / phone / contactName are never included (personal-info boundary).
+// postalCode / addressLine / phone / contactName are never included
+// (personal-info boundary; prefecture / city are public).
 // Ratings come from published reviews, fetched in bulk to avoid an N+1.
 export async function listPublishedNurseries(): Promise<PublicNursery[]> {
   const nurseries = await prisma.nurseryProfile.findMany({
@@ -23,16 +73,24 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
     orderBy: {createdAt: 'desc'},
   });
 
-  const ratings = await getNurseryRatings(nurseries.map((n) => n.id));
+  const ids = nurseries.map((n) => n.id);
+  const [ratings, mainPhotos] = await Promise.all([
+    getNurseryRatings(ids),
+    prisma.nurseryPhoto.findMany({
+      where: {nurseryId: {in: ids}, isMain: true},
+      select: {id: true, nurseryId: true},
+    }),
+  ]);
 
-  return nurseries.map((n) => ({
-    id: n.id,
-    nurseryName: n.nurseryName,
-    area: n.area,
-    concept: n.concept,
-    policy: n.policy,
-    rating: ratings.get(n.id) ?? null,
-  }));
+  const mainPhotoMap = new Map(mainPhotos.map((p) => [p.nurseryId, p.id]));
+
+  return nurseries.map((n) =>
+    toPublicNursery(
+      n,
+      ratings.get(n.id) ?? null,
+      mainPhotoMap.get(n.id) ?? null,
+    ),
+  );
 }
 
 // Assemble a nursery's public detail (profile + open postings + rating and
@@ -40,23 +98,27 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
 // render exactly the same projection. Independent queries run together to cut
 // round-trips.
 async function buildNurseryDetail(
-  n: Pick<NurseryProfile, 'id' | 'nurseryName' | 'area' | 'concept' | 'policy'>,
+  n: NurseryPublicFields,
 ): Promise<PublicNurseryDetail> {
-  const [rating, jobPostings, reviews] = await Promise.all([
+  const [rating, jobPostings, reviews, allPhotos] = await Promise.all([
     getNurseryRating(n.id),
     listOpenJobsByNursery(n.id),
     listPublishedNurseryReviews(n.id),
+    prisma.nurseryPhoto.findMany({
+      where: {nurseryId: n.id},
+      select: {id: true, isMain: true, order: true},
+      orderBy: {order: 'asc'},
+    }),
   ]);
 
+  const mainPhoto = allPhotos.find((p) => p.isMain);
+  const subPhotos = allPhotos.filter((p) => !p.isMain);
+
   return {
-    id: n.id,
-    nurseryName: n.nurseryName,
-    area: n.area,
-    concept: n.concept,
-    policy: n.policy,
-    rating,
+    ...toPublicNursery(n, rating, mainPhoto?.id ?? null),
     jobPostings,
     reviews,
+    photos: subPhotos.map((p) => ({id: p.id})),
   };
 }
 
@@ -80,6 +142,91 @@ export async function getNurseryDetailForViewer(
   return {detail: await buildNurseryDetail(n), isOwnerPreview: true};
 }
 
+// File bytes for the photo-serving route. A published nursery's photos are
+// visible to anyone; an unpublished nursery's photos only to its owner (the
+// profile edit page and the pre-publish preview), mirroring the visibility
+// rule of getNurseryDetailForViewer. Returns null when the photo does not
+// exist or the viewer is not allowed — the route maps that to 404 (no
+// existence disclosure). isPubliclyVisible lets the route pick a cache policy.
+export async function getAccessibleNurseryPhotoFile(id: string): Promise<{
+  body: ReadableStream;
+  contentType: string;
+  isPubliclyVisible: boolean;
+} | null> {
+  const photo = await prisma.nurseryPhoto.findUnique({
+    where: {id},
+    include: {nursery: {select: {isPublished: true, userId: true}}},
+  });
+  if (!photo || !photo.fileKey) return null;
+
+  if (!photo.nursery.isPublished) {
+    const user = await getCurrentUser();
+    if (!user || photo.nursery.userId !== user.id) return null;
+  }
+
+  try {
+    const file = await getObjectStream(photo.fileKey);
+    return {...file, isPubliclyVisible: photo.nursery.isPublished};
+  } catch {
+    // Row exists but the R2 object is missing (drift) — treat as not found so
+    // the route keeps its 404-for-everything contract instead of 500-ing.
+    return null;
+  }
+}
+
+// The current nursery's profile with photo data for the profile edit page.
+export async function getNurseryProfileWithPhotos(): Promise<{
+  input: NurseryProfileInput;
+  id: string;
+  mainPhoto: {id: string; order: number} | null;
+  subPhotos: {id: string; order: number}[];
+} | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const p = await prisma.nurseryProfile.findUnique({
+    where: {userId: user.id},
+    include: {
+      photos: {
+        select: {id: true, isMain: true, order: true},
+        orderBy: {order: 'asc'},
+      },
+    },
+  });
+  if (!p) return null;
+
+  const mainPhoto = p.photos.find((ph) => ph.isMain) ?? null;
+  const subPhotos = p.photos.filter((ph) => !ph.isMain);
+
+  return {
+    id: p.id,
+    mainPhoto: mainPhoto ? {id: mainPhoto.id, order: mainPhoto.order} : null,
+    subPhotos: subPhotos.map((ph) => ({id: ph.id, order: ph.order})),
+    input: {
+      nurseryName: p.nurseryName,
+      postalCode: p.postalCode ?? '',
+      prefecture: p.prefecture ?? '',
+      city: p.city ?? '',
+      addressLine: p.addressLine ?? '',
+      phone: p.phone ?? '',
+      contactName: p.contactName,
+      homepageUrl: p.homepageUrl ?? '',
+      instagramUrl: p.instagramUrl ?? '',
+      twitterUrl: p.twitterUrl ?? '',
+      facebookUrl: p.facebookUrl ?? '',
+      otherSnsUrl: p.otherSnsUrl ?? '',
+      featureTags: p.featureTags ?? [],
+      featureNote: p.featureNote ?? '',
+      receptionTags: p.receptionTags ?? [],
+      receptionNote: p.receptionNote ?? '',
+      joinReason: p.joinReason ?? '',
+      idealPartner: p.idealPartner ?? '',
+      additionalNotes: p.additionalNotes ?? '',
+      isPublished: p.isPublished,
+    },
+  };
+}
+
 // The current nursery's profile as form-ready input, or null if none yet.
 export async function getNurseryProfileInput(): Promise<NurseryProfileInput | null> {
   const user = await getCurrentUser();
@@ -90,12 +237,24 @@ export async function getNurseryProfileInput(): Promise<NurseryProfileInput | nu
 
   return {
     nurseryName: p.nurseryName,
-    area: p.area,
-    address: p.address ?? '',
-    contactName: p.contactName,
+    postalCode: p.postalCode ?? '',
+    prefecture: p.prefecture ?? '',
+    city: p.city ?? '',
+    addressLine: p.addressLine ?? '',
     phone: p.phone ?? '',
-    concept: p.concept ?? '',
-    policy: p.policy ?? '',
+    contactName: p.contactName,
+    homepageUrl: p.homepageUrl ?? '',
+    instagramUrl: p.instagramUrl ?? '',
+    twitterUrl: p.twitterUrl ?? '',
+    facebookUrl: p.facebookUrl ?? '',
+    otherSnsUrl: p.otherSnsUrl ?? '',
+    featureTags: p.featureTags ?? [],
+    featureNote: p.featureNote ?? '',
+    receptionTags: p.receptionTags ?? [],
+    receptionNote: p.receptionNote ?? '',
+    joinReason: p.joinReason ?? '',
+    idealPartner: p.idealPartner ?? '',
+    additionalNotes: p.additionalNotes ?? '',
     isPublished: p.isPublished,
   };
 }

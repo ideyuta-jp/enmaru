@@ -4,9 +4,9 @@ import Typography from '@mui/material/Typography';
 
 import AdminReviewRow from '@/components/AdminReviewRow';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SessionHeader from '@/components/SessionHeader';
 import {listSubmittedReviews} from '@/server/review';
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default async function AdminReviewsPage() {
 
   return (
     <>
-      <Header role="ADMIN" />
+      <SessionHeader />
       <PageContainer maxWidth="md">
         <SectionHeading subtitle="提出された評価を確認し、公開・非公開を切り替えます">
           評価確認

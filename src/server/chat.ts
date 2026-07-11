@@ -24,10 +24,10 @@ export function isChatOpen(
   return now.getTime() - completedAt.getTime() < CHAT_GRACE_PERIOD_MS;
 }
 
-// The chat view for one engagement: the messages plus the header context and the
-// current window state. Returns null when the engagement does not exist or the
-// viewer is not one of its two parties. Guarded to SEEKER / NURSERY; the send
-// action re-checks party membership and the window authoritatively.
+// The chat view for one engagement: the messages and the current window state.
+// Returns null when the engagement does not exist or the viewer is not one of its
+// two parties. Guarded to SEEKER / NURSERY; the send action re-checks party
+// membership and the window authoritatively.
 export async function getChatThread(
   engagementId: string,
 ): Promise<ChatThread | null> {
@@ -38,11 +38,10 @@ export async function getChatThread(
     include: {
       job: {
         select: {
-          title: true,
-          nursery: {select: {userId: true, nurseryName: true}},
+          nursery: {select: {userId: true}},
         },
       },
-      seeker: {select: {userId: true, displayName: true}},
+      seeker: {select: {userId: true}},
       chatMessages: {
         orderBy: {createdAt: 'asc'},
         select: {id: true, body: true, senderId: true, createdAt: true},
@@ -60,10 +59,6 @@ export async function getChatThread(
   return {
     engagementId: engagement.id,
     viewerParty: isSeeker ? 'SEEKER' : 'NURSERY',
-    counterpartName: isSeeker
-      ? engagement.job.nursery.nurseryName
-      : engagement.seeker.displayName,
-    jobTitle: engagement.job.title,
     open: isChatOpen(engagement.status, engagement.completedAt, new Date()),
     messages: engagement.chatMessages.map((m) => ({
       id: m.id,

@@ -122,38 +122,89 @@ model User {
 }
 
 model SeekerProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
-  realName       String
-  displayName    String
-  license        Boolean  @default(false)
-  blankYears     String?
-  preferredArea  String?
-  preferredStyle String[] @default([])
-  bio            String?
-  experience     String?
-  skills         String?
-  ngConditions   String?
-  isPublished    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String @id @default(cuid())
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id])
+  realName    String
+  displayName String
+
+  // 希望エリア（公開）
+  preferredPrefecture String?
+  preferredCity       String?
+
+  // 資格・経験（公開）
+  licenses        String[] @default([])
+  experienceYears String?
+
+  // ブランク期間（マッチング相手のみ）
+  blankYears String?
+
+  // 得意分野（公開）
+  skills     String[] @default([])
+  skillsNote String?
+
+  // 職務経歴（マッチング相手のみ）
+  experience String?
+
+  // 希望勤務スタイル（公開）
+  preferredPeriod   String[] @default([])
+  preferredTimeSlot String[] @default([])
+
+  // 大切にしていること（公開）
+  values String?
+
+  // 自己紹介（公開）
+  bio String?
+
+  // 園の方へひとこと（公開）
+  messageToNursery String?
+
+  // NGな条件（非公開）
+  ngConditions     String[] @default([])
+  ngConditionsNote String?
+
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   engagements Engagement[]
   documents   SeekerDocument[]
 }
 
 model NurseryProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  // 基本情報（公開）
   nurseryName String
-  area        String
-  address     String?
-  contactName String
+  postalCode  String?
+  prefecture  String?
+  city        String?
+  addressLine String?
   phone       String?
-  concept     String?
-  policy      String?
+  contactName String
+
+  // SNS・URL（公開）
+  homepageUrl  String?
+  instagramUrl String?
+  twitterUrl   String?
+  facebookUrl  String?
+  otherSnsUrl  String?
+
+  // 園の特徴（公開）
+  featureTags String[]
+  featureNote String?
+
+  // 受け入れ方針（公開）
+  receptionTags String[]
+  receptionNote String?
+
+  // 園からのメッセージ（公開）
+  joinReason      String?
+  idealPartner    String?
+  additionalNotes String?
+
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -162,6 +213,17 @@ model NurseryProfile {
   // an Engagement keeps only jobId + seekerId (the nursery is derived via the
   // posting), so there is no redundant nurseryId to keep in sync.
   jobPostings JobPosting[]
+  photos      NurseryPhoto[]
+}
+
+model NurseryPhoto {
+  id         String         @id @default(cuid())
+  nurseryId  String
+  nursery    NurseryProfile @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+  fileKey    String
+  isMain     Boolean        @default(false)
+  order      Int            @default(0)
+  uploadedAt DateTime       @default(now())
 }
 
 // ---------------------------------------------------------------------------
@@ -169,22 +231,36 @@ model NurseryProfile {
 // ---------------------------------------------------------------------------
 
 model JobPosting {
-  id                String               @id @default(cuid())
-  nurseryId         String
-  nursery           NurseryProfile       @relation(fields: [nurseryId], references: [id])
-  title             String
-  workContent       String
-  workDate          DateTime
-  workTimeStart     String // 'HH:mm'
-  workTimeEnd       String // 'HH:mm'
-  hourlyWage        Int? // null = undecided
-  targetPerson      String?
-  remarks           String?
+  id                        String               @id @default(cuid())
+  nurseryId                 String
+  nursery                   NurseryProfile       @relation(fields: [nurseryId], references: [id])
+  title                     String
+  // Work content is a tag selection plus a free note, stored separately —
+  // packing both into one delimited string lets free text collide with the
+  // tag delimiter (same tags+note shape as SeekerProfile.skills/skillsNote).
+  // At least one of the two is required (enforced in server/job-actions.ts).
+  workContentTags           String[]             @default([])
+  workContentNote           String?
+  workDate                  DateTime
+  workTimeStart             String // 'HH:mm'
+  workTimeEnd               String // 'HH:mm'
+  hourlyWage                Int? // null = undecided
+  // Same tags+note split as workContent above (both parts optional here).
+  targetPersonTags          String[]             @default([])
+  targetPersonNote          String?
+  remarks                   String?
   // Documents this posting requires to be verified before a seeker may apply.
-  requiredDocuments SeekerDocumentType[] @default([])
-  status            JobStatus            @default(OPEN)
-  postedAt          DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  requiredDocuments         SeekerDocumentType[] @default([])
+  // 募集に必要な資格（例: "保育士資格必須", "幼稚園教諭免許可", "資格不問"）
+  qualification             String[]             @default([])
+  // 交通費: true=あり / false=なし / null=未設定
+  transportationExpense     Boolean?
+  transportationExpenseNote String?
+  // 勤務時の服装
+  dresscode                 String?
+  status                    JobStatus            @default(OPEN)
+  postedAt                  DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
 
   engagements Engagement[]
 }

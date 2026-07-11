@@ -18,11 +18,6 @@ interface Props {
   viewerParty: 'SEEKER' | 'NURSERY';
   seekerReported: boolean;
   nurseryReported: boolean;
-  // Whether the viewer has already reviewed the counterpart, and where their
-  // review form lives — used to show the 評価する button (or 評価済み) once
-  // the engagement is COMPLETED.
-  viewerReviewed: boolean;
-  reviewHref: string;
 }
 
 export default function WorkFlowActions({
@@ -31,11 +26,8 @@ export default function WorkFlowActions({
   viewerParty,
   seekerReported,
   nurseryReported,
-  viewerReviewed,
-  reviewHref,
 }: Props) {
   const router = useRouter();
-  const [reporting, setReporting] = useState(false);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +44,6 @@ export default function WorkFlowActions({
         setError(result.message ?? '処理に失敗しました。');
         return;
       }
-      setReporting(false);
       setComment('');
       router.refresh();
     } catch {
@@ -64,20 +55,9 @@ export default function WorkFlowActions({
 
   if (engagementStatus === EngagementStatus.COMPLETED) {
     return (
-      <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-        <Typography variant="caption" sx={{color: '#6A1B9A'}}>
-          業務完了しました
-        </Typography>
-        {viewerReviewed ? (
-          <Typography variant="caption" sx={{color: '#AAAAAA'}}>
-            評価済み
-          </Typography>
-        ) : (
-          <Button href={reviewHref} variant="contained" size="small">
-            評価する
-          </Button>
-        )}
-      </Box>
+      <Typography variant="caption" sx={{color: '#6A1B9A'}}>
+        業務完了しました
+      </Typography>
     );
   }
 
@@ -113,52 +93,30 @@ export default function WorkFlowActions({
     );
   }
 
+  // WORKING, not yet reported. The comment field is shown upfront (no
+  // intermediate "open the form" step), so the report button submits directly.
   return (
     <Box>
       <ErrorAlert message={error} />
-      {reporting ? (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
-          <TextField
-            label="補足（任意）"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            size="small"
-            multiline
-            rows={2}
-            placeholder="業務に関する補足があれば入力してください（任意）"
-          />
-          <Box sx={{display: 'flex', gap: 1}}>
-            <Button
-              variant="contained"
-              size="small"
-              disabled={busy}
-              onClick={() => run(() => submitWorkReport(engagementId, comment))}
-            >
-              {busy ? '送信中...' : '報告する'}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={busy}
-              onClick={() => {
-                setReporting(false);
-                setComment('');
-              }}
-              sx={{borderColor: '#AAAAAA', color: '#666666'}}
-            >
-              キャンセル
-            </Button>
-          </Box>
-        </Box>
-      ) : (
+      <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+        <TextField
+          label="コメント（任意）"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          size="small"
+          multiline
+          rows={2}
+          placeholder="業務の感想や気づきなど"
+        />
         <Button
           variant="contained"
           size="small"
-          onClick={() => setReporting(true)}
+          disabled={busy}
+          onClick={() => run(() => submitWorkReport(engagementId, comment))}
         >
-          業務完了を報告する
+          {busy ? '送信中...' : '業務完了を報告する'}
         </Button>
-      )}
+      </Box>
     </Box>
   );
 }

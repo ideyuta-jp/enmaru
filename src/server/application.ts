@@ -1,6 +1,5 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
-import {hasReported} from '@/server/work-report';
 import type {ApplyTarget, SeekerApplication} from '@/types/Application';
 import type {SeekerDocumentType} from '@/types/Document';
 import {UserRole} from '@/types/User';
@@ -19,7 +18,6 @@ export async function listSeekerApplications(): Promise<SeekerApplication[]> {
     where: {seekerId: profile.id},
     include: {
       job: {include: {nursery: {select: {nurseryName: true}}}},
-      workReports: {select: {reporter: true, completed: true}},
       reviewSeekerToNursery: {select: {id: true}},
     },
     orderBy: {createdAt: 'desc'},
@@ -35,8 +33,6 @@ export async function listSeekerApplications(): Promise<SeekerApplication[]> {
     appliedAt: e.createdAt.toISOString(),
     engagementStatus: e.status,
     reviewStatus: e.reviewStatus,
-    seekerReported: hasReported(e.workReports, 'SEEKER'),
-    nurseryReported: hasReported(e.workReports, 'NURSERY'),
     seekerReviewed: e.reviewSeekerToNursery !== null,
   }));
 }

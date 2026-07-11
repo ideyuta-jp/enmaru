@@ -4,6 +4,7 @@ import {useState} from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Snackbar from '@mui/material/Snackbar';
 import {useRouter} from 'next/navigation';
 
 import ErrorAlert from '@/components/ErrorAlert';
@@ -25,20 +26,19 @@ export default function EditJobForm({jobId, initial, initialStatus}: Props) {
   const [saving, setSaving] = useState(false);
   const [updatingJobStatus, setUpdatingJobStatus] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setSaved(false);
     try {
       const result = await updateJob(jobId, form);
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      setSaved(true);
+      setToast(true);
       router.refresh();
     } catch {
       setError('保存に失敗しました。時間をおいて再度お試しください。');
@@ -93,12 +93,6 @@ export default function EditJobForm({jobId, initial, initialStatus}: Props) {
       </Box>
 
       <ErrorAlert message={error} />
-      {saved && (
-        <Alert severity="success" sx={{mb: 2}}>
-          保存しました
-        </Alert>
-      )}
-
       <JobForm
         form={form}
         setForm={setForm}
@@ -106,7 +100,18 @@ export default function EditJobForm({jobId, initial, initialStatus}: Props) {
         onCancel={() => router.push('/nursery/jobs')}
         saving={saving}
         submitLabel="保存する"
+        singleDate
       />
+      <Snackbar
+        open={toast}
+        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+        autoHideDuration={3000}
+        onClose={() => setToast(false)}
+      >
+        <Alert severity="success" onClose={() => setToast(false)}>
+          保存しました
+        </Alert>
+      </Snackbar>
     </>
   );
 }
