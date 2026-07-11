@@ -1,5 +1,6 @@
 import type {NurseryProfile} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
+import {getObjectStream} from '@/lib/storage';
 import {getCurrentUser} from '@/server/auth';
 import {listOpenJobsByNursery} from '@/server/job';
 import {
@@ -84,7 +85,11 @@ export async function listPublishedNurseries(): Promise<PublicNursery[]> {
   const mainPhotoMap = new Map(mainPhotos.map((p) => [p.nurseryId, p.id]));
 
   return nurseries.map((n) =>
-    toPublicNursery(n, ratings.get(n.id) ?? null, mainPhotoMap.get(n.id) ?? null),
+    toPublicNursery(
+      n,
+      ratings.get(n.id) ?? null,
+      mainPhotoMap.get(n.id) ?? null,
+    ),
   );
 }
 
@@ -135,6 +140,38 @@ export async function getNurseryDetailForViewer(
   const user = await getCurrentUser();
   if (!user || n.userId !== user.id) return null;
   return {detail: await buildNurseryDetail(n), isOwnerPreview: true};
+}
+
+// File bytes for the photo-serving route. A published nursery's photos are
+// visible to anyone; an unpublished nursery's photos only to its owner (the
+// profile edit page and the pre-publish preview), mirroring the visibility
+// rule of getNurseryDetailForViewer. Returns null when the photo does not
+// exist or the viewer is not allowed — the route maps that to 404 (no
+// existence disclosure). isPubliclyVisible lets the route pick a cache policy.
+export async function getAccessibleNurseryPhotoFile(id: string): Promise<{
+  body: ReadableStream;
+  contentType: string;
+  isPubliclyVisible: boolean;
+} | null> {
+  const photo = await prisma.nurseryPhoto.findUnique({
+    where: {id},
+    include: {nursery: {select: {isPublished: true, userId: true}}},
+  });
+  if (!photo || !photo.fileKey) return null;
+
+  if (!photo.nursery.isPublished) {
+    const user = await getCurrentUser();
+    if (!user || photo.nursery.userId !== user.id) return null;
+  }
+
+  try {
+    const file = await getObjectStream(photo.fileKey);
+    return {...file, isPubliclyVisible: photo.nursery.isPublished};
+  } catch {
+    // Row exists but the R2 object is missing (drift) — treat as not found so
+    // the route keeps its 404-for-everything contract instead of 500-ing.
+    return null;
+  }
 }
 
 // The current nursery's profile with photo data for the profile edit page.

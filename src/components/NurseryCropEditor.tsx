@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useLayoutEffect, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -26,7 +26,11 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function NurseryCropEditor({imageSrc, onConfirm, onCancel}: Props) {
+export default function NurseryCropEditor({
+  imageSrc,
+  onConfirm,
+  onCancel,
+}: Props) {
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({x: 0, y: 0});
   const [naturalSize, setNaturalSize] = useState({w: 0, h: 0});
@@ -45,16 +49,22 @@ export default function NurseryCropEditor({imageSrc, onConfirm, onCancel}: Props
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Reset when image changes
-  useEffect(() => {
+  // Reset when the image changes — adjusted during render (not in an effect)
+  // so the old image never paints with the new image's zoom/offset.
+  const [prevImageSrc, setPrevImageSrc] = useState(imageSrc);
+  if (prevImageSrc !== imageSrc) {
+    setPrevImageSrc(imageSrc);
     setZoom(1);
     setOffset({x: 0, y: 0});
     setNaturalSize({w: 0, h: 0});
-  }, [imageSrc]);
+  }
 
   const cropH = cropW > 0 ? cropW / ASPECT : 0;
   const ready = naturalSize.w > 0 && cropW > 0;
 
+  // Scale at which the image fully covers the 16:9 crop box (the object-fit:
+  // cover rule): the larger of the two axis ratios wins, so zoom = 1 never
+  // shows letterboxing.
   const coverScale = ready
     ? Math.max(cropW / naturalSize.w, cropH / naturalSize.h)
     : 1;
@@ -98,15 +108,33 @@ export default function NurseryCropEditor({imageSrc, onConfirm, onCancel}: Props
     canvas.width = OUTPUT_W;
     canvas.height = OUTPUT_H;
     const ctx = canvas.getContext('2d')!;
+    // Invert the display transform (image scaled by coverScale * zoom and
+    // shifted by offset from the centered position) to find the source-image
+    // pixel rect currently visible in the crop box, then let drawImage
+    // resample that rect to the fixed output size.
     const s = coverScale * zoom;
     const srcW = cropW / s;
     const srcH = cropH / s;
     const srcX = naturalSize.w / 2 - offset.x / s - srcW / 2;
     const srcY = naturalSize.h / 2 - offset.y / s - srcH / 2;
-    ctx.drawImage(imgElRef.current, srcX, srcY, srcW, srcH, 0, 0, OUTPUT_W, OUTPUT_H);
-    canvas.toBlob((blob) => {
-      if (blob) onConfirm(blob);
-    }, 'image/jpeg', 0.9);
+    ctx.drawImage(
+      imgElRef.current,
+      srcX,
+      srcY,
+      srcW,
+      srcH,
+      0,
+      0,
+      OUTPUT_W,
+      OUTPUT_H,
+    );
+    canvas.toBlob(
+      (blob) => {
+        if (blob) onConfirm(blob);
+      },
+      'image/jpeg',
+      0.9,
+    );
   }
 
   const displayW = ready ? naturalSize.w * coverScale * zoom : 0;
@@ -118,10 +146,22 @@ export default function NurseryCropEditor({imageSrc, onConfirm, onCancel}: Props
     <Modal
       open
       onClose={onCancel}
-      sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2}}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+      }}
     >
       <Box
-        sx={{bgcolor: '#FFFFFF', borderRadius: 2, p: 3, width: '100%', maxWidth: 560, outline: 'none'}}
+        sx={{
+          bgcolor: '#FFFFFF',
+          borderRadius: 2,
+          p: 3,
+          width: '100%',
+          maxWidth: 560,
+          outline: 'none',
+        }}
       >
         <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 2}}>
           メイン写真の編集
@@ -191,7 +231,11 @@ export default function NurseryCropEditor({imageSrc, onConfirm, onCancel}: Props
           )}
         </Box>
 
-        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1, mb: 0.5}}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block', mt: 1, mb: 0.5}}
+        >
           ドラッグで位置を調整できます
         </Typography>
 

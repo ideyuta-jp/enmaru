@@ -1,4 +1,9 @@
-import {DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 // Cloudflare R2 is S3-compatible. The region is always "auto" and the endpoint
 // points at the account's R2 gateway. Credentials are an R2 API token

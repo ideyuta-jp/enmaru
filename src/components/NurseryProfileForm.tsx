@@ -231,10 +231,10 @@ export default function NurseryProfileForm({
               color="text.secondary"
               sx={{display: 'block', mb: 1.5}}
             >
-              ※保育園一覧のカードに表示されます。１枚のみ設定可能です。推奨サイズ：横16:縦9（例：1280×720px 以上）
+              ※保育園一覧のカードに表示されます。１枚のみ設定可能です。推奨サイズ：横16:縦9（例：1280×720px
+              以上）
             </Typography>
             <NurseryPhotoUpload
-              nurseryId={nurseryId}
               initialPhotos={initialMainPhoto ? [initialMainPhoto] : []}
               isMain
               maxPhotos={1}
@@ -259,11 +259,7 @@ export default function NurseryProfileForm({
             >
               ※掲載したい写真（園舎、給食、行事の様子など）があれば教えてください。
             </Typography>
-            <NurseryPhotoUpload
-              nurseryId={nurseryId}
-              initialPhotos={initialSubPhotos ?? []}
-              maxPhotos={5}
-            />
+            <NurseryPhotoUpload initialPhotos={initialSubPhotos ?? []} />
           </Box>
         )}
 

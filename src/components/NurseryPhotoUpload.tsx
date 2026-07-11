@@ -13,9 +13,11 @@ import {
   deleteNurseryPhoto,
   uploadNurseryPhoto,
 } from '@/server/nursery-photo-actions';
-
-const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+import {
+  ALLOWED_NURSERY_PHOTO_MIME_TYPES,
+  MAX_NURSERY_PHOTO_BYTES,
+  MAX_NURSERY_SUB_PHOTOS,
+} from '@/types/Nursery';
 
 interface Photo {
   id: string;
@@ -23,7 +25,6 @@ interface Photo {
 }
 
 interface Props {
-  nurseryId: string;
   initialPhotos: Photo[];
   isMain?: boolean;
   maxPhotos?: number;
@@ -31,10 +32,9 @@ interface Props {
 }
 
 export default function NurseryPhotoUpload({
-  nurseryId: _nurseryId,
   initialPhotos,
   isMain = false,
-  maxPhotos = 5,
+  maxPhotos = MAX_NURSERY_SUB_PHOTOS,
   note,
 }: Props) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
@@ -52,14 +52,20 @@ export default function NurseryPhotoUpload({
       const formData = new FormData();
       formData.append(
         'file',
-        blob instanceof File ? blob : new File([blob], 'photo.jpg', {type: 'image/jpeg'}),
+        blob instanceof File
+          ? blob
+          : new File([blob], 'photo.jpg', {type: 'image/jpeg'}),
       );
       const result = await uploadNurseryPhoto(formData, isMain);
       if (!result.ok) {
         setError(result.message ?? 'アップロードに失敗しました。');
         return;
       }
-      window.location.reload();
+      // The main photo replaces the previous one (the server already deleted
+      // it); sub photos append.
+      setPhotos((prev) => (isMain ? [result.photo] : [...prev, result.photo]));
+    } catch {
+      setError('アップロードに失敗しました。時間をおいて再度お試しください。');
     } finally {
       setUploading(false);
     }
@@ -70,11 +76,11 @@ export default function NurseryPhotoUpload({
     if (inputRef.current) inputRef.current.value = '';
     if (!file) return;
 
-    if (file.size > MAX_BYTES) {
+    if (file.size > MAX_NURSERY_PHOTO_BYTES) {
       setError('1枚あたり5MBまでにしてください。');
       return;
     }
-    if (!ALLOWED_MIME.includes(file.type)) {
+    if (!ALLOWED_NURSERY_PHOTO_MIME_TYPES.includes(file.type)) {
       setError('画像（JPEG/PNG/WebP）をアップロードしてください。');
       return;
     }
@@ -94,12 +100,16 @@ export default function NurseryPhotoUpload({
 
   async function handleDelete(photoId: string) {
     setError(null);
-    const result = await deleteNurseryPhoto(photoId);
-    if (!result.ok) {
-      setError(result.message ?? '削除に失敗しました。');
-      return;
+    try {
+      const result = await deleteNurseryPhoto(photoId);
+      if (!result.ok) {
+        setError(result.message ?? '削除に失敗しました。');
+        return;
+      }
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    } catch {
+      setError('削除に失敗しました。時間をおいて再度お試しください。');
     }
-    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
   }
 
   return (
@@ -116,17 +126,30 @@ export default function NurseryPhotoUpload({
       )}
 
       <Box>
-        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.75}}>
-          {isMain ? '1枚・' : `最大${maxPhotos}枚・`}1枚あたり5MBまで（JPEG/PNG/WebP）
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block', mb: 0.75}}
+        >
+          {isMain ? '1枚・' : `最大${maxPhotos}枚・`}
+          1枚あたり5MBまで（JPEG/PNG/WebP）
         </Typography>
         {note && (
-          <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 1.5}}
+          >
             {note}
           </Typography>
         )}
 
         {error && (
-          <Typography variant="caption" color="error" sx={{display: 'block', mb: 1}}>
+          <Typography
+            variant="caption"
+            color="error"
+            sx={{display: 'block', mb: 1}}
+          >
             {error}
           </Typography>
         )}
@@ -186,7 +209,7 @@ export default function NurseryPhotoUpload({
               <input
                 ref={inputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={ALLOWED_NURSERY_PHOTO_MIME_TYPES.join(',')}
                 style={{display: 'none'}}
                 onChange={handleFileChange}
                 disabled={uploading}

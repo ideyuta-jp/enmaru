@@ -2,6 +2,7 @@
 
 import {useCallback, useEffect, useState} from 'react';
 import Box from '@mui/material/Box';
+import ButtonBase from '@mui/material/ButtonBase';
 import Modal from '@mui/material/Modal';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -16,7 +17,9 @@ export default function NurseryPhotoGallery({photos}: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const handlePrev = useCallback(() => {
-    setOpenIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length));
+    setOpenIndex((i) =>
+      i === null ? null : (i - 1 + photos.length) % photos.length,
+    );
   }, [photos.length]);
 
   const handleNext = useCallback(() => {
@@ -46,30 +49,39 @@ export default function NurseryPhotoGallery({photos}: Props) {
     <>
       <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
         {photos.map((photo, idx) => (
-          <Box
+          <ButtonBase
             key={photo.id}
-            component="img"
-            src={`/api/nursery-photos/${photo.id}/file`}
-            alt="園の写真"
             onClick={() => setOpenIndex(idx)}
+            focusRipple
             sx={{
               width: {xs: 'calc(50% - 4px)', sm: 160},
               height: {xs: 140, sm: 120},
-              objectFit: 'cover',
               borderRadius: 1,
               border: '1px solid #E0E0E0',
-              cursor: 'pointer',
+              overflow: 'hidden',
               transition: 'opacity 0.15s',
               '&:hover': {opacity: 0.85},
             }}
-          />
+          >
+            <Box
+              component="img"
+              src={`/api/nursery-photos/${photo.id}/file`}
+              alt="園の写真"
+              sx={{width: '100%', height: '100%', objectFit: 'cover'}}
+            />
+          </ButtonBase>
         ))}
       </Box>
 
       <Modal
         open={openIndex !== null}
         onClose={() => setOpenIndex(null)}
-        sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2}}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2,
+        }}
       >
         <Box
           sx={{
@@ -80,14 +92,12 @@ export default function NurseryPhotoGallery({photos}: Props) {
             gap: 1,
           }}
         >
-          {/* 前へ */}
           {photos.length > 1 && (
             <IconButton onClick={handlePrev} sx={navButtonSx}>
               <ArrowBackIosNewIcon fontSize="small" />
             </IconButton>
           )}
 
-          {/* 画像 */}
           {openIndex !== null && (
             <Box sx={{position: 'relative'}}>
               <Box
@@ -102,7 +112,6 @@ export default function NurseryPhotoGallery({photos}: Props) {
                   borderRadius: 1,
                 }}
               />
-              {/* 閉じる */}
               <IconButton
                 onClick={() => setOpenIndex(null)}
                 size="small"
@@ -117,7 +126,6 @@ export default function NurseryPhotoGallery({photos}: Props) {
               >
                 <CloseIcon fontSize="small" />
               </IconButton>
-              {/* 枚数インジケーター */}
               {photos.length > 1 && (
                 <Box
                   sx={{
@@ -139,7 +147,6 @@ export default function NurseryPhotoGallery({photos}: Props) {
             </Box>
           )}
 
-          {/* 次へ */}
           {photos.length > 1 && (
             <IconButton onClick={handleNext} sx={navButtonSx}>
               <ArrowForwardIosIcon fontSize="small" />
