@@ -41,9 +41,11 @@ in prod.
      DATABASE_URL="<prod connection string>" node scripts/grant-admin.mjs person@example.com
      ```
 
-   The script prints the updated user, or errors if no user has that email — e.g.
-   they haven't registered yet, or registered on a different environment than the
-   one `DATABASE_URL` targets.
+   The script shows the target database host (labelled dev / prod when it is a
+   known Neon endpoint) and the matched user, then asks for confirmation before
+   writing anything (add `--dry-run` to stop after the preview). It errors if
+   no user has that email — e.g. they haven't registered yet, or registered on
+   a different environment than the one `DATABASE_URL` targets.
 
 Verify by signing in as that person and opening `/admin`. The role lives on the
 `User` row in the database, so it takes effect on their next request — no
@@ -94,8 +96,11 @@ target.
      DATABASE_URL="<prod connection string>" node scripts/update-email.mjs temp@yourdomain.com customer@example.com
      ```
 
-   The script prints the updated user, or errors if no row has the current email
-   (wrong address, or wrong environment) or the new email is already taken.
+   The script shows the target database host (labelled dev / prod when it is a
+   known Neon endpoint) and the matched user, then asks for confirmation before
+   writing anything (add `--dry-run` to stop after the preview). It errors if
+   no row has the current email (wrong address, or wrong environment) or the
+   new email is already taken.
 
 The customer can then sign in with their real email and the initial password,
 and change the password themselves via the "forgot password" link.
