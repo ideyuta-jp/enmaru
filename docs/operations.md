@@ -17,7 +17,8 @@ in prod.
 
 1. **Sign up (in a browser).** The person opens the app for that environment and
    registers — any role, since it gets overwritten:
-   - Dev: <http://localhost:3000> (your local `pnpm dev`)
+   - Dev: <https://dev--marvelous-crepe-8a78fb.netlify.app> (the `dev` branch
+     deploy)
    - Prod: <https://enmaru.kasumin.biz>
 
    Click ログイン / 新規登録 → sign in via Logto → finish the registration step.
@@ -45,7 +46,59 @@ in prod.
    one `DATABASE_URL` targets.
 
 Verify by signing in as that person and opening `/admin`. The role lives on the
-`User` row, so it takes effect on their next request — no redeploy.
+`User` row in the database, so it takes effect on their next request — no
+redeploy.
+
+## Registering a user on their behalf (and fixing their email)
+
+Sometimes you register an account for someone (e.g. a nursery or seeker joining
+at launch) rather than having them self-register. The obstacle is the sign-up
+one-time code: it goes to the email being registered, so you can't complete
+sign-up with the customer's address unless you can read their inbox.
+
+Work around it by signing up with an address you control, then swapping the
+email over in two places — Logto (the source of truth for auth) and the `User`
+row in the database (Neon), whose email is a mirror seeded once at registration
+(`src/server/user.ts`) and never synced afterwards. Identity is keyed on the
+Logto subject (`User.authId`), not email, so the account keeps working
+throughout; the email swap just keeps the database mirror correct for admin
+tooling, notifications, and display.
+
+**Pick one environment and stay in it** — same rule as the admin grant above.
+The Logto account and the database `User` row live in whichever environment you
+target.
+
+1. **Sign up (in a browser)** with an email you can receive mail at, and finish
+   the registration step. This creates the Logto account and the `User` row in
+   the database, both holding your temporary email:
+   - Dev: <https://dev--marvelous-crepe-8a78fb.netlify.app>
+   - Prod: <https://enmaru.kasumin.biz>
+
+2. **Change the email in Logto.** In the Logto admin console, open Console >
+   User management > (the account) and edit the **Email address** to the
+   customer's real address. This is the source of truth for sign-in. You can
+   also reset the password here to hand the customer initial credentials.
+
+3. **Update the `User` row in the database** to match, from the **repository
+   root** (same checkout you run `pnpm dev` from — it needs `package.json` and
+   `scripts/update-email.mjs`). Pass the address you signed up with, then the
+   customer's real address:
+   - Dev — reads `DATABASE_URL` from `.env.local` (the dev Neon branch):
+     ```bash
+     cd <your enmaru checkout>
+     pnpm email:update temp@yourdomain.com customer@example.com
+     ```
+   - Prod — pass the production `DATABASE_URL` explicitly instead:
+     ```bash
+     cd <your enmaru checkout>
+     DATABASE_URL="<prod connection string>" node scripts/update-email.mjs temp@yourdomain.com customer@example.com
+     ```
+
+   The script prints the updated user, or errors if no row has the current email
+   (wrong address, or wrong environment) or the new email is already taken.
+
+The customer can then sign in with their real email and the initial password,
+and change the password themselves via the "forgot password" link.
 
 ## Running database migrations
 
