@@ -1,8 +1,9 @@
 import type {NurseryProfile} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
 import {getObjectStream} from '@/lib/storage';
-import {getCurrentUser} from '@/server/auth';
+import {getCurrentUser, requireRole} from '@/server/auth';
 import {listOpenJobsByNursery} from '@/server/job';
+import {isUniqueViolation} from '@/server/prisma-error';
 import {
   getNurseryRating,
   getNurseryRatings,
@@ -15,6 +16,7 @@ import type {
   PublicNursery,
   PublicNurseryDetail,
 } from '@/types/Nursery';
+import {UserRole} from '@/types/User';
 
 type NurseryPublicFields = Pick<
   NurseryProfile,
@@ -174,6 +176,46 @@ export async function getAccessibleNurseryPhotoFile(id: string): Promise<{
   }
 }
 
+// Creates the current nursery's profile row as an empty draft if none exists.
+// A photo upload can arrive before the profile has ever been saved — the photo
+// needs the row up front (NurseryPhoto.nurseryId is a required FK and the R2
+// key embeds the profile id), so uploadNurseryPhoto ensures it on demand
+// (#143). The draft is invisible to seekers — isPublished stays false until an
+// explicit save flips it — and an existing row is never modified here.
+export async function ensureNurseryProfile(): Promise<void> {
+  const user = await requireRole([UserRole.NURSERY]);
+
+  const existing = await prisma.nurseryProfile.findUnique({
+    where: {userId: user.id},
+    select: {id: true},
+  });
+  if (existing) return;
+
+  try {
+    await prisma.nurseryProfile.create({
+      data: {userId: user.id, nurseryName: '', contactName: ''},
+    });
+  } catch (e) {
+    // Two pre-save uploads can race here (a main and a sub photo dropped in
+    // quick succession): both pass the existence check above and the loser's
+    // create hits the unique userId constraint. The row exists either way —
+    // which is all this function promises — so treat that as success instead
+    // of failing the upload.
+    if (!isUniqueViolation(e)) throw e;
+  }
+}
+
+// Whether the nursery has actually saved its profile, as opposed to the row
+// being an empty draft auto-created by ensureNurseryProfile. Blank nurseryName
+// can only mean the draft — saveNurseryProfile rejects it — so this predicate
+// is the single source of truth for the draft-vs-saved distinction; check it
+// instead of mere row existence wherever "has a profile" means "saved one".
+export function isSavedNurseryProfile(
+  profile: Pick<NurseryProfile, 'nurseryName'>,
+): boolean {
+  return profile.nurseryName !== '';
+}
+
 // The current nursery's profile with photo data for the profile edit page.
 export async function getNurseryProfileWithPhotos(): Promise<{
   input: NurseryProfileInput;
@@ -267,7 +309,8 @@ export async function getNurseryDashboard(): Promise<NurseryDashboard> {
     ? await prisma.nurseryProfile.findUnique({where: {userId: user.id}})
     : null;
 
-  if (!profile) {
+  // An auto-created draft keeps the dashboard in its onboarding state (#143).
+  if (!profile || !isSavedNurseryProfile(profile)) {
     return {
       hasProfile: false,
       id: null,

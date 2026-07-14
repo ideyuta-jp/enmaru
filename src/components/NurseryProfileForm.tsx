@@ -218,52 +218,48 @@ export default function NurseryProfileForm({
 
         <Divider />
 
-        {nurseryId && (
-          <Box>
-            <Typography
-              variant="subtitle1"
-              sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}
-            >
-              メイン写真（任意・公開）
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{display: 'block', mb: 1.5}}
-            >
-              ※保育園一覧のカードに表示されます。１枚のみ設定可能です。推奨サイズ：横16:縦9（例：1280×720px
-              以上）
-            </Typography>
-            <NurseryPhotoUpload
-              initialPhotos={initialMainPhoto ? [initialMainPhoto] : []}
-              isMain
-              maxPhotos={1}
-            />
-          </Box>
-        )}
+        <Box>
+          <Typography
+            variant="subtitle1"
+            sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}
+          >
+            メイン写真（任意・公開）
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 1.5}}
+          >
+            ※保育園一覧のカードに表示されます。１枚のみ設定可能です。推奨サイズ：横16:縦9（例：1280×720px
+            以上）
+          </Typography>
+          <NurseryPhotoUpload
+            initialPhotos={initialMainPhoto ? [initialMainPhoto] : []}
+            isMain
+            maxPhotos={1}
+          />
+        </Box>
 
-        {nurseryId && <Divider />}
+        <Divider />
 
-        {nurseryId && (
-          <Box>
-            <Typography
-              variant="subtitle1"
-              sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}
-            >
-              サブ写真（任意・公開）
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{display: 'block', mb: 1.5}}
-            >
-              ※掲載したい写真（園舎、給食、行事の様子など）があれば教えてください。
-            </Typography>
-            <NurseryPhotoUpload initialPhotos={initialSubPhotos ?? []} />
-          </Box>
-        )}
+        <Box>
+          <Typography
+            variant="subtitle1"
+            sx={{fontWeight: 700, mb: 0.5, color: '#666666'}}
+          >
+            サブ写真（任意・公開）
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 1.5}}
+          >
+            ※掲載したい写真（園舎、給食、行事の様子など）があれば教えてください。
+          </Typography>
+          <NurseryPhotoUpload initialPhotos={initialSubPhotos ?? []} />
+        </Box>
 
-        {nurseryId && <Divider />}
+        <Divider />
 
         <Box>
           <Typography
