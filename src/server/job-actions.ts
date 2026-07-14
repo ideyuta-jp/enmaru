@@ -2,6 +2,7 @@
 
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
+import {isSavedNurseryProfile} from '@/server/nursery';
 import type {ActionResult} from '@/types/ActionResult';
 import {ALL_DOCUMENT_TYPES, type SeekerDocumentType} from '@/types/Document';
 import {
@@ -104,13 +105,15 @@ interface ValidJob {
 }
 
 // Create one posting per selected date for the signed-in nursery. Requires a
-// nursery profile (a posting belongs to one).
+// SAVED nursery profile (a posting belongs to one) — a row can also be an
+// unsaved draft auto-created by a pre-save photo upload, which must not
+// unlock job posting.
 export async function createJob(input: JobInput): Promise<ActionResult> {
   const user = await requireRole([UserRole.NURSERY]);
   const profile = await prisma.nurseryProfile.findUnique({
     where: {userId: user.id},
   });
-  if (!profile) {
+  if (!profile || !isSavedNurseryProfile(profile)) {
     return {ok: false, message: '先に園プロフィールを作成してください。'};
   }
 
