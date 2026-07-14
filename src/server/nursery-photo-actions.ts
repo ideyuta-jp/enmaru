@@ -3,6 +3,7 @@
 import {prisma} from '@/lib/prisma';
 import {deleteObject, putObject} from '@/lib/storage';
 import {requireRole} from '@/server/auth';
+import {ensureNurseryProfile} from '@/server/nursery';
 import type {ActionResult} from '@/types/ActionResult';
 import {
   ALLOWED_NURSERY_PHOTO_MIME_TYPES,
@@ -22,6 +23,8 @@ export async function uploadNurseryPhoto(
   isMain: boolean,
 ): Promise<UploadNurseryPhotoResult> {
   const user = await requireRole([UserRole.NURSERY]);
+  // Guarantees the profile row exists before we depend on it below (#143).
+  await ensureNurseryProfile();
   const profile = await prisma.nurseryProfile.findUnique({
     where: {userId: user.id},
     include: {
@@ -29,7 +32,8 @@ export async function uploadNurseryPhoto(
     },
   });
   if (!profile) {
-    return {ok: false, message: '先にプロフィールを保存してください。'};
+    // Unreachable: ensureNurseryProfile() above guarantees the row exists.
+    return {ok: false, message: '園プロフィールの取得に失敗しました。'};
   }
 
   const subPhotos = profile.photos.filter((p) => !p.isMain);
