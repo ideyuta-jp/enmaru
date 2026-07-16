@@ -110,7 +110,8 @@ export const EMPTY_JOB: JobInput = {
   targetPersonTags: [],
   targetPersonNote: '',
   remarks: '',
-  // The baseline always-required documents; the nursery can add the stool test.
+  // The baseline always-required documents; the nursery can add the remaining
+  // optional types.
   requiredDocuments: [
     SeekerDocumentType.RESUME,
     SeekerDocumentType.LICENSE,

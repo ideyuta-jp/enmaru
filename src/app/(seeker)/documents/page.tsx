@@ -33,8 +33,8 @@ export default async function SeekerDocumentsPage() {
   const documents = await listMyDocuments();
 
   // Split into the seeker-facing required / optional groups. Required follows
-  // the order of REQUIRED_SEEKER_DOCUMENT_TYPES (health-check, then resume);
-  // optional keeps the listMyDocuments order (license, then stool test).
+  // the order of REQUIRED_SEEKER_DOCUMENT_TYPES; optional keeps the
+  // listMyDocuments order (= ALL_DOCUMENT_TYPES order).
   const byType = new Map(documents.map((d) => [d.documentType, d]));
   const requiredDocs = REQUIRED_SEEKER_DOCUMENT_TYPES.map((t) =>
     byType.get(t),
