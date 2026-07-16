@@ -72,7 +72,6 @@ function parseJobInput(
       workTimeStart: input.workTimeStart,
       workTimeEnd: input.workTimeEnd,
       hourlyWage,
-      qualification: input.qualification,
       transportationExpense: encodeTransportationExpense(
         input.transportationExpense,
       ),
@@ -95,7 +94,6 @@ interface ValidJob {
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number;
-  qualification: string[];
   transportationExpense: boolean | null;
   transportationExpenseNote: string | null;
   dresscode: string | null;

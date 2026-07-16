@@ -22,7 +22,6 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {PickerDay, type PickerDayProps} from '@mui/x-date-pickers/PickerDay';
 import dayjs, {type Dayjs} from 'dayjs';
 
-import CheckboxGroup from '@/components/CheckboxGroup';
 import TagSelector from '@/components/TagSelector';
 import {
   ALL_DOCUMENT_TYPES,
@@ -49,12 +48,6 @@ const WORK_CONTENT_TAGS = [
   '制作活動のサポート',
   '事務補助',
   '保育全般',
-];
-
-const QUALIFICATION_OPTIONS = [
-  '保育士資格必須',
-  '幼稚園教諭免許可',
-  '資格不問（保育補助可）',
 ];
 
 const DRESSCODE_CHIPS = [
@@ -248,15 +241,6 @@ export default function JobForm({
       requiredDocuments: prev.requiredDocuments.includes(type)
         ? prev.requiredDocuments.filter((d) => d !== type)
         : [...prev.requiredDocuments, type],
-    }));
-  }
-
-  function toggleQualification(value: string) {
-    setForm((prev) => ({
-      ...prev,
-      qualification: prev.qualification.includes(value)
-        ? prev.qualification.filter((q) => q !== value)
-        : [...prev.qualification, value],
     }));
   }
 
@@ -494,17 +478,6 @@ export default function JobForm({
         helperText={
           submitted && !form.hourlyWage.trim() ? '入力してください' : undefined
         }
-      />
-
-      <Divider />
-
-      {/* 募集に必要な資格 */}
-      <CheckboxGroup
-        label="募集に必要な資格"
-        options={QUALIFICATION_OPTIONS}
-        selected={form.qualification}
-        onToggle={toggleQualification}
-        row={false}
       />
 
       <Divider />
