@@ -15,7 +15,8 @@ import {toMinutes} from '@/utils/date';
 import {blankToNull} from '@/utils/string';
 
 // Validate + normalize a posting form. Required fields mirror the non-null
-// columns in the schema; hourlyWage is optional and stored as Int? (null = TBD).
+// columns in the schema, plus hourlyWage (app-layer required; the column
+// stays Int? since existing null rows are left as-is).
 function parseJobInput(
   input: JobInput,
 ): {ok: true; data: ValidJob} | {ok: false; message: string} {
@@ -47,14 +48,13 @@ function parseJobInput(
     return {ok: false, message: '勤務時間は1時間以上に設定してください'};
   }
 
-  let hourlyWage: number | null = null;
   const wageText = input.hourlyWage.trim();
-  if (wageText !== '') {
-    const n = Number(wageText);
-    if (!Number.isInteger(n) || n < 0) {
-      return {ok: false, message: '時給は0以上の整数で入力してください。'};
-    }
-    hourlyWage = n;
+  if (wageText === '') {
+    return {ok: false, message: '時給は必須です。'};
+  }
+  const hourlyWage = Number(wageText);
+  if (!Number.isInteger(hourlyWage) || hourlyWage < 0) {
+    return {ok: false, message: '時給は0以上の整数で入力してください。'};
   }
 
   // Drop any unknown values, then de-duplicate the requested document types.

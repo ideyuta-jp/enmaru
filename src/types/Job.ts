@@ -48,8 +48,9 @@ export function formatTagsWithNote(
 }
 
 // The editable shape of a posting — what the create/edit form holds and sends.
-// All text fields are plain strings (hourlyWage too, empty = unset) so the form
-// can bind directly; the server parses/validates and maps empty to null.
+// All text fields are plain strings (hourlyWage too) so the form can bind
+// directly; the server parses/validates (hourlyWage is required — empty is
+// rejected, not mapped to null).
 export interface JobInput {
   title: string;
   workContentTags: string[];
