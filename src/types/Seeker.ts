@@ -15,6 +15,7 @@ export interface SeekerProfileInput {
   experience: string;
   preferredPeriod: string[];
   preferredTimeSlot: string[];
+  preferredAgeGroups: string[];
   values: string;
   bio: string;
   messageToNursery: string;
@@ -37,6 +38,7 @@ export const EMPTY_SEEKER_PROFILE: SeekerProfileInput = {
   experience: '',
   preferredPeriod: [],
   preferredTimeSlot: [],
+  preferredAgeGroups: [],
   values: '',
   bio: '',
   messageToNursery: '',

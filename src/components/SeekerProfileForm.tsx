@@ -59,6 +59,17 @@ const TIME_SLOT_OPTIONS = [
   '遅番（16:00〜18:00以降）',
 ];
 
+const AGE_GROUP_OPTIONS = [
+  '0歳児：目覚ましい成長に合わせ、一人ひとりの発達の土台を支えたい',
+  '1歳児：あふれ出す自我と好奇心を受け止め、全身で表現する喜びを共有したい',
+  '2歳児：「自分でしたい！」という葛藤に寄り添い、自立へ向かう心を見守りたい',
+  '3歳児：友達への関わりが広がる時期。初めての集団生活での育ちを支えたい',
+  '4歳児：想像力が豊かになり、仲間と工夫して遊びを展開する楽しさを分かち合いたい',
+  '5歳児：共通の目的に向かって力を合わせる協同性や、就学に向けた意欲を育みたい',
+  '異年齢：年齢の枠を超えた育ち合いの中で生まれる、憧れやいたわりの心を大切にしたい',
+  'フリー：特定のクラスを決めず、園全体のサポートをしながら自分に合う年齢層を見つけたい',
+];
+
 const VALUES_CHIPS = [
   '子どもの主体性を大切にしています',
   '子どものペースに寄り添います',
@@ -399,6 +410,21 @@ export default function SeekerProfileForm({initial}: Props) {
               note="※施設によって前後する場合があります"
             />
           </Box>
+        </Box>
+
+        <Divider />
+
+        {/* 関わりたい年齢層 */}
+        <Box>
+          {sectionLabel('関わりたい年齢層')}
+          {visibilityNote('公開')}
+          <CheckboxGroup
+            label="複数選択可"
+            options={AGE_GROUP_OPTIONS}
+            selected={form.preferredAgeGroups}
+            onToggle={(v) => toggle('preferredAgeGroups', v)}
+            row={false}
+          />
         </Box>
 
         <Divider />

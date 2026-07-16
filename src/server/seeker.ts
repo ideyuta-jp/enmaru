@@ -27,6 +27,7 @@ export async function getSeekerProfileInput(): Promise<SeekerProfileInput | null
     experience: p.experience ?? '',
     preferredPeriod: p.preferredPeriod,
     preferredTimeSlot: p.preferredTimeSlot,
+    preferredAgeGroups: p.preferredAgeGroups,
     values: p.values ?? '',
     bio: p.bio ?? '',
     messageToNursery: p.messageToNursery ?? '',
