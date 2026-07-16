@@ -86,6 +86,7 @@ enum SeekerDocumentType {
   LICENSE // 保育士証
   HEALTH_CHECK // 健康診断書
   STOOL_TEST // 検便結果（一部の募集のみ必須）
+  KINDERGARTEN_TEACHER_LICENSE // 幼稚園教諭免許状（任意）
 }
 
 enum SeekerDocumentStatus {

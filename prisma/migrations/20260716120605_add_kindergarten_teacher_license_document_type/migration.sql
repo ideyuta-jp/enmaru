@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "SeekerDocumentType" ADD VALUE 'KINDERGARTEN_TEACHER_LICENSE';
+
