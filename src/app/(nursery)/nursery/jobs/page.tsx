@@ -1,18 +1,16 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 import Footer from '@/components/Footer';
+import NurseryJobRow from '@/components/NurseryJobRow';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {listNurseryJobs} from '@/server/job';
-import {JobStatus, type Job} from '@/types/Job';
+import {JobStatus} from '@/types/Job';
 
 export default async function NurseryJobsPage() {
   const jobs = await listNurseryJobs();
@@ -63,7 +61,7 @@ export default async function NurseryJobsPage() {
                 </Typography>
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
                   {openJobs.map((job) => (
-                    <JobRow key={job.id} job={job} />
+                    <NurseryJobRow key={job.id} job={job} />
                   ))}
                 </Box>
               </Box>
@@ -83,7 +81,7 @@ export default async function NurseryJobsPage() {
                     sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}
                   >
                     {closedJobs.map((job) => (
-                      <JobRow key={job.id} job={job} />
+                      <NurseryJobRow key={job.id} job={job} />
                     ))}
                   </Box>
                 </Box>
@@ -96,62 +94,3 @@ export default async function NurseryJobsPage() {
     </>
   );
 }
-
-const JobRow = ({job}: {job: Job}) => (
-  <Box
-    sx={{
-      p: {xs: 1.5, md: 2},
-      bgcolor: '#FAFAFA',
-      borderRadius: 2,
-      border: '1px solid #E0E0E0',
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 1.5,
-      flexWrap: 'wrap',
-    }}
-  >
-    <Box sx={{flex: 1, minWidth: 0}}>
-      <Typography variant="subtitle2" sx={{fontWeight: 700, mb: 0.5}}>
-        {job.title}
-      </Typography>
-      <Box sx={{display: 'flex', gap: 1.5, flexWrap: 'wrap'}}>
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-          <CalendarTodayIcon sx={{fontSize: 13, color: '#AAAAAA'}} />
-          <Typography variant="caption" color="text.secondary">
-            {new Date(job.workDate).toLocaleDateString('ja-JP')}
-          </Typography>
-        </Box>
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-          <AccessTimeIcon sx={{fontSize: 13, color: '#AAAAAA'}} />
-          <Typography variant="caption" color="text.secondary">
-            {job.workTimeStart}〜{job.workTimeEnd}
-          </Typography>
-        </Box>
-        {job.hourlyWage && (
-          <Typography variant="caption" color="text.secondary">
-            時給{job.hourlyWage.toLocaleString()}円
-          </Typography>
-        )}
-      </Box>
-    </Box>
-    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}>
-      <Chip
-        label={job.status === JobStatus.OPEN ? '公開中' : '終了'}
-        size="small"
-        sx={{
-          bgcolor: job.status === JobStatus.OPEN ? '#E8F5E9' : '#F9F9F9',
-          color: job.status === JobStatus.OPEN ? '#2E7D32' : '#AAAAAA',
-          fontSize: '0.7rem',
-        }}
-      />
-      <Button
-        href={`/nursery/jobs/${job.id}/edit`}
-        size="small"
-        variant="outlined"
-        sx={{fontSize: '0.75rem', py: 0.5}}
-      >
-        編集
-      </Button>
-    </Box>
-  </Box>
-);
