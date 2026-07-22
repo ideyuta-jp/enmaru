@@ -287,7 +287,8 @@ export default function JobForm({
       workContentMissing ||
       form.workDates.length === 0 ||
       !form.workTimeStart ||
-      !form.workTimeEnd;
+      !form.workTimeEnd ||
+      !form.hourlyWage.trim();
     // Duration in minutes — ordering alone isn't enough since a posting must
     // be at least one hour long (mirrors job-actions.ts).
     const timeDiff =
@@ -482,13 +483,17 @@ export default function JobForm({
 
       {/* 時給 */}
       <TextField
-        label="時給（円・任意）"
+        label="時給（円・必須）"
         type="number"
         value={form.hourlyWage}
         onChange={(e) => set('hourlyWage', e.target.value)}
+        required
         size="small"
         slotProps={{htmlInput: {min: 1}}}
-        helperText="未定の場合は空欄のままにしてください"
+        error={submitted && !form.hourlyWage.trim()}
+        helperText={
+          submitted && !form.hourlyWage.trim() ? '入力してください' : undefined
+        }
       />
 
       <Divider />
