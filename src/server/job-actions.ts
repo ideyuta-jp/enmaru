@@ -15,8 +15,9 @@ import {toMinutes} from '@/utils/date';
 import {blankToNull} from '@/utils/string';
 
 // Validate + normalize a posting form. Required fields mirror the non-null
-// columns in the schema, plus hourlyWage (app-layer required; the column
-// stays Int? since existing null rows are left as-is).
+// columns in the schema, plus hourlyWage (app-layer required — see
+// https://github.com/ideyuta-jp/enmaru/issues/151; the column stays Int?
+// since existing null rows are left as-is).
 function parseJobInput(
   input: JobInput,
 ): {ok: true; data: ValidJob} | {ok: false; message: string} {
@@ -93,7 +94,7 @@ interface ValidJob {
   workContentNote: string | null;
   workTimeStart: string;
   workTimeEnd: string;
-  hourlyWage: number | null;
+  hourlyWage: number;
   qualification: string[];
   transportationExpense: boolean | null;
   transportationExpenseNote: string | null;
