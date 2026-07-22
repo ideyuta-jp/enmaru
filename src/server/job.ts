@@ -15,7 +15,6 @@ function toJob(p: JobPosting): Job {
     workTimeStart: p.workTimeStart,
     workTimeEnd: p.workTimeEnd,
     hourlyWage: p.hourlyWage,
-    qualification: p.qualification,
     transportationExpense: p.transportationExpense,
     transportationExpenseNote: p.transportationExpenseNote,
     dresscode: p.dresscode,

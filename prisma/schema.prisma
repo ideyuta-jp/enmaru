@@ -251,8 +251,6 @@ model JobPosting {
   remarks                   String?
   // Documents this posting requires to be verified before a seeker may apply.
   requiredDocuments         SeekerDocumentType[] @default([])
-  // 募集に必要な資格（例: "保育士資格必須", "幼稚園教諭免許可", "資格不問"）
-  qualification             String[]             @default([])
   // 交通費: true=あり / false=なし / null=未設定
   transportationExpense     Boolean?
   transportationExpenseNote String?

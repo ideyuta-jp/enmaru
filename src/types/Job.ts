@@ -24,7 +24,6 @@ export interface Job {
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number | null;
-  qualification: string[];
   // true = paid, false = not paid, null = unset.
   transportationExpense: boolean | null;
   transportationExpenseNote: string | null;
@@ -59,7 +58,6 @@ export interface JobInput {
   workTimeStart: string; // 'HH:mm'
   workTimeEnd: string;
   hourlyWage: string;
-  qualification: string[];
   transportationExpense: string; // '' | 'yes' | 'no'
   transportationExpenseNote: string;
   dresscode: string;
@@ -95,7 +93,6 @@ export const EMPTY_JOB: JobInput = {
   workTimeStart: '',
   workTimeEnd: '',
   hourlyWage: '',
-  qualification: [],
   transportationExpense: '',
   transportationExpenseNote: '',
   dresscode: '',
@@ -121,7 +118,6 @@ export function toJobInput(job: Job): JobInput {
     workTimeStart: job.workTimeStart,
     workTimeEnd: job.workTimeEnd,
     hourlyWage: job.hourlyWage?.toString() ?? '',
-    qualification: job.qualification,
     transportationExpense: decodeTransportationExpense(
       job.transportationExpense,
     ),
