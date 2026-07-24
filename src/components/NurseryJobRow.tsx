@@ -89,7 +89,9 @@ export default function NurseryJobRow({job}: Props) {
             )}
           </Box>
         </Box>
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}>
+        <Box
+          sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}
+        >
           <Chip
             label={job.status === JobStatus.OPEN ? '公開中' : '終了'}
             size="small"
