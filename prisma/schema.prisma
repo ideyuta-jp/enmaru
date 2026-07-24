@@ -172,6 +172,69 @@ model SeekerProfile {
 
   engagements Engagement[]
   documents   SeekerDocument[]
+  resume      SeekerResume?
+}
+
+// 保育士バディがWeb上で入力する履歴書の内容 — SeekerDocument(RESUME)として
+// 自動保存されるPDFの元データ。SeekerProfileと1対1。ここに持たせる項目は
+// SeekerProfileが現状持っていないPII（管理者のみ閲覧、docs/requirements.md
+// の個人情報境界に準拠）のため、SeekerProfileを直接拡張せず別モデルとする。
+// licenses（資格）・bio（自己PR）はここに重複させない — PDF生成時に
+// SeekerProfileから直接読み取ることで、情報源を一本化する。
+model SeekerResume {
+  id       String        @id @default(cuid())
+  seekerId String        @unique
+  seeker   SeekerProfile @relation(fields: [seekerId], references: [id])
+
+  // 生年月日・住所・電話番号（管理者のみ）
+  birthDate   DateTime?
+  postalCode  String?
+  prefecture  String?
+  city        String?
+  addressLine String?
+  phone       String?
+  // 証明写真（R2オブジェクトキー）。アップロードUIは今回未実装、将来追加用（#167）。
+  photoFileKey String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  education   SeekerEducationHistory[]
+  workHistory SeekerWorkHistory[]
+}
+
+// 学歴の1エントリ（学校ごとに1行）。PDF出力時に「入学／卒業」の2行に展開する。
+// orderで表示順（古い順）を制御する。graduationStatusはフォーム上はプルダウン
+// （卒業／中退／卒業見込み）で選ばせるが、SeekerProfileのexperienceYears/
+// blankYearsと同じ「スキーマはString?、選択肢はフォーム側の定数」という
+// 既存パターンに倣い、Prisma enumにはしない。
+model SeekerEducationHistory {
+  id               String       @id @default(cuid())
+  resumeId         String
+  resume           SeekerResume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  schoolName       String
+  graduationStatus String? // フォーム上はプルダウン：卒業／中退／卒業見込み
+  // 'YYYY-MM'形式。履歴書の慣例に合わせ日付精度は月までとする。
+  // フォーム上は年・月それぞれ独立したプルダウン(Select)2つで入力する。
+  startYearMonth String?
+  endYearMonth   String? // 空欄=在学中
+  order          Int      @default(0)
+}
+
+// 職歴の1エントリ（企業ごとに1行）。SeekerProfile.experience（マッチング
+// 相手向けの自由記述の職務経歴）とは別物 — こちらは履歴書専用の構造化データ。
+// employmentTypeもgraduationStatusと同様、スキーマはString?・フォーム側で
+// プルダウンの選択肢を持つ。
+model SeekerWorkHistory {
+  id             String       @id @default(cuid())
+  resumeId       String
+  resume         SeekerResume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  companyName    String
+  employmentType String? // フォーム上はプルダウン：正社員／契約社員／派遣社員／パート・アルバイト／業務委託／その他
+  description    String? // 業務内容など自由記述（任意）
+  startYearMonth String?
+  endYearMonth   String? // 空欄=現在勤務中
+  order          Int      @default(0)
 }
 
 model NurseryProfile {
@@ -333,9 +396,11 @@ model ChatMessage {
 // "Document") because the app will likely handle other document kinds later
 // (nursery audit paperwork, billing), which should be their own models.
 // fileKey is the R2 object key (a signed URL is produced via src/lib/storage.ts).
-// RESUME is upload-only for the MVP — the in-app résumé form path (spec 06 §2.2)
-// is intentionally NOT supported yet; whether it is needed is tracked in #18.
-// Admin verifies each by eye — no auto-verification.
+// RESUME's file can come from either a manual upload (document-actions.ts's
+// uploadDocument) or an auto-generated PDF from the seeker's web résumé
+// (resume-actions.ts's saveResume, backed by SeekerResume) — both write to
+// this same row via the same upsert key, so whichever the seeker used most
+// recently wins. Admin verifies each by eye — no auto-verification.
 model SeekerDocument {
   id              String               @id @default(cuid())
   seekerId        String

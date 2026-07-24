@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '12mb',
     },
   },
+  // server/resume-pdf.tsx reads the embedded résumé fonts via a runtime
+  // path.join(process.cwd(), ...), not a static import/require — Next's
+  // output file tracing only follows the latter, so the font files would be
+  // silently missing from the deployed serverless bundle without this.
+  outputFileTracingIncludes: {
+    '/resume': ['./src/assets/fonts/**'],
+  },
 };
 
 export default nextConfig;

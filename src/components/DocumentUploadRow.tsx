@@ -30,9 +30,16 @@ const STATUS_STYLE: Record<SeekerDocumentStatus, {bg: string; color: string}> =
 interface Props {
   doc: MyDocument;
   required?: boolean;
+  // Extra guidance shown under the type label (used for RESUME's "you can
+  // also generate this from the web résumé" pointer — see documents/page.tsx).
+  hint?: React.ReactNode;
 }
 
-export default function DocumentUploadRow({doc, required = false}: Props) {
+export default function DocumentUploadRow({
+  doc,
+  required = false,
+  hint,
+}: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -130,6 +137,16 @@ export default function DocumentUploadRow({doc, required = false}: Props) {
           sx={{color: '#C62828', display: 'block', mb: 1}}
         >
           差し戻し理由：{doc.rejectionReason}
+        </Typography>
+      )}
+
+      {hint && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block', mb: 1}}
+        >
+          {hint}
         </Typography>
       )}
 
