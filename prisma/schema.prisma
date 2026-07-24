@@ -150,6 +150,9 @@ model SeekerProfile {
   preferredPeriod   String[] @default([])
   preferredTimeSlot String[] @default([])
 
+  // 関わりたい年齢層（公開）。選択肢テキストはアプリ層（コンポーネント）で管理する。
+  preferredAgeGroups String[] @default([])
+
   // 大切にしていること（公開）
   values String?
 
