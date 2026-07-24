@@ -23,9 +23,10 @@ interface Props {
 
 // One posting row on the nursery's job management list. Client component (not
 // the list page itself) because deleting needs a confirm dialog, a pending
-// state, and an inline error — the same shape as NurseryPhotoUpload's delete
-// flow. A successful delete refreshes the server-rendered list via router
-// rather than tracking removal locally, since the parent page owns the list.
+// state, and an inline error — the same shape as AdminDocumentsTable's
+// reject-reason dialog. A successful delete refreshes the server-rendered
+// list via router rather than tracking removal locally, since the parent
+// page owns the list.
 export default function NurseryJobRow({job}: Props) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -81,7 +82,7 @@ export default function NurseryJobRow({job}: Props) {
                 {job.workTimeStart}〜{job.workTimeEnd}
               </Typography>
             </Box>
-            {job.hourlyWage && (
+            {job.hourlyWage !== null && (
               <Typography variant="caption" color="text.secondary">
                 時給{job.hourlyWage.toLocaleString()}円
               </Typography>
