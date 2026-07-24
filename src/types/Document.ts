@@ -5,13 +5,15 @@ export type SeekerDocumentType =
   | 'RESUME'
   | 'LICENSE'
   | 'HEALTH_CHECK'
-  | 'STOOL_TEST';
+  | 'STOOL_TEST'
+  | 'KINDERGARTEN_TEACHER_LICENSE';
 
 export const SeekerDocumentType = {
   RESUME: 'RESUME',
   LICENSE: 'LICENSE',
   HEALTH_CHECK: 'HEALTH_CHECK',
   STOOL_TEST: 'STOOL_TEST',
+  KINDERGARTEN_TEACHER_LICENSE: 'KINDERGARTEN_TEACHER_LICENSE',
 } as const;
 
 // Verification status of a submitted document.
@@ -29,6 +31,7 @@ export const ALL_DOCUMENT_TYPES: SeekerDocumentType[] = [
   SeekerDocumentType.LICENSE,
   SeekerDocumentType.HEALTH_CHECK,
   SeekerDocumentType.STOOL_TEST,
+  SeekerDocumentType.KINDERGARTEN_TEACHER_LICENSE,
 ];
 
 // Baseline documents a seeker is expected to get approved (resume and
@@ -45,6 +48,7 @@ export const DOCUMENT_TYPE_LABEL: Record<SeekerDocumentType, string> = {
   LICENSE: '保育士証',
   HEALTH_CHECK: '健康診断書',
   STOOL_TEST: '検便結果',
+  KINDERGARTEN_TEACHER_LICENSE: '幼稚園教諭免許状',
 };
 
 export const DOCUMENT_STATUS_LABEL: Record<SeekerDocumentStatus, string> = {
