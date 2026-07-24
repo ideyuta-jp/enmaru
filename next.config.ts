@@ -13,8 +13,12 @@ const nextConfig: NextConfig = {
   // path.join(process.cwd(), ...), not a static import/require — Next's
   // output file tracing only follows the latter, so the font files would be
   // silently missing from the deployed serverless bundle without this.
+  // The global '/*' key (the documented pattern for runtime assets) is used
+  // instead of '/resume' because the fonts are consumed by a Server Action,
+  // and which route bundle a Server Action's trace belongs to is not worth
+  // guessing; the value is scoped to the font dir, so traces stay small.
   outputFileTracingIncludes: {
-    '/resume': ['./src/assets/fonts/**'],
+    '/*': ['./src/assets/fonts/**'],
   },
 };
 
