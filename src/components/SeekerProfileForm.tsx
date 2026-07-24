@@ -415,6 +415,9 @@ export default function SeekerProfileForm({initial}: Props) {
         <Divider />
 
         {/* 関わりたい年齢層 */}
+        {/* FIXME: This section is labeled 公開 but preferredAgeGroups is not yet
+            shown anywhere on the nursery-facing side (profile/preview, match.ts),
+            unlike every other 公開 field. Add it to those views or drop the label. */}
         <Box>
           {sectionLabel('関わりたい年齢層')}
           {visibilityNote('公開')}
