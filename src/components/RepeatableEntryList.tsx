@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-interface Props<T> {
+interface Props<T extends {_key: string}> {
   label: string;
   items: T[];
   onChange: (next: T[]) => void;
@@ -28,7 +28,7 @@ interface Props<T> {
 // the rest of the form). Shared by ResumeForm's 学歴 and 職歴 sections; only
 // each row's own fields differ, so the add/remove/list mechanics live here
 // once.
-export default function RepeatableEntryList<T>({
+export default function RepeatableEntryList<T extends {_key: string}>({
   label,
   items,
   onChange,
@@ -63,7 +63,7 @@ export default function RepeatableEntryList<T>({
       <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
         {items.map((item, index) => (
           <Box
-            key={index}
+            key={item._key}
             sx={{
               display: 'flex',
               gap: 1,

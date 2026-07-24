@@ -37,4 +37,14 @@ describe('formatYearMonthRange', () => {
   it('returns an empty string when both are blank', () => {
     expect(formatYearMonthRange('', '', '現在')).toBe('');
   });
+
+  it('stays open-ended when end and endLabel are both blank', () => {
+    expect(formatYearMonthRange('2013-04', '', '')).toBe('2013年4月 〜');
+  });
+
+  it('stays open-ended when end is malformed', () => {
+    expect(formatYearMonthRange('2013-04', '2014', '現在')).toBe(
+      '2013年4月 〜',
+    );
+  });
 });

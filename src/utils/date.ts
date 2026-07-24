@@ -35,7 +35,10 @@ export function formatYearMonth(yearMonth: string): string {
 // without generating the PDF. `endLabel` is what to show when `end` is blank
 // but `start` is set (an ongoing entry: 在学中 for education, 現在勤務中 for
 // work history). Returns '' when `start` itself is blank — an ongoing label
-// with no start date isn't a meaningful range.
+// with no start date isn't a meaningful range. When no end text can be
+// produced either (blank `endLabel`, or a malformed `end`), the range stays
+// open-ended ('2010年4月 〜') instead of trailing off after a dangling
+// separator.
 export function formatYearMonthRange(
   start: string,
   end: string,
@@ -44,5 +47,5 @@ export function formatYearMonthRange(
   const startText = formatYearMonth(start);
   if (!startText) return '';
   const endText = end ? formatYearMonth(end) : endLabel;
-  return `${startText} 〜 ${endText}`;
+  return endText ? `${startText} 〜 ${endText}` : `${startText} 〜`;
 }

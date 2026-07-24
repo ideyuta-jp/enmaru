@@ -253,6 +253,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    setSaved(false);
     try {
       const result = await saveResume(form);
       if (!result.ok) {
@@ -389,48 +390,47 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
             onChange={(next) => set('education', next)}
             createEmpty={newEducationEntry}
             addButtonLabel="学歴を追加する"
-            renderRow={(entry, update) => (
-              <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
-                <TextField
-                  label="学校名"
-                  value={entry.schoolName}
-                  onChange={(e) => update({schoolName: e.target.value})}
-                  size="small"
-                  fullWidth
-                />
-                <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-                  <YearMonthSelect
-                    label="入学年月"
-                    value={entry.startYearMonth}
-                    onChange={(v) => update({startYearMonth: v})}
+            renderRow={(entry, update) => {
+              const rangeText = formatYearMonthRange(
+                entry.startYearMonth,
+                entry.endYearMonth,
+                '在学中',
+              );
+              return (
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                  <TextField
+                    label="学校名"
+                    value={entry.schoolName}
+                    onChange={(e) => update({schoolName: e.target.value})}
+                    size="small"
+                    fullWidth
                   />
-                  <YearMonthSelect
-                    label="卒業年月（在学中は空欄）"
-                    value={entry.endYearMonth}
-                    onChange={(v) => update({endYearMonth: v})}
-                  />
-                  <OptionSelect
-                    label="区分"
-                    options={GRADUATION_STATUS_OPTIONS}
-                    value={entry.graduationStatus}
-                    onChange={(v) => update({graduationStatus: v})}
-                  />
+                  <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
+                    <YearMonthSelect
+                      label="入学年月"
+                      value={entry.startYearMonth}
+                      onChange={(v) => update({startYearMonth: v})}
+                    />
+                    <YearMonthSelect
+                      label="卒業年月（在学中は空欄）"
+                      value={entry.endYearMonth}
+                      onChange={(v) => update({endYearMonth: v})}
+                    />
+                    <OptionSelect
+                      label="区分"
+                      options={GRADUATION_STATUS_OPTIONS}
+                      value={entry.graduationStatus}
+                      onChange={(v) => update({graduationStatus: v})}
+                    />
+                  </Box>
+                  {rangeText && (
+                    <Typography variant="caption" color="text.secondary">
+                      {rangeText}
+                    </Typography>
+                  )}
                 </Box>
-                {formatYearMonthRange(
-                  entry.startYearMonth,
-                  entry.endYearMonth,
-                  '在学中',
-                ) && (
-                  <Typography variant="caption" color="text.secondary">
-                    {formatYearMonthRange(
-                      entry.startYearMonth,
-                      entry.endYearMonth,
-                      '在学中',
-                    )}
-                  </Typography>
-                )}
-              </Box>
-            )}
+              );
+            }}
           />
         </Box>
 
@@ -445,57 +445,56 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
             onChange={(next) => set('workHistory', next)}
             createEmpty={newWorkHistoryEntry}
             addButtonLabel="職歴を追加する"
-            renderRow={(entry, update) => (
-              <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
-                <TextField
-                  label="会社名"
-                  value={entry.companyName}
-                  onChange={(e) => update({companyName: e.target.value})}
-                  size="small"
-                  fullWidth
-                />
-                <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-                  <YearMonthSelect
-                    label="入社年月"
-                    value={entry.startYearMonth}
-                    onChange={(v) => update({startYearMonth: v})}
+            renderRow={(entry, update) => {
+              const rangeText = formatYearMonthRange(
+                entry.startYearMonth,
+                entry.endYearMonth,
+                '現在勤務中',
+              );
+              return (
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                  <TextField
+                    label="会社名"
+                    value={entry.companyName}
+                    onChange={(e) => update({companyName: e.target.value})}
+                    size="small"
+                    fullWidth
                   />
-                  <YearMonthSelect
-                    label="退社年月（現在勤務中は空欄）"
-                    value={entry.endYearMonth}
-                    onChange={(v) => update({endYearMonth: v})}
+                  <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
+                    <YearMonthSelect
+                      label="入社年月"
+                      value={entry.startYearMonth}
+                      onChange={(v) => update({startYearMonth: v})}
+                    />
+                    <YearMonthSelect
+                      label="退社年月（現在勤務中は空欄）"
+                      value={entry.endYearMonth}
+                      onChange={(v) => update({endYearMonth: v})}
+                    />
+                    <OptionSelect
+                      label="雇用形態"
+                      options={EMPLOYMENT_TYPE_OPTIONS}
+                      value={entry.employmentType}
+                      onChange={(v) => update({employmentType: v})}
+                    />
+                  </Box>
+                  <TextField
+                    label="業務内容（任意）"
+                    value={entry.description}
+                    onChange={(e) => update({description: e.target.value})}
+                    size="small"
+                    multiline
+                    rows={2}
+                    fullWidth
                   />
-                  <OptionSelect
-                    label="雇用形態"
-                    options={EMPLOYMENT_TYPE_OPTIONS}
-                    value={entry.employmentType}
-                    onChange={(v) => update({employmentType: v})}
-                  />
+                  {rangeText && (
+                    <Typography variant="caption" color="text.secondary">
+                      {rangeText}
+                    </Typography>
+                  )}
                 </Box>
-                <TextField
-                  label="業務内容（任意）"
-                  value={entry.description}
-                  onChange={(e) => update({description: e.target.value})}
-                  size="small"
-                  multiline
-                  rows={2}
-                  fullWidth
-                />
-                {formatYearMonthRange(
-                  entry.startYearMonth,
-                  entry.endYearMonth,
-                  '現在勤務中',
-                ) && (
-                  <Typography variant="caption" color="text.secondary">
-                    {formatYearMonthRange(
-                      entry.startYearMonth,
-                      entry.endYearMonth,
-                      '現在勤務中',
-                    )}
-                  </Typography>
-                )}
-              </Box>
-            )}
+              );
+            }}
           />
         </Box>
 

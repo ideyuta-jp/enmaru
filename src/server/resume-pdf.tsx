@@ -11,11 +11,11 @@ import {
 import type {EducationEntryInput, WorkHistoryEntryInput} from '@/types/Resume';
 import {formatYearMonth} from '@/utils/date';
 
-// Embedded Japanese font — @react-pdf/renderer renders entirely in Node (no
-// headless browser), which is why this approach was chosen: this sandboxed
-// environment blocks headless Chromium's outbound HTTPS at the network level,
-// so any HTML-to-PDF-via-browser approach would be unusable here, but a pure
-// layout/encoding library needs no network access at render time.
+// @react-pdf's built-in fonts have no Japanese glyphs, so a Japanese font
+// must be registered for Japanese text to render at all. The files are
+// read via a runtime-built path that output file tracing cannot follow;
+// next.config.ts's outputFileTracingIncludes keeps them in the deploy
+// bundle — update it if these files move.
 Font.register({
   family: 'Noto Sans JP',
   fonts: [
