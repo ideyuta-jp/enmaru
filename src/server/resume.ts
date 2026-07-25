@@ -35,8 +35,14 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
     };
   }
 
+  const bd = resume.birthDate;
   return {
-    birthDate: resume.birthDate?.toISOString().slice(0, 10) ?? '',
+    birthDate:
+      bd == null
+        ? ''
+        : typeof bd === 'string'
+          ? (bd as string).slice(0, 10)
+          : (bd as Date).toISOString().slice(0, 10),
     postalCode: resume.postalCode ?? '',
     prefecture: resume.prefecture ?? '',
     city: resume.city ?? '',

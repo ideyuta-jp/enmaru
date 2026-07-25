@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -173,6 +173,15 @@ function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
   const [year, setYear] = useState(initial[0]);
   const [month, setMonth] = useState(initial[1]);
   const [day, setDay] = useState(initial[2]);
+
+  // Sync internal state when value prop changes (e.g. after router.refresh()
+  // re-delivers server data, or when the parent resets the form).
+  useEffect(() => {
+    const parts = value ? value.split('-') : ['', '', ''];
+    setYear(parts[0] ?? '');
+    setMonth(parts[1] ?? '');
+    setDay(parts[2] ?? '');
+  }, [value]);
 
   function set(nextYear: string, nextMonth: string, nextDay: string) {
     setYear(nextYear);
