@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
+import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 
 import DocumentUploadRow from '@/components/DocumentUploadRow';
@@ -9,7 +10,20 @@ import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {listMyDocuments} from '@/server/document';
-import {REQUIRED_SEEKER_DOCUMENT_TYPES} from '@/types/Document';
+import {
+  REQUIRED_SEEKER_DOCUMENT_TYPES,
+  SeekerDocumentType,
+} from '@/types/Document';
+
+// Only the RESUME row gets a pointer to the web résumé — scanning/uploading
+// stays available (and unchanged) for every document type.
+const RESUME_HINT = (
+  <>
+    スキャンなしでOK。
+    <MuiLink href="/resume">WEB履歴書</MuiLink>
+    からも作成できます →
+  </>
+);
 
 export const metadata: Metadata = {
   title: '書類',
@@ -46,7 +60,16 @@ export default async function SeekerDocumentsPage() {
         </Typography>
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
           {requiredDocs.map((doc) => (
-            <DocumentUploadRow key={doc.documentType} doc={doc} required />
+            <DocumentUploadRow
+              key={doc.documentType}
+              doc={doc}
+              required
+              hint={
+                doc.documentType === SeekerDocumentType.RESUME
+                  ? RESUME_HINT
+                  : undefined
+              }
+            />
           ))}
         </Box>
 
