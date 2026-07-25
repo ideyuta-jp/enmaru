@@ -68,6 +68,46 @@ function newWorkHistoryEntry(): WorkHistoryEntryInput {
   };
 }
 
+interface DateUnitSelectProps {
+  unit: string; // '年' | '月' | '日' — placeholder and option suffix at once
+  options: number[];
+  // Zero-pad the stored value ('04') — months/days, to keep 'YYYY-MM(-DD)'
+  // strings well-formed. Years stay unpadded.
+  pad?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  minWidth?: number;
+}
+
+// One unit of a date ('2010年', '4月', '1日') as a single pull-down Select.
+// YearMonthSelect and BirthDateSelect are compositions of this.
+function DateUnitSelect({
+  unit,
+  options,
+  pad = false,
+  value,
+  onChange,
+  minWidth = 90,
+}: DateUnitSelectProps) {
+  return (
+    <Select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      displayEmpty
+      size="small"
+      sx={{minWidth}}
+    >
+      <MenuItem value="">{unit}</MenuItem>
+      {options.map((n) => (
+        <MenuItem key={n} value={pad ? String(n).padStart(2, '0') : String(n)}>
+          {n}
+          {unit}
+        </MenuItem>
+      ))}
+    </Select>
+  );
+}
+
 interface YearMonthSelectProps {
   label: string;
   value: string; // 'YYYY-MM', '' = unset
@@ -94,34 +134,20 @@ function YearMonthSelect({label, value, onChange}: YearMonthSelectProps) {
         {label}
       </Typography>
       <Box sx={{display: 'flex', gap: 1}}>
-        <Select
+        <DateUnitSelect
+          unit="年"
+          options={YEARS}
+          minWidth={100}
           value={year}
-          onChange={(e) => set(e.target.value, month)}
-          displayEmpty
-          size="small"
-          sx={{minWidth: 100}}
-        >
-          <MenuItem value="">年</MenuItem>
-          {YEARS.map((y) => (
-            <MenuItem key={y} value={String(y)}>
-              {y}年
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
+          onChange={(y) => set(y, month)}
+        />
+        <DateUnitSelect
+          unit="月"
+          options={MONTHS}
+          pad
           value={month}
-          onChange={(e) => set(year, e.target.value)}
-          displayEmpty
-          size="small"
-          sx={{minWidth: 90}}
-        >
-          <MenuItem value="">月</MenuItem>
-          {MONTHS.map((m) => (
-            <MenuItem key={m} value={String(m).padStart(2, '0')}>
-              {m}月
-            </MenuItem>
-          ))}
-        </Select>
+          onChange={(m) => set(year, m)}
+        />
       </Box>
     </Box>
   );
@@ -153,48 +179,27 @@ function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
         生年月日
       </Typography>
       <Box sx={{display: 'flex', gap: 1}}>
-        <Select
+        <DateUnitSelect
+          unit="年"
+          options={YEARS}
+          minWidth={100}
           value={year}
-          onChange={(e) => set(e.target.value, month, day)}
-          displayEmpty
-          size="small"
-          sx={{minWidth: 100}}
-        >
-          <MenuItem value="">年</MenuItem>
-          {YEARS.map((y) => (
-            <MenuItem key={y} value={String(y)}>
-              {y}年
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
+          onChange={(y) => set(y, month, day)}
+        />
+        <DateUnitSelect
+          unit="月"
+          options={MONTHS}
+          pad
           value={month}
-          onChange={(e) => set(year, e.target.value, day)}
-          displayEmpty
-          size="small"
-          sx={{minWidth: 90}}
-        >
-          <MenuItem value="">月</MenuItem>
-          {MONTHS.map((m) => (
-            <MenuItem key={m} value={String(m).padStart(2, '0')}>
-              {m}月
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
+          onChange={(m) => set(year, m, day)}
+        />
+        <DateUnitSelect
+          unit="日"
+          options={DAYS}
+          pad
           value={day}
-          onChange={(e) => set(year, month, e.target.value)}
-          displayEmpty
-          size="small"
-          sx={{minWidth: 90}}
-        >
-          <MenuItem value="">日</MenuItem>
-          {DAYS.map((d) => (
-            <MenuItem key={d} value={String(d).padStart(2, '0')}>
-              {d}日
-            </MenuItem>
-          ))}
-        </Select>
+          onChange={(d) => set(year, month, d)}
+        />
       </Box>
     </Box>
   );

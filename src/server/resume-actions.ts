@@ -1,11 +1,11 @@
 'use server';
 
 import {prisma} from '@/lib/prisma';
-import {putObject} from '@/lib/storage';
 import {renderResumePdf} from '@/server/resume-pdf';
 import {requireRole} from '@/server/auth';
+import {storeSeekerDocument} from '@/server/document';
 import type {ActionResult} from '@/types/ActionResult';
-import {SeekerDocumentStatus, SeekerDocumentType} from '@/types/Document';
+import {SeekerDocumentType} from '@/types/Document';
 import type {ResumeInput} from '@/types/Resume';
 import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
@@ -85,32 +85,15 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
     workHistory: input.workHistory,
   });
 
-  // Same key scheme and status-reset-on-change semantics as
-  // document-actions.ts's uploadDocument, so the manual-upload path, the
-  // application gate, and admin verification all keep working unchanged —
+  // Submitted through the same path as a manual upload (storeSeekerDocument),
+  // so the application gate and admin verification keep working unchanged —
   // whichever path (upload or web résumé) the seeker used most recently wins.
-  const key = `seeker-documents/${profile.id}/${SeekerDocumentType.RESUME}`;
-  await putObject(key, pdf, 'application/pdf');
-  await prisma.seekerDocument.upsert({
-    where: {
-      seekerId_documentType: {
-        seekerId: profile.id,
-        documentType: SeekerDocumentType.RESUME,
-      },
-    },
-    update: {
-      fileKey: key,
-      status: SeekerDocumentStatus.PENDING,
-      rejectionReason: null,
-      uploadedAt: new Date(),
-      verifiedAt: null,
-    },
-    create: {
-      seekerId: profile.id,
-      documentType: SeekerDocumentType.RESUME,
-      fileKey: key,
-    },
-  });
+  await storeSeekerDocument(
+    profile.id,
+    SeekerDocumentType.RESUME,
+    pdf,
+    'application/pdf',
+  );
 
   return {ok: true};
 }
