@@ -142,3 +142,29 @@ first; do not force it blindly.
 The same command migrates **dev** with the dev branch's direct `DATABASE_URL`
 (or just run `pnpm db:migrate` locally, which both creates and applies against the
 dev branch from `.env.local`).
+
+## Closing expired job postings
+
+A `JobPosting`'s status only otherwise changes when a seeker applies
+(immediate first-come match), so an unmatched posting whose `workDate` has
+passed would sit `OPEN` indefinitely. `.github/workflows/close-expired-jobs.yml`
+runs `scripts/close-expired-jobs.mjs` daily at 00:05 JST to close any `OPEN`
+posting whose `workDate` is before today (JST); today's own postings stay
+`OPEN` all day.
+
+**One-time setup**: this is the first workflow in this repo to write to a
+database from GitHub Actions, so it needs a `DATABASE_URL` repository secret
+(Settings > Secrets and variables > Actions) pointing at **prod**'s pooled
+connection string (the same one Netlify's runtime uses — this script only
+runs plain queries, not `migrate`, so it doesn't need the direct/unpooled
+endpoint). Until that secret is set, the scheduled run fails at the
+`DATABASE_URL` step.
+
+To preview or run it by hand:
+
+```bash
+cd <your enmaru checkout>
+pnpm jobs:close-expired --dry-run   # dev, from .env.local — lists what would close
+pnpm jobs:close-expired             # dev — actually closes them
+DATABASE_URL='<prod connection string>' node scripts/close-expired-jobs.mjs --dry-run
+```

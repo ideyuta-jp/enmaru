@@ -1,0 +1,22 @@
+name: Close expired job postings
+
+on:
+  schedule:
+    # 00:05 JST daily (GitHub Actions cron is UTC — 15:05 the previous day).
+    - cron: '5 15 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  close-expired-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: corepack enable
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/close-expired-jobs.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
