@@ -118,9 +118,18 @@ interface YearMonthSelectProps {
 // faster to fill in on mobile than tapping through a month picker, and maps
 // directly onto the 'YYYY-MM' string the rest of the form/server use.
 function YearMonthSelect({label, value, onChange}: YearMonthSelectProps) {
-  const [year, month] = value ? value.split('-') : ['', ''];
+  // The halves live in local state because a half-picked pair (year chosen,
+  // month not yet) cannot be represented in the committed 'YYYY-MM' string —
+  // deriving them from `value` would bounce a single pick straight back to
+  // empty. Only a complete pair reaches onChange; an incomplete one commits
+  // '' (= unset).
+  const initial = value ? value.split('-') : ['', ''];
+  const [year, setYear] = useState(initial[0]);
+  const [month, setMonth] = useState(initial[1]);
 
   function set(nextYear: string, nextMonth: string) {
+    setYear(nextYear);
+    setMonth(nextMonth);
     onChange(nextYear && nextMonth ? `${nextYear}-${nextMonth}` : '');
   }
 
@@ -159,9 +168,16 @@ interface BirthDateSelectProps {
 }
 
 function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
-  const [year, month, day] = value ? value.split('-') : ['', '', ''];
+  // Same local-state reasoning as YearMonthSelect, with three parts.
+  const initial = value ? value.split('-') : ['', '', ''];
+  const [year, setYear] = useState(initial[0]);
+  const [month, setMonth] = useState(initial[1]);
+  const [day, setDay] = useState(initial[2]);
 
   function set(nextYear: string, nextMonth: string, nextDay: string) {
+    setYear(nextYear);
+    setMonth(nextMonth);
+    setDay(nextDay);
     onChange(
       nextYear && nextMonth && nextDay
         ? `${nextYear}-${nextMonth}-${nextDay}`
