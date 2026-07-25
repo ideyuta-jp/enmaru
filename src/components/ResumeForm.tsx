@@ -306,7 +306,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       </SectionHeading>
 
       <Alert severity="info" sx={{mb: 3}}>
-        この情報は管理者のみが閲覧します。
+        入力内容は運営が確認します。マッチング成立後は保育園にも共有されます。
       </Alert>
 
       <ErrorAlert message={error} />
