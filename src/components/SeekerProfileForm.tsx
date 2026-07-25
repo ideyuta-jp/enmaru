@@ -19,10 +19,10 @@ import Typography from '@mui/material/Typography';
 
 import CheckboxGroup from '@/components/CheckboxGroup';
 import ErrorAlert from '@/components/ErrorAlert';
+import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import SectionHeading from '@/components/SectionHeading';
 import TagSelector from '@/components/TagSelector';
 import {saveSeekerProfile} from '@/server/seeker-actions';
-import {CITIES_BY_PREFECTURE, PREFECTURES} from '@/types/Area';
 import {EMPTY_SEEKER_PROFILE, type SeekerProfileInput} from '@/types/Seeker';
 
 const LICENSE_OPTIONS = ['保育士資格', '幼稚園教諭免許', '子育て支援員'];
@@ -276,45 +276,17 @@ export default function SeekerProfileForm({initial}: Props) {
           {sectionLabel('希望エリア')}
           {visibilityNote('公開')}
           <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-            <FormControl size="small" sx={{minWidth: 160}}>
-              <Select
-                displayEmpty
-                value={form.preferredPrefecture}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    preferredPrefecture: e.target.value,
-                    preferredCity: '',
-                  }))
-                }
-                renderValue={(v) => v || '都道府県を選択'}
-              >
-                <MenuItem value="">未選択</MenuItem>
-                {PREFECTURES.map((p) => (
-                  <MenuItem key={p} value={p}>
-                    {p}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{minWidth: 160}}>
-              <Select
-                displayEmpty
-                value={form.preferredCity}
-                onChange={(e) => set('preferredCity', e.target.value)}
-                renderValue={(v) => v || '市区町村を選択'}
-                disabled={!form.preferredPrefecture}
-              >
-                <MenuItem value="">未選択</MenuItem>
-                {(CITIES_BY_PREFECTURE[form.preferredPrefecture] ?? []).map(
-                  (c) => (
-                    <MenuItem key={c} value={c}>
-                      {c}
-                    </MenuItem>
-                  ),
-                )}
-              </Select>
-            </FormControl>
+            <PrefectureCitySelect
+              prefecture={form.preferredPrefecture}
+              city={form.preferredCity}
+              onChange={(preferredPrefecture, preferredCity) =>
+                setForm((prev) => ({
+                  ...prev,
+                  preferredPrefecture,
+                  preferredCity,
+                }))
+              }
+            />
           </Box>
         </Box>
 
