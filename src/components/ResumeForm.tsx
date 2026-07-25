@@ -17,10 +17,10 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
+import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import RepeatableEntryList from '@/components/RepeatableEntryList';
 import SectionHeading from '@/components/SectionHeading';
 import {saveResume} from '@/server/resume-actions';
-import {CITIES_BY_PREFECTURE, PREFECTURES} from '@/types/Area';
 import {
   EMPTY_RESUME,
   type EducationEntryInput,
@@ -328,43 +328,13 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                 placeholder="850-0000"
                 sx={{width: 160}}
               />
-              <FormControl size="small" sx={{minWidth: 160}}>
-                <Select
-                  displayEmpty
-                  value={form.prefecture}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      prefecture: e.target.value,
-                      city: '',
-                    }))
-                  }
-                  renderValue={(v) => v || '都道府県を選択'}
-                >
-                  <MenuItem value="">未選択</MenuItem>
-                  {PREFECTURES.map((p) => (
-                    <MenuItem key={p} value={p}>
-                      {p}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{minWidth: 160}}>
-                <Select
-                  displayEmpty
-                  value={form.city}
-                  onChange={(e) => set('city', e.target.value)}
-                  renderValue={(v) => v || '市区町村を選択'}
-                  disabled={!form.prefecture}
-                >
-                  <MenuItem value="">未選択</MenuItem>
-                  {(CITIES_BY_PREFECTURE[form.prefecture] ?? []).map((c) => (
-                    <MenuItem key={c} value={c}>
-                      {c}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <PrefectureCitySelect
+                prefecture={form.prefecture}
+                city={form.city}
+                onChange={(prefecture, city) =>
+                  setForm((prev) => ({...prev, prefecture, city}))
+                }
+              />
             </Box>
             <TextField
               label="番地・建物名など"
