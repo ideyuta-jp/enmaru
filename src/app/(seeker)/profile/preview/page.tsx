@@ -39,6 +39,9 @@ const LabeledBlock = ({
 
 export default async function ProfilePreviewPage() {
   const profile = await getSeekerProfileInput();
+  // FIXME: Silent redirect leaves the seeker wondering why they landed on
+  // /profile — show a "register your profile first" message instead, the
+  // way /resume does since #171.
   if (!profile) redirect('/profile');
 
   const preferredArea = [profile.preferredPrefecture, profile.preferredCity]
