@@ -13,6 +13,14 @@ export const EngagementStatus = {
   COMPLETED: 'COMPLETED',
 } as const;
 
+// How many minutes before a shift's scheduled start the seeker may press
+// "start work" (MATCHED -> WORKING). Before this window the action is locked, to
+// stop an accidental early press. Shared by the button (UX lock) and the
+// startWork server action (authoritative gate) so both agree on the boundary.
+// A developer-level constant, not a user/admin setting and not per-posting — the
+// value may later become 60, but it is only ever changed here in code.
+export const WORK_START_LEAD_MINUTES = 30;
+
 // Mutual-review progress, independent of the work lifecycle: neither side has
 // reviewed, one side has, or both have. Only meaningful once the work is
 // COMPLETED.

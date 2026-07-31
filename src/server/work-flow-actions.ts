@@ -4,8 +4,10 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import {notify} from '@/server/notification';
 import type {ActionResult} from '@/types/ActionResult';
+import {WORK_START_LEAD_MINUTES} from '@/types/Engagement';
 import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
+import {isStartWindowOpen} from '@/utils/date';
 
 // Which party (if any) the signed-in user is to this engagement. The seeker party
 // is the engagement's seeker; the nursery party owns the posting. Anyone else is
@@ -28,19 +30,38 @@ async function partyForEngagement(
 }
 
 // Seeker starts the shift: MATCHED -> WORKING. Only the engagement's own seeker,
-// and only from MATCHED.
+// only from MATCHED, and only once the start window is open (see
+// WORK_START_LEAD_MINUTES) — the authoritative half of the gate the button also
+// enforces, since a client clock can't be trusted.
 export async function startWork(engagementId: string): Promise<ActionResult> {
   const user = await requireRole([UserRole.SEEKER]);
 
   const engagement = await prisma.engagement.findUnique({
     where: {id: engagementId},
-    select: {status: true, seeker: {select: {userId: true}}},
+    select: {
+      status: true,
+      seeker: {select: {userId: true}},
+      job: {select: {workDate: true, workTimeStart: true}},
+    },
   });
   if (!engagement || engagement.seeker.userId !== user.id) {
     return {ok: false, message: '対象の業務が見つかりません。'};
   }
   if (engagement.status !== 'MATCHED') {
     return {ok: false, message: 'この業務はすでに開始されています。'};
+  }
+  if (
+    !isStartWindowOpen(
+      engagement.job.workDate.toISOString(),
+      engagement.job.workTimeStart,
+      new Date(),
+      WORK_START_LEAD_MINUTES,
+    )
+  ) {
+    return {
+      ok: false,
+      message: `業務開始は予定時刻の${WORK_START_LEAD_MINUTES}分前から可能です。`,
+    };
   }
 
   // Guard the status in the write so two concurrent starts can't race; the check

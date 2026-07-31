@@ -19,6 +19,43 @@ export function formatDateTime(value: string | Date): string {
   });
 }
 
+// Absolute instant of a shift's scheduled start. `workDateIso` is a stored
+// timestamp whose Asia/Tokyo calendar date is the shift date (however it was
+// persisted), and `workTimeStart` is a JST 'HH:mm' wall-clock time. We read the
+// Tokyo calendar date explicitly (not the UTC date, which can be a day off) and
+// combine it with the start time as JST. JST is a fixed UTC+9 with no DST, so
+// the UTC instant is just the wall clock minus 9 hours.
+export function scheduledStartAt(
+  workDateIso: string,
+  workTimeStart: string,
+): Date {
+  const [y, mo, d] = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+    .format(new Date(workDateIso))
+    .split('-')
+    .map(Number);
+  const [hh, mm] = workTimeStart.split(':').map(Number);
+  return new Date(Date.UTC(y, mo - 1, d, hh - 9, mm));
+}
+
+// Whether `now` has reached the point `leadMinutes` before the shift's scheduled
+// start — the single gate for the "start work" action, so the button and the
+// server action stay in lockstep. There is no upper bound: once open it stays
+// open (a late start is allowed).
+export function isStartWindowOpen(
+  workDateIso: string,
+  workTimeStart: string,
+  now: Date,
+  leadMinutes: number,
+): boolean {
+  const start = scheduledStartAt(workDateIso, workTimeStart);
+  return now.getTime() >= start.getTime() - leadMinutes * 60_000;
+}
+
 // 'YYYY-MM' -> '2010年4月'. Returns '' for an empty/malformed input. Shared by
 // the résumé PDF renderer (server/resume-pdf.tsx) and ResumeForm (client) —
 // kept here rather than in resume-pdf.tsx so the client form doesn't pull in

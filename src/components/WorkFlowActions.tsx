@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,7 +9,8 @@ import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {startWork, submitWorkReport} from '@/server/work-flow-actions';
-import {EngagementStatus} from '@/types/Engagement';
+import {EngagementStatus, WORK_START_LEAD_MINUTES} from '@/types/Engagement';
+import {isStartWindowOpen} from '@/utils/date';
 
 interface Props {
   engagementId: string;
@@ -18,6 +19,11 @@ interface Props {
   viewerParty: 'SEEKER' | 'NURSERY';
   seekerReported: boolean;
   nurseryReported: boolean;
+  // The shift's scheduled start, used to gate the "start work" button (see
+  // WORK_START_LEAD_MINUTES). workDate is an ISO timestamp; workTimeStart is
+  // 'HH:mm' JST.
+  workDate: string;
+  workTimeStart: string;
 }
 
 export default function WorkFlowActions({
@@ -26,11 +32,28 @@ export default function WorkFlowActions({
   viewerParty,
   seekerReported,
   nurseryReported,
+  workDate,
+  workTimeStart,
 }: Props) {
   const router = useRouter();
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Client clock, resolved after mount (null during SSR/first paint so the
+  // button starts locked and there is no hydration mismatch). The first tick is
+  // deferred (not set synchronously in the effect) and then repeats on an
+  // interval, so the button unlocks on its own when the window opens without a
+  // page reload.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 30_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, []);
 
   const myReported =
     viewerParty === 'SEEKER' ? seekerReported : nurseryReported;
@@ -69,17 +92,32 @@ export default function WorkFlowActions({
         </Typography>
       );
     }
+    // Locked until WORK_START_LEAD_MINUTES before the scheduled start, to stop
+    // an accidental early press. The server enforces the same gate; this is the
+    // UX half. `now === null` (pre-mount) counts as locked.
+    const startWindowOpen =
+      now !== null &&
+      isStartWindowOpen(workDate, workTimeStart, now, WORK_START_LEAD_MINUTES);
     return (
       <Box>
         <ErrorAlert message={error} />
         <Button
           variant="contained"
           size="small"
-          disabled={busy}
+          disabled={busy || !startWindowOpen}
           onClick={() => run(() => startWork(engagementId))}
         >
           業務を開始する
         </Button>
+        {!startWindowOpen && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mt: 0.5}}
+          >
+            業務開始予定の{WORK_START_LEAD_MINUTES}分前から開始できます
+          </Typography>
+        )}
       </Box>
     );
   }

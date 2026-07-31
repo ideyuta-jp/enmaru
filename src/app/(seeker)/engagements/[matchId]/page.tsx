@@ -34,6 +34,8 @@ export default async function SeekerEngagementPage({params}: Props) {
             viewerParty={summary.viewerParty}
             seekerReported={summary.seekerReported}
             nurseryReported={summary.nurseryReported}
+            workDate={summary.workDate}
+            workTimeStart={summary.workTimeStart}
           />
         </Box>
         <ChatPanel initial={thread} />
