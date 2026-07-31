@@ -19,9 +19,9 @@ import {
 // stays available (and unchanged) for every document type.
 const RESUME_HINT = (
   <>
-    スキャンなしでOK。
+    手元に履歴書がなくても
     <MuiLink href="/resume">WEB履歴書</MuiLink>
-    からも作成できます →
+    ですぐに作成できます
   </>
 );
 
