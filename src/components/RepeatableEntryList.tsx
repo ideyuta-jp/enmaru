@@ -19,6 +19,8 @@ interface Props<T extends {_key: string}> {
     remove: () => void,
   ) => React.ReactNode;
   addButtonLabel?: string;
+  // Hides the add button once reached — undefined means no cap.
+  maxItems?: number;
 }
 
 // A client-staged array of structured sub-forms with add/remove rows,
@@ -35,6 +37,7 @@ export default function RepeatableEntryList<T extends {_key: string}>({
   createEmpty,
   renderRow,
   addButtonLabel = '追加する',
+  maxItems,
 }: Props<T>) {
   function updateAt(index: number, patch: Partial<T>) {
     onChange(
@@ -95,15 +98,21 @@ export default function RepeatableEntryList<T extends {_key: string}>({
 
       {items.length > 0 && <Divider sx={{my: 1.5}} />}
 
-      <Button
-        onClick={add}
-        startIcon={<AddIcon />}
-        size="small"
-        variant="outlined"
-        sx={{mt: items.length > 0 ? 0 : 1.5}}
-      >
-        {addButtonLabel}
-      </Button>
+      {maxItems === undefined || items.length < maxItems ? (
+        <Button
+          onClick={add}
+          startIcon={<AddIcon />}
+          size="small"
+          variant="outlined"
+          sx={{mt: items.length > 0 ? 0 : 1.5}}
+        >
+          {addButtonLabel}
+        </Button>
+      ) : (
+        <Typography variant="caption" color="text.secondary">
+          最大{maxItems}件まで追加できます
+        </Typography>
+      )}
     </Box>
   );
 }

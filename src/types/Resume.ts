@@ -42,6 +42,15 @@ export interface ResumeInput {
   workHistory: WorkHistoryEntryInput[];
 }
 
+// Row cap for 学歴/職歴 — RepeatableEntryList otherwise lets a client add rows
+// without limit; ResumeForm disables its "add" button at this count and
+// saveResume rejects a direct call that exceeds it anyway.
+export const MAX_RESUME_HISTORY_ENTRIES = 20;
+
+// Char cap for 職歴 the free-text description (業務内容) — ResumeForm enforces
+// via the TextField's native maxLength, saveResume re-checks as the backstop.
+export const MAX_RESUME_DESCRIPTION_LENGTH = 1000;
+
 export const EMPTY_RESUME: ResumeInput = {
   birthDate: '',
   postalCode: '',
