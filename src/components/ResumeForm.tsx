@@ -17,6 +17,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
+import LinkBehavior from '@/components/LinkBehavior';
 import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import RepeatableEntryList from '@/components/RepeatableEntryList';
 import SectionHeading from '@/components/SectionHeading';
@@ -270,8 +271,9 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
     setForm((prev) => ({...prev, [key]: value}));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Reports only whether the save succeeded — failures surface through
+  // `error`, so what happens next (toast, navigation) is the caller's call.
+  async function save(): Promise<boolean> {
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -279,15 +281,39 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       const result = await saveResume(form);
       if (!result.ok) {
         setError(result.message);
-        return;
+        return false;
       }
-      setSaved(true);
-      router.refresh();
+      return true;
     } catch {
       setError('保存に失敗しました。時間をおいて再度お試しください。');
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (await save()) {
+      setSaved(true);
+      router.refresh();
+    }
+  }
+
+  // A real <a href="/profile">, but in-app navigation is intercepted: following
+  // the link would drop the form's unsaved changes (#175), so save first and
+  // navigate only once that succeeds. Modified clicks (Cmd/Ctrl+click, middle
+  // click) never reach onNavigate — next/link leaves those to the browser, so
+  // they open a new tab and this tab keeps the form as it is.
+  async function handleProfileLinkNavigate(e: {preventDefault: () => void}) {
+    e.preventDefault();
+    // next/link navigates as soon as this returns, so cancel above before
+    // bailing out when a save is already running (this link or the submit
+    // button — a link cannot be disabled). A second saveResume would share
+    // `saving`, and whichever finished first would flip it back — re-enabling
+    // the submit button mid-save — besides queueing another PDF render.
+    if (saving) return;
+    if (await save()) router.push('/profile');
   }
 
   const sectionLabel = (text: string) => (
@@ -296,6 +322,22 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}
     >
       {text}
+    </Typography>
+  );
+
+  // Closes both read-only sections, whose values are edited on /profile.
+  const profileEditNote = (
+    <Typography variant="caption" color="text.secondary">
+      <MuiLink
+        // The theme wires MuiLink to LinkBehavior already; naming it here is
+        // what makes next/link's onNavigate visible to the type checker.
+        component={LinkBehavior}
+        href="/profile"
+        onNavigate={handleProfileLinkNavigate}
+      >
+        プロフィール編集
+      </MuiLink>
+      から変更できます
     </Typography>
   );
 
@@ -505,10 +547,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
               未登録です
             </Typography>
           )}
-          <Typography variant="caption" color="text.secondary">
-            <MuiLink href="/profile">プロフィール編集</MuiLink>
-            から変更できます
-          </Typography>
+          {profileEditNote}
         </Box>
 
         <Divider />
@@ -523,10 +562,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
           >
             {bio || '未登録です'}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            <MuiLink href="/profile">プロフィール編集</MuiLink>
-            から変更できます
-          </Typography>
+          {profileEditNote}
         </Box>
 
         <Box
