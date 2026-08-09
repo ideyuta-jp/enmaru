@@ -3,9 +3,11 @@ import type {PostalAddress} from '@/types/Address';
 
 // Resolve a postal code (hyphen optional) to prefecture/city for address
 // autofill. Zipcloud splits the address into prefecture / city / town; town is
-// merged into city to match the NurseryProfile field granularity. Returns null
-// for malformed codes and lookup misses alike — the form falls back to manual
-// input either way.
+// merged into city here, matching NurseryProfileForm's free-text city field.
+// Consumers that need a coarser granularity re-split it downstream — see
+// `resolveCity` in `types/Area.ts`, which ResumeForm uses to hit its fixed city
+// dropdown. Returns null for malformed codes and lookup misses alike — the form
+// falls back to manual input either way.
 export async function lookupPostalAddress(
   postalCode: string,
 ): Promise<PostalAddress | null> {
