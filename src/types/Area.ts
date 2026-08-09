@@ -715,3 +715,16 @@ export const CITIES_BY_PREFECTURE: Record<string, string[]> = {
     'その他',
   ],
 };
+
+// Maps a raw city string from a postal-code lookup onto an entry of
+// CITIES_BY_PREFECTURE. The lookup returns city and town joined (「長崎市西山」)
+// while the list carries city-level entries, so match by prefix — which also
+// covers the ward suffix of designated cities (「静岡市葵区」→「静岡市」).
+// The list is a curated subset, not every municipality: towns, villages and
+// many cities are missing (東京都 carries 7 of its 26 cities). '' is therefore
+// an ordinary outcome, not an edge case — the caller leaves the field for
+// manual selection.
+export function resolveCity(prefecture: string, rawCity: string): string {
+  const cities = CITIES_BY_PREFECTURE[prefecture] ?? [];
+  return cities.find((city) => rawCity.startsWith(city)) ?? '';
+}

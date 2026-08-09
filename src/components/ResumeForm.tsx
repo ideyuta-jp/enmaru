@@ -6,6 +6,7 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
@@ -22,6 +23,8 @@ import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import RepeatableEntryList from '@/components/RepeatableEntryList';
 import SectionHeading from '@/components/SectionHeading';
 import {saveResume} from '@/server/resume-actions';
+import {lookupPostalAddress} from '@/services/address';
+import {resolveCity} from '@/types/Area';
 import {
   EMPTY_RESUME,
   type EducationEntryInput,
@@ -266,9 +269,30 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
 
   function set<K extends keyof ResumeInput>(key: K, value: ResumeInput[K]) {
     setForm((prev) => ({...prev, [key]: value}));
+  }
+
+  // TODO: extract a shared postal-code field — NurseryProfileForm carries the
+  // same zipLoading + onBlur lookup + spinner adornment as this one.
+  async function handlePostalCodeBlur() {
+    if (form.postalCode.replace(/-/g, '').length !== 7) return;
+    setZipLoading(true);
+    try {
+      const address = await lookupPostalAddress(form.postalCode);
+      if (address) {
+        // The city is a fixed dropdown, so an unmatched lookup leaves it empty
+        // for manual selection rather than guessing.
+        const city = resolveCity(address.prefecture, address.city);
+        setForm((prev) => ({...prev, prefecture: address.prefecture, city}));
+      }
+    } catch {
+      // silently ignore — user can fill in manually
+    } finally {
+      setZipLoading(false);
+    }
   }
 
   // Reports only whether the save succeeded — failures surface through
@@ -312,7 +336,9 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
     // button — a link cannot be disabled). A second saveResume would share
     // `saving`, and whichever finished first would flip it back — re-enabling
     // the submit button mid-save — besides queueing another PDF render.
-    if (saving) return;
+    // Same for an in-flight postal lookup as on the submit button, except a
+    // link cannot be disabled — bail out here instead.
+    if (saving || zipLoading) return;
     if (await save()) router.push('/profile');
   }
 
@@ -382,9 +408,22 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                 label="郵便番号"
                 value={form.postalCode}
                 onChange={(e) => set('postalCode', e.target.value)}
+                onBlur={handlePostalCodeBlur}
                 size="small"
                 placeholder="850-0000"
-                sx={{width: 160}}
+                // helperText rather than a sibling caption so the hint is tied
+                // to the input through aria-describedby. Its default 14px side
+                // margins would push the hint onto a second line, so drop them
+                // and let it use the field's full width.
+                helperText="入力すると住所を自動補完します"
+                sx={{width: 220, '& .MuiFormHelperText-root': {mx: 0}}}
+                slotProps={{
+                  input: {
+                    endAdornment: zipLoading ? (
+                      <CircularProgress size={16} sx={{mr: 0.5}} />
+                    ) : null,
+                  },
+                }}
               />
               <PrefectureCitySelect
                 prefecture={form.prefecture}
@@ -575,7 +614,11 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
           <Button
             type="submit"
             variant="contained"
-            disabled={saving}
+            // Also blocked while an autofill is in flight: clicking here blurs
+            // the postal-code field, and save() would read the form before the
+            // looked-up address lands — saving a blank address under a success
+            // toast. The spinner in the field shows why the click is refused.
+            disabled={saving || zipLoading}
             sx={{py: 1.25, flexGrow: {xs: 1, md: 0}, minWidth: {md: 200}}}
           >
             {saving ? '保存中...' : '保存する'}
