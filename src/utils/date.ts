@@ -56,6 +56,20 @@ export function isValidBirthDate(value: string): boolean {
   );
 }
 
+// 'YYYY-MM-DD' birth date + 'YYYY-MM-DD' today -> age in full years, JIS
+// resumes' conventional "満n歳". Returns null if either date is malformed.
+// Used by the résumé PDF renderer (server/resume-pdf.tsx).
+export function calcAge(birthDate: string, todayIso: string): number | null {
+  const b = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
+  const t = /^(\d{4})-(\d{2})-(\d{2})$/.exec(todayIso);
+  if (!b || !t) return null;
+  const [by, bm, bd] = [Number(b[1]), Number(b[2]), Number(b[3])];
+  const [ty, tm, td] = [Number(t[1]), Number(t[2]), Number(t[3])];
+  let age = ty - by;
+  if (tm < bm || (tm === bm && td < bd)) age -= 1;
+  return age;
+}
+
 // A start/end 'YYYY-MM' pair is out of order only once both halves are set —
 // a still-open-ended entry (在学中/現在勤務中) has nothing to compare
 // against. Shared by ResumeForm (inline error) and validateResumeInput
@@ -67,14 +81,36 @@ export function isYearMonthRangeOutOfOrder(
   return start !== '' && end !== '' && start > end;
 }
 
-// 'YYYY-MM' -> '2010年4月'. Returns '' for an empty/malformed input. Shared by
-// the résumé PDF renderer (server/resume-pdf.tsx) and ResumeForm (client) —
-// kept here rather than in resume-pdf.tsx so the client form doesn't pull in
-// that file's @react-pdf/renderer/Node-only dependencies.
+// 'YYYY-MM-DD' -> '1995年4月1日'. Returns '' for an empty/malformed input.
+// The full-date sibling of formatYearMonth — used by the résumé PDF renderer
+// for the birth date and the 作成日 header.
+export function formatYearMonthDay(date: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return '';
+  return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
+}
+
+// 'YYYY-MM' -> '2010年4月'. Returns '' for an empty/malformed input. Used by
+// formatYearMonthRange below for ResumeForm's range summaries; the résumé PDF
+// renderer instead splits the pair into separate table cells with
+// formatYearMonthCells.
 export function formatYearMonth(yearMonth: string): string {
   const match = /^(\d{4})-(\d{2})$/.exec(yearMonth);
   if (!match) return '';
   return `${match[1]}年${Number(match[2])}月`;
+}
+
+// 'YYYY-MM' -> {year: '2010年', month: '4月'}. Both '' for an
+// empty/malformed input, so the résumé PDF's 年/月 table cells render blank
+// rather than throwing. The per-cell counterpart of formatYearMonth, for the
+// JIS-style tables in server/resume-pdf.tsx.
+export function formatYearMonthCells(yearMonth: string): {
+  year: string;
+  month: string;
+} {
+  const match = /^(\d{4})-(\d{2})$/.exec(yearMonth);
+  if (!match) return {year: '', month: ''};
+  return {year: `${match[1]}年`, month: `${Number(match[2])}月`};
 }
 
 // A start/end 'YYYY-MM' pair rendered as one human range — used by
