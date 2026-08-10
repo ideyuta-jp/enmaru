@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from 'react';
+import {useRef, useState, type Dispatch, type SetStateAction} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -236,15 +230,6 @@ export default function JobForm({
   const [timeError, setTimeError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  // Synchronous re-entrancy lock: `saving` (the backstop against a second
-  // submit) lives in the parent and only becomes true after this component
-  // re-renders, so a rapid double click/double Enter can call onSubmit twice
-  // before that disables the button. Cleared once `saving` goes back to
-  // false (submit finished, success or error) so a retry isn't locked out.
-  const submittingRef = useRef(false);
-  useEffect(() => {
-    if (!saving) submittingRef.current = false;
-  }, [saving]);
 
   function set<K extends keyof JobInput>(key: K, value: JobInput[K]) {
     setForm((prev) => ({...prev, [key]: value}));
@@ -278,7 +263,6 @@ export default function JobForm({
   // (job-actions.ts) re-validates everything as the backstop.
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (submittingRef.current) return;
     setSubmitted(true);
     setTimeError(null);
 
@@ -315,7 +299,6 @@ export default function JobForm({
       }, 50);
       return;
     }
-    submittingRef.current = true;
     onSubmit(e);
   }
 
