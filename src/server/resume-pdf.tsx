@@ -33,8 +33,9 @@ Font.register({
 // element, so each "table" is a bordered View with flex-row cells). Kept
 // black-on-white by design — this is an auto-generated document seekers
 // submit for nursery audits, not a chat-deliverable, so the org's brand
-// palette doesn't apply here. No photo box: not required for audit
-// purposes (issue #188) and may be added later once photo upload exists.
+// palette doesn't apply here. No photo box yet: a photo was confirmed as
+// required after all (issue #167), but the box needs the photo-upload
+// feature #167 itself adds, so both land together in that issue.
 const BORDER = '#000000';
 
 const styles = StyleSheet.create({
