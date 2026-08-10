@@ -38,6 +38,7 @@ const SEEKER_NAV: NavItem[] = [
 const NURSERY_NAV: NavItem[] = [
   {label: 'マイページ', href: '/nursery/mypage'},
   {label: '園プロフィール', href: '/nursery/profile'},
+  {label: '保育士を探す', href: '/nursery/seekers'},
   {label: '募集管理', href: '/nursery/jobs'},
   {label: '応募管理', href: '/nursery/applications'},
 ];
