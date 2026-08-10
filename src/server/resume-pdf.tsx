@@ -328,13 +328,27 @@ function ResumeDocument({
           </View>
         )}
 
+        {/* The heading and the box are page-level siblings, not wrapped in a
+            section View: when the pair starts too close to the page bottom,
+            @react-pdf would split the wrapper right after the heading and
+            draw the box's top border over the heading text. minPresenceAhead
+            keeps the heading on one page with the box's minHeight worth of
+            content after it — and it only takes effect on an element with
+            preceding siblings, which a section wrapper's first child is not.
+            A bio longer than a full page can still split mid-box; only the
+            squeezed-at-page-bottom case is avoided. */}
         {data.bio && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>自己PR</Text>
+          <>
+            <Text
+              style={[styles.section, styles.sectionTitle]}
+              minPresenceAhead={100}
+            >
+              自己PR
+            </Text>
             <View style={styles.selfPrBox}>
               <Text>{data.bio}</Text>
             </View>
-          </View>
+          </>
         )}
       </Page>
     </Document>
