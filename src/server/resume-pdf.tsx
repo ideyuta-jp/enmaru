@@ -9,6 +9,12 @@ import {
   renderToBuffer,
 } from '@react-pdf/renderer';
 import type {EducationEntryInput, WorkHistoryEntryInput} from '@/types/Resume';
+import {
+  calcAge,
+  formatYearMonthCells,
+  formatYearMonthDay,
+  todayInJst,
+} from '@/utils/date';
 
 // @react-pdf's built-in fonts have no Japanese glyphs, so a Japanese font
 // must be registered for Japanese text to render at all. The files are
@@ -101,35 +107,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// 'YYYY-MM-DD' -> '1995年4月1日'. Returns '' for an empty/malformed input.
-function formatBirthDate(date: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  if (!match) return '';
-  return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
-}
-
-// 'YYYY-MM-DD' birth date + 'YYYY-MM-DD' today -> age in full years, JIS
-// resumes' conventional "満n歳". Returns null if either date is malformed.
-function calcAge(birthDate: string, todayIso: string): number | null {
-  const b = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
-  const t = /^(\d{4})-(\d{2})-(\d{2})$/.exec(todayIso);
-  if (!b || !t) return null;
-  const [by, bm, bd] = [Number(b[1]), Number(b[2]), Number(b[3])];
-  const [ty, tm, td] = [Number(t[1]), Number(t[2]), Number(t[3])];
-  let age = ty - by;
-  if (tm < bm || (tm === bm && td < bd)) age -= 1;
-  return age;
-}
-
-// 'YYYY-MM' -> {year: '2010年', month: '4月'}. Both '' for an
-// empty/malformed input, so the row's 年/月 cells render blank rather than
-// throwing.
-function splitYearMonth(yearMonth: string): {year: string; month: string} {
-  const match = /^(\d{4})-(\d{2})$/.exec(yearMonth);
-  if (!match) return {year: '', month: ''};
-  return {year: `${match[1]}年`, month: `${Number(match[2])}月`};
-}
-
 interface HistoryRow {
   year: string;
   month: string;
@@ -152,12 +129,12 @@ function buildHistoryRows(
     rows.push({year: '', month: '', content: '学歴', align: 'center'});
     for (const entry of education) {
       rows.push({
-        ...splitYearMonth(entry.startYearMonth),
+        ...formatYearMonthCells(entry.startYearMonth),
         content: `${entry.schoolName}　入学`,
       });
       if (entry.endYearMonth) {
         rows.push({
-          ...splitYearMonth(entry.endYearMonth),
+          ...formatYearMonthCells(entry.endYearMonth),
           content: `${entry.schoolName}　${entry.graduationStatus || '卒業'}`,
         });
       }
@@ -172,12 +149,12 @@ function buildHistoryRows(
         ? `（${entry.employmentType}）`
         : '';
       rows.push({
-        ...splitYearMonth(entry.startYearMonth),
+        ...formatYearMonthCells(entry.startYearMonth),
         content: `${entry.companyName}　入社${employmentSuffix}`,
       });
       if (entry.endYearMonth) {
         rows.push({
-          ...splitYearMonth(entry.endYearMonth),
+          ...formatYearMonthCells(entry.endYearMonth),
           content: `${entry.companyName}　退社`,
         });
       } else {
@@ -222,10 +199,8 @@ function ResumeDocument({
     .join('');
   const ageAtToday = data.birthDate ? calcAge(data.birthDate, todayIso) : null;
   const historyRows = buildHistoryRows(data.education, data.workHistory);
-  const todayMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(todayIso);
-  const todayLabel = todayMatch
-    ? `${todayMatch[1]}年${Number(todayMatch[2])}月${Number(todayMatch[3])}日現在`
-    : '';
+  const todayText = formatYearMonthDay(todayIso);
+  const todayLabel = todayText ? `${todayText}現在` : '';
 
   return (
     <Document>
@@ -250,7 +225,7 @@ function ResumeDocument({
             </View>
             <View style={styles.valueCell}>
               <Text>
-                {data.birthDate && formatBirthDate(data.birthDate)}
+                {data.birthDate && formatYearMonthDay(data.birthDate)}
                 {ageAtToday !== null && `　（満${ageAtToday}歳）`}
               </Text>
             </View>
@@ -349,8 +324,5 @@ function ResumeDocument({
 // browser). Used by resume-actions.ts's saveResume to produce the file stored
 // as SeekerDocument(RESUME).
 export async function renderResumePdf(data: ResumePdfData): Promise<Buffer> {
-  const todayIso = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tokyo',
-  }).format(new Date());
-  return renderToBuffer(<ResumeDocument data={data} todayIso={todayIso} />);
+  return renderToBuffer(<ResumeDocument data={data} todayIso={todayInJst()} />);
 }
