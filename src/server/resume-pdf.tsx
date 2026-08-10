@@ -54,6 +54,11 @@ Font.registerHyphenationCallback((word) =>
 // feature #167 itself adds, so both land together in that issue.
 const BORDER = '#000000';
 
+// Column widths of the 学歴・職歴 table, shared by the header row (inline
+// style) and the body rows (yearCell/monthCell) so the columns stay aligned.
+const YEAR_COL_WIDTH = 55;
+const MONTH_COL_WIDTH = 40;
+
 const styles = StyleSheet.create({
   page: {fontFamily: 'Noto Sans JP', padding: 28, fontSize: 9},
   headerRow: {
@@ -91,14 +96,14 @@ const styles = StyleSheet.create({
   },
   tableHeaderCell: {padding: 4, fontWeight: 'bold', textAlign: 'center'},
   yearCell: {
-    width: 55,
+    width: YEAR_COL_WIDTH,
     padding: 4,
     borderRightWidth: 1,
     borderRightColor: BORDER,
     textAlign: 'center',
   },
   monthCell: {
-    width: 40,
+    width: MONTH_COL_WIDTH,
     padding: 4,
     borderRightWidth: 1,
     borderRightColor: BORDER,
@@ -265,8 +270,14 @@ function ResumeDocument({
           <View style={styles.section}>
             <View style={styles.box}>
               <View style={styles.tableHeaderRow}>
-                <Text style={[styles.tableHeaderCell, {width: 55}]}>年</Text>
-                <Text style={[styles.tableHeaderCell, {width: 40}]}>月</Text>
+                <Text style={[styles.tableHeaderCell, {width: YEAR_COL_WIDTH}]}>
+                  年
+                </Text>
+                <Text
+                  style={[styles.tableHeaderCell, {width: MONTH_COL_WIDTH}]}
+                >
+                  月
+                </Text>
                 <Text style={[styles.tableHeaderCell, {flex: 1}]}>
                   学歴・職歴
                 </Text>
