@@ -1,3 +1,5 @@
+import type {SeekerProfile} from '@/generated/prisma/client';
+
 import {prisma} from '@/lib/prisma';
 import {missingRequiredDocuments} from '@/server/application';
 import {getCurrentUser, requireRole} from '@/server/auth';
@@ -49,16 +51,19 @@ export async function getSeekerProfileInput(): Promise<SeekerProfileInput | null
 // browse. Accepts the full profile row (extra fields are dropped by the
 // explicit copy). Shared by the list and detail reads so both project the same
 // public subset.
-function toPublicSeeker(p: {
-  id: string;
-  displayName: string;
-  preferredPrefecture: string | null;
-  preferredCity: string | null;
-  licenses: string[];
-  experienceYears: string | null;
-  skills: string[];
-  preferredAgeGroups: string[];
-}): PublicSeeker {
+type SeekerPublicFields = Pick<
+  SeekerProfile,
+  | 'id'
+  | 'displayName'
+  | 'preferredPrefecture'
+  | 'preferredCity'
+  | 'licenses'
+  | 'experienceYears'
+  | 'skills'
+  | 'preferredAgeGroups'
+>;
+
+function toPublicSeeker(p: SeekerPublicFields): PublicSeeker {
   return {
     id: p.id,
     displayName: p.displayName,
