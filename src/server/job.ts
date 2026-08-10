@@ -74,7 +74,9 @@ function toJob(p: JobPosting & {engagement: {id: string} | null}): Job {
   };
 }
 
-// The signed-in nursery's own postings (newest first). Guarded to NURSERY; empty
+// The signed-in nursery's own postings, ordered by work date (soonest first —
+// nursery/jobs/page.tsx splits this one query's result into 募集中/終了済み by
+// derived state, so both groups share this order). Guarded to NURSERY; empty
 // until the nursery has a profile (a posting belongs to a NurseryProfile).
 export async function listNurseryJobs(): Promise<Job[]> {
   const user = await requireRole([UserRole.NURSERY]);
@@ -86,7 +88,7 @@ export async function listNurseryJobs(): Promise<Job[]> {
   const jobs = await prisma.jobPosting.findMany({
     where: {nurseryId: profile.id},
     include: {engagement: {select: {id: true}}},
-    orderBy: {postedAt: 'desc'},
+    orderBy: {workDate: 'asc'},
   });
   return jobs.map(toJob);
 }
