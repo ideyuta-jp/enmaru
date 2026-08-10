@@ -188,7 +188,7 @@ model SeekerResume {
   seekerId String        @unique
   seeker   SeekerProfile @relation(fields: [seekerId], references: [id])
 
-  // 生年月日・住所・電話番号（管理者のみ）
+  // 生年月日・住所・電話番号・メールアドレス（管理者のみ）
   birthDate       DateTime?
   postalCode      String?
   prefecture      String?
@@ -199,6 +199,8 @@ model SeekerResume {
   // 履歴書専用データのためこちらに置く。
   addressFurigana String?
   phone           String?
+  // 履歴書上の連絡先メールアドレス（任意）。ログイン用のUser.emailとは別物。
+  email           String?
   // 証明写真（R2オブジェクトキー）。アップロードUIは今回未実装、将来追加用（#167）。
   photoFileKey    String?
 

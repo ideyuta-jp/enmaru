@@ -1,6 +1,36 @@
 import {describe, expect, it} from 'vitest';
 
-import {isKatakanaOnly, isValidAddressFurigana} from '@/utils/string';
+import {
+  isKatakanaOnly,
+  isValidAddressFurigana,
+  isValidEmail,
+} from '@/utils/string';
+
+describe('isValidEmail', () => {
+  it('accepts an empty string (unset, not a format error)', () => {
+    expect(isValidEmail('')).toBe(true);
+  });
+
+  it('accepts a well-formed address', () => {
+    expect(isValidEmail('yamada@example.com')).toBe(true);
+  });
+
+  it('rejects a missing @', () => {
+    expect(isValidEmail('yamada.example.com')).toBe(false);
+  });
+
+  it('rejects a missing domain dot', () => {
+    expect(isValidEmail('yamada@example')).toBe(false);
+  });
+
+  it('rejects a missing local part', () => {
+    expect(isValidEmail('@example.com')).toBe(false);
+  });
+
+  it('rejects embedded whitespace', () => {
+    expect(isValidEmail('yamada @example.com')).toBe(false);
+  });
+});
 
 describe('isKatakanaOnly', () => {
   it('accepts an empty string (optional field)', () => {

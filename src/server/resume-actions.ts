@@ -37,6 +37,7 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
     addressLine: blankToNull(input.addressLine),
     addressFurigana: blankToNull(input.addressFurigana),
     phone: blankToNull(input.phone),
+    email: blankToNull(input.email),
   };
 
   await prisma.$transaction(async (tx) => {
@@ -78,19 +79,11 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
   });
 
   const pdf = await renderResumePdf({
+    ...input,
     realName: profile.realName,
     furigana: profile.furigana ?? '',
-    birthDate: input.birthDate,
-    postalCode: input.postalCode,
-    prefecture: input.prefecture,
-    city: input.city,
-    addressLine: input.addressLine,
-    addressFurigana: input.addressFurigana,
-    phone: input.phone,
     licenses: profile.licenses,
     bio: profile.bio ?? '',
-    education: input.education,
-    workHistory: input.workHistory,
   });
 
   // Submitted through the same path as a manual upload (storeSeekerDocument),

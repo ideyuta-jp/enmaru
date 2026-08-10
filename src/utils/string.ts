@@ -17,6 +17,12 @@ export function isValidPhoneNumber(value: string): boolean {
   return value === '' || /^0\d{1,4}-?\d{1,4}-?\d{3,4}$/.test(value);
 }
 
+// A permissive "looks like an email" check — one '@', something on both sides,
+// at least one '.' after it. Same '' convention as isValidPostalCode.
+export function isValidEmail(value: string): boolean {
+  return value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 // フリガナ fields (name/address) must be katakana only — that's what the label
 // itself signals in Japanese business convention (フリガナ = katakana,
 // ふりがな = hiragana). '' also passes — these fields are optional, so a blank

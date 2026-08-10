@@ -1,6 +1,7 @@
 import {prisma} from '@/lib/prisma';
 import {getCurrentUser} from '@/server/auth';
 import {
+  EMPTY_RESUME,
   MAX_RESUME_DESCRIPTION_LENGTH,
   MAX_RESUME_HISTORY_ENTRIES,
   type ResumeInput,
@@ -12,6 +13,7 @@ import {
 } from '@/utils/date';
 import {
   isValidAddressFurigana,
+  isValidEmail,
   isValidPhoneNumber,
   isValidPostalCode,
 } from '@/utils/string';
@@ -38,6 +40,9 @@ export function validateResumeInput(
   }
   if (!isValidPhoneNumber(input.phone)) {
     return {ok: false, message: '電話番号の形式が正しくありません。'};
+  }
+  if (!isValidEmail(input.email)) {
+    return {ok: false, message: 'メールアドレスの形式が正しくありません。'};
   }
   if (
     input.education.length > MAX_RESUME_HISTORY_ENTRIES ||
@@ -112,17 +117,10 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
     },
   });
   if (!resume) {
-    return {
-      birthDate: '',
-      postalCode: '',
-      prefecture: '',
-      city: '',
-      addressLine: '',
-      addressFurigana: '',
-      phone: '',
-      education: [],
-      workHistory: [],
-    };
+    // First-time default only — once a résumé row exists its own (possibly
+    // blank) email is used as-is below, so an intentional clear stays cleared
+    // rather than springing back to the login address on reload.
+    return {...EMPTY_RESUME, email: user.email};
   }
 
   return {
@@ -133,6 +131,7 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
     addressLine: resume.addressLine ?? '',
     addressFurigana: resume.addressFurigana ?? '',
     phone: resume.phone ?? '',
+    email: resume.email ?? '',
     education: resume.education.map((e) => ({
       _key: e.id,
       schoolName: e.schoolName,
