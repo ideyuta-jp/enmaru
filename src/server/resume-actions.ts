@@ -4,9 +4,10 @@ import {prisma} from '@/lib/prisma';
 import {renderResumePdf} from '@/server/resume-pdf';
 import {requireRole} from '@/server/auth';
 import {storeSeekerDocument} from '@/server/document';
+import {validateResumeInput} from '@/server/resume';
 import type {ActionResult} from '@/types/ActionResult';
 import {SeekerDocumentType} from '@/types/Document';
-import type {ResumeInput} from '@/types/Resume';
+import {type ResumeInput} from '@/types/Resume';
 import {UserRole} from '@/types/User';
 import {blankToNull} from '@/utils/string';
 
@@ -14,7 +15,8 @@ import {blankToNull} from '@/utils/string';
 // seekerId, so the same action serves both first save and edits — mirrors
 // saveSeekerProfile (src/server/seeker-actions.ts). All SeekerResume scalar
 // fields stay optional: a first-time seeker legitimately has no work history
-// yet, so nothing here is hard-required.
+// yet, so nothing here is hard-required — validateResumeInput only rejects
+// filled-but-malformed values (and history rows missing their name).
 export async function saveResume(input: ResumeInput): Promise<ActionResult> {
   const user = await requireRole([UserRole.SEEKER]);
   const profile = await prisma.seekerProfile.findUnique({
@@ -23,6 +25,9 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
   if (!profile) {
     return {ok: false, message: '先にプロフィールを作成してください。'};
   }
+
+  const validation = validateResumeInput(input);
+  if (!validation.ok) return validation;
 
   const resumeData = {
     birthDate: input.birthDate ? new Date(input.birthDate) : null,

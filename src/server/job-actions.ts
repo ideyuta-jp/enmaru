@@ -11,7 +11,7 @@ import {
   type JobStatus,
 } from '@/types/Job';
 import {UserRole} from '@/types/User';
-import {toMinutes} from '@/utils/date';
+import {toMinutes, todayInJst} from '@/utils/date';
 import {blankToNull} from '@/utils/string';
 
 // Validate + normalize a posting form. Required fields mirror the non-null
@@ -28,12 +28,8 @@ function parseJobInput(
   if (!title || !hasWorkContent || input.workDates.length === 0) {
     return {ok: false, message: 'タイトル・勤務内容・勤務日は必須です。'};
   }
-  // Backstop for the calendar's disablePast. Compare calendar dates in JST
-  // (the service's locale) — the server clock may run in UTC, and
-  // toISOString-style UTC dates lag Japan by 9 hours around midnight.
-  const todayJst = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tokyo',
-  }).format(new Date());
+  // Backstop for the calendar's disablePast.
+  const todayJst = todayInJst();
   if (input.workDates.some((d) => d < todayJst)) {
     return {ok: false, message: '過去の日付は指定できません。'};
   }
