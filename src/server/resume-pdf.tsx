@@ -35,6 +35,16 @@ Font.register({
   ],
 });
 
+// @react-pdf's default hyphenation is English-oriented: a long Japanese
+// run is treated as one word and gets a "-" inserted at every line break.
+// Allow a break between any two characters with no hyphen instead — the
+// Japanese line-breaking convention. The interleaved '' fragments matter:
+// a break between plain fragments of one word renders a hyphen, while ''
+// becomes a zero-width glue (a hyphen-free break opportunity) in textkit.
+Font.registerHyphenationCallback((word) =>
+  Array.from(word).flatMap((char) => [char, '']),
+);
+
 // A JIS-style resume built from ruled tables (@react-pdf has no <table>
 // element, so each "table" is a bordered View with flex-row cells). Kept
 // black-on-white by design — this is an auto-generated document seekers
