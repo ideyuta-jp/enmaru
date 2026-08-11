@@ -27,13 +27,15 @@ export default function NewJobForm() {
       const result = await createJob(form);
       if (!result.ok) {
         setError(result.message);
+        setSaving(false);
         return;
       }
       setToast(result.count ?? 1);
+      // Keep `saving` true on success: the button stays disabled during the
+      // toast delay below, so a second click can't create the postings again.
       setTimeout(() => router.push('/nursery/jobs'), 1500);
     } catch {
       setError('作成に失敗しました。時間をおいて再度お試しください。');
-    } finally {
       setSaving(false);
     }
   }

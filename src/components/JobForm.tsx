@@ -302,11 +302,24 @@ export default function JobForm({
     onSubmit(e);
   }
 
+  // Enter in a single-line field would otherwise submit the form natively;
+  // block that so a stray Enter while typing (title, hourly wage, etc.)
+  // doesn't fire an early/accidental submit. Textareas are unaffected since
+  // Enter there already just inserts a newline rather than submitting, and
+  // buttons (the submit button itself, calendar day cells) are excluded so
+  // keyboard activation keeps working.
+  function handleFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+      e.preventDefault();
+    }
+  }
+
   return (
     <Box
       component="form"
       ref={formRef}
       onSubmit={handleSubmit}
+      onKeyDown={handleFormKeyDown}
       // Suppress the browser's native validation UI — errors are rendered via
       // MUI's error state and the scroll-to-first-error handling above.
       noValidate
