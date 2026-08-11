@@ -15,7 +15,20 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {deleteJob} from '@/server/job-actions';
-import {JobStatus, type Job} from '@/types/Job';
+import {type Job, type JobState} from '@/types/Job';
+
+// Chip per derived state — OPEN keeps the existing green; MATCHED gets the
+// app's pink family so a formed match reads as an outcome, not a shutdown;
+// the two "no longer applyable" states share the muted gray.
+const STATE_CHIP: Record<
+  JobState,
+  {label: string; bgcolor: string; color: string}
+> = {
+  OPEN: {label: '公開中', bgcolor: '#E8F5E9', color: '#2E7D32'},
+  MATCHED: {label: 'マッチ成立', bgcolor: '#FCE4EC', color: '#C2185B'},
+  EXPIRED: {label: '期限切れ', bgcolor: '#F9F9F9', color: '#AAAAAA'},
+  UNPUBLISHED: {label: '非公開', bgcolor: '#F9F9F9', color: '#AAAAAA'},
+};
 
 interface Props {
   job: Job;
@@ -93,11 +106,11 @@ export default function NurseryJobRow({job}: Props) {
           sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}
         >
           <Chip
-            label={job.status === JobStatus.OPEN ? '公開中' : '終了'}
+            label={STATE_CHIP[job.state].label}
             size="small"
             sx={{
-              bgcolor: job.status === JobStatus.OPEN ? '#E8F5E9' : '#F9F9F9',
-              color: job.status === JobStatus.OPEN ? '#2E7D32' : '#AAAAAA',
+              bgcolor: STATE_CHIP[job.state].bgcolor,
+              color: STATE_CHIP[job.state].color,
               fontSize: '0.7rem',
             }}
           />

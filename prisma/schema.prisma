@@ -19,17 +19,18 @@ datasource db {
 // PascalCase models, camelCase fields, cuid() ids.
 //
 // Core shape of the flow:
-//   JobPosting (1) ──< Engagement (N)   — one posting, many seekers (future)
+//   JobPosting (1) ── Engagement (0..1)   — one posting, at most one seeker
 // A JobPosting is a nursery's offer. An Engagement is one seeker's whole
 // involvement with that posting: it is created when the seeker applies (matching
 // is immediate), then runs MATCHED -> WORKING -> COMPLETED and carries the mutual
-// review. "Applying" is the birth of an Engagement, not a separate entity. The
-// posting's own open/closed life is JobPosting.status, kept apart from each
-// seeker's lifecycle.
+// review. "Applying" is the birth of an Engagement, not a separate entity.
+// Whether a posting still accepts applications is DERIVED, not stored (#185):
+// it must be published (isPublished — the nursery's choice, the one stored
+// fact), unmatched (no Engagement exists), and not expired (workDate not yet
+// past in JST). See deriveJobState in src/server/job.ts.
 //
 // Vocabulary — "Job" vs "Work" are used deliberately, not interchangeably:
-//   - Job / JobPosting: the posting (the offer a nursery lists). JobStatus is the
-//     posting's open/closed state.
+//   - Job / JobPosting: the posting (the offer a nursery lists).
 //   - Work: the actual shift the posting offers. workContent / workDate /
 //     workTime* describe that shift; WorkReport confirms it was performed.
 // In short: a JobPosting advertises Work.
@@ -46,11 +47,6 @@ enum Role {
   SEEKER
   NURSERY
   ADMIN
-}
-
-enum JobStatus {
-  OPEN
-  CLOSED
 }
 
 // Lifecycle of one Engagement. Matching is immediate and first-come, so an
@@ -322,11 +318,16 @@ model JobPosting {
   transportationExpenseNote String?
   // 勤務時の服装
   dresscode                 String?
-  status                    JobStatus            @default(OPEN)
+  // Whether the nursery shows this posting to seekers. This is the only
+  // stored bit of the posting's availability; matched and expired are derived
+  // (see the header comment). Deliberately NOT written by matching — the old
+  // OPEN/CLOSED status was, and letting the nursery's publish toggle overwrite
+  // the match fact enabled double-matching (#185).
+  isPublished               Boolean              @default(true)
   postedAt                  DateTime             @default(now())
   updatedAt                 DateTime             @updatedAt
 
-  engagements Engagement[]
+  engagement Engagement?
 }
 
 // One seeker's whole involvement with one posting, from applying through the
@@ -335,7 +336,11 @@ model JobPosting {
 // Holds only jobId + seekerId; the nursery is reached via job.
 model Engagement {
   id            String           @id @default(cuid())
-  jobId         String
+  // Unique = first-come single match: at most one Engagement per posting,
+  // enforced by the database so two concurrent applies cannot both succeed
+  // (applyToJob relies on this instead of a stored OPEN/CLOSED status, #185).
+  // Lift to a capacity check if postings ever take multiple seekers.
+  jobId         String           @unique
   job           JobPosting       @relation(fields: [jobId], references: [id])
   seekerId      String
   seeker        SeekerProfile    @relation(fields: [seekerId], references: [id])
@@ -353,9 +358,6 @@ model Engagement {
   chatMessages          ChatMessage[]
   reviewNurseryToSeeker ReviewNurseryToSeeker?
   reviewSeekerToNursery ReviewSeekerToNursery?
-
-  // A seeker can engage a given posting only once.
-  @@unique([jobId, seekerId])
 }
 
 // Both parties confirm the shift happened; the Engagement becomes COMPLETED once

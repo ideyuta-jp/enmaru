@@ -10,12 +10,12 @@ import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {listNurseryJobs} from '@/server/job';
-import {JobStatus} from '@/types/Job';
+import {JobState} from '@/types/Job';
 
 export default async function NurseryJobsPage() {
   const jobs = await listNurseryJobs();
-  const openJobs = jobs.filter((j) => j.status === JobStatus.OPEN);
-  const closedJobs = jobs.filter((j) => j.status === JobStatus.CLOSED);
+  const openJobs = jobs.filter((j) => j.state === JobState.OPEN);
+  const closedJobs = jobs.filter((j) => j.state !== JobState.OPEN);
 
   return (
     <>
