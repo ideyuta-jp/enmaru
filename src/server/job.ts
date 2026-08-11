@@ -3,14 +3,15 @@ import {requireRole} from '@/server/auth';
 import {JobState, type Job} from '@/types/Job';
 import {UserRole} from '@/types/User';
 import {todayInJst} from '@/utils/date';
-import type {JobPosting} from '@/generated/prisma/client';
+import type {JobPosting, Prisma} from '@/generated/prisma/client';
 
 // A posting's availability, derived from the three independent facts instead
 // of a stored status (#185): published is the nursery's choice (the one stored
 // bit), matched is the Engagement's existence, expired is the calendar.
 // Precedence when several apply: matched and expired are permanent facts while
-// unpublished is reversible, and matched is the one the nursery acted on — so
-// MATCHED > EXPIRED > UNPUBLISHED. Pure and exported for unit tests; dates are
+// unpublished is reversible, and matched is the more consequential fact to
+// surface — so MATCHED > EXPIRED > UNPUBLISHED. Pure and exported for unit
+// tests; dates are
 // 'YYYY-MM-DD' strings compared lexicographically (the codebase-wide
 // convention, see utils/date.ts).
 export function deriveJobState(args: {
@@ -32,7 +33,10 @@ export function deriveJobState(args: {
 // only applyable postings. workDate is stored as UTC midnight of its calendar
 // date (created via new Date('YYYY-MM-DD')) and new Date(todayInJst()) is UTC
 // midnight of today's JST date, so gte keeps postings through their work date.
-export function acceptingJobWhere() {
+// The explicit WhereInput return type matters: spreading a function result
+// bypasses excess-property checks, so without it a field renamed by a future
+// schema change would compile silently and quietly widen this filter.
+export function acceptingJobWhere(): Prisma.JobPostingWhereInput {
   return {
     isPublished: true,
     engagement: null,

@@ -42,6 +42,7 @@ interface Props {
 // page owns the list.
 export default function NurseryJobRow({job}: Props) {
   const router = useRouter();
+  const chip = STATE_CHIP[job.state];
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,11 +107,11 @@ export default function NurseryJobRow({job}: Props) {
           sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}
         >
           <Chip
-            label={STATE_CHIP[job.state].label}
+            label={chip.label}
             size="small"
             sx={{
-              bgcolor: STATE_CHIP[job.state].bgcolor,
-              color: STATE_CHIP[job.state].color,
+              bgcolor: chip.bgcolor,
+              color: chip.color,
               fontSize: '0.7rem',
             }}
           />

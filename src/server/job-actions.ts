@@ -171,9 +171,9 @@ export async function setJobPublished(
 }
 
 // Permanently delete one of the signed-in nursery's postings
-// (ownership-checked). Refuses postings that already have at least one
-// Engagement — first-come matching happens the moment a seeker applies, so a
-// matched posting must stay as a record rather than disappear on the seeker.
+// (ownership-checked). Refuses postings that already have their Engagement —
+// first-come matching happens the moment a seeker applies, so a matched
+// posting must stay as a record rather than disappear on the seeker.
 export async function deleteJob(id: string): Promise<ActionResult> {
   const user = await requireRole([UserRole.NURSERY]);
   const owned = await prisma.jobPosting.findFirst({
