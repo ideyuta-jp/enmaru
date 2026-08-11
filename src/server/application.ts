@@ -1,10 +1,12 @@
 import type {Prisma} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
+import {deriveJobState} from '@/server/job';
 import type {ApplyTarget, SeekerApplication} from '@/types/Application';
 import type {SeekerDocumentType} from '@/types/Document';
+import {JobState} from '@/types/Job';
 import {UserRole} from '@/types/User';
-import {toMinutes} from '@/utils/date';
+import {toMinutes, todayInJst} from '@/utils/date';
 
 // The signed-in seeker's application history (newest first). Each application is
 // an Engagement; the nursery is reached through the posting. Guarded to SEEKER;
@@ -50,7 +52,10 @@ export async function getApplicationTarget(
   const user = await requireRole([UserRole.SEEKER]);
   const job = await prisma.jobPosting.findUnique({
     where: {id: jobId},
-    include: {nursery: {select: {nurseryName: true}}},
+    include: {
+      nursery: {select: {nurseryName: true}},
+      engagement: {select: {seekerId: true}},
+    },
   });
   if (!job) return null;
 
@@ -61,25 +66,30 @@ export async function getApplicationTarget(
   let alreadyApplied = false;
   let missingDocuments: SeekerDocumentType[] = job.requiredDocuments;
   if (profile) {
-    const existing = await prisma.engagement.findUnique({
-      where: {jobId_seekerId: {jobId, seekerId: profile.id}},
-      select: {id: true},
-    });
-    alreadyApplied = existing !== null;
+    // At most one Engagement exists per posting (jobId is unique), so
+    // "already applied" is just "the one match is mine".
+    alreadyApplied = job.engagement?.seekerId === profile.id;
     missingDocuments = await missingRequiredDocuments(
       profile.id,
       job.requiredDocuments,
     );
   }
 
+  const workDate = job.workDate.toISOString().slice(0, 10);
   return {
     jobId: job.id,
     nurseryName: job.nursery.nurseryName,
     title: job.title,
-    workDate: job.workDate.toISOString().slice(0, 10),
+    workDate,
     workTimeStart: job.workTimeStart,
     workTimeEnd: job.workTimeEnd,
-    isOpen: job.status === 'OPEN',
+    isOpen:
+      deriveJobState({
+        isPublished: job.isPublished,
+        matched: job.engagement !== null,
+        workDate,
+        todayJst: todayInJst(),
+      }) === JobState.OPEN,
     alreadyApplied,
     missingDocuments,
   };

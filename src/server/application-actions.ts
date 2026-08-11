@@ -6,27 +6,26 @@ import {
   findApplicationConflict,
   missingRequiredDocuments,
 } from '@/server/application';
+import {deriveJobState} from '@/server/job';
 import {notify} from '@/server/notification';
 import {isUniqueViolation} from '@/server/prisma-error';
 import type {ActionResult} from '@/types/ActionResult';
 import {DOCUMENT_TYPE_LABEL} from '@/types/Document';
+import {JobState} from '@/types/Job';
 import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
-
-// Thrown inside the transaction when another seeker closed the posting first, so
-// the catch below can tell it apart from a real error and map it to a message.
-const POSTING_CLOSED = 'POSTING_CLOSED';
+import {todayInJst} from '@/utils/date';
 
 // Thrown inside the transaction when the seeker's existing engagements clash
 // with this posting; carries the user-facing reason from
 // findApplicationConflict.
 class ApplicationConflict extends Error {}
 
-// A seeker applies to a posting. Matching is immediate and first-come: the first
-// applicant's apply both creates the Engagement (MATCHED) and closes the posting,
-// in one transaction, so a second concurrent applicant cannot also match. The
-// same transaction also rejects the apply if it clashes with the seeker's
-// existing shifts (see findApplicationConflict).
+// A seeker applies to a posting. Matching is immediate and first-come:
+// creating the Engagement (MATCHED) IS the match — jobId is unique, so of two
+// concurrent applicants the second one's insert fails at the database and
+// cannot also match. The transaction also rejects the apply if it clashes
+// with the seeker's existing shifts (see findApplicationConflict).
 export async function applyToJob(input: {
   jobId: string;
   applyMessage: string;
@@ -42,10 +41,22 @@ export async function applyToJob(input: {
 
   const job = await prisma.jobPosting.findUnique({
     where: {id: input.jobId},
-    include: {nursery: {select: {userId: true, nurseryName: true}}},
+    include: {
+      nursery: {select: {userId: true, nurseryName: true}},
+      engagement: {select: {seekerId: true}},
+    },
   });
   if (!job) return {ok: false, message: '募集が見つかりません。'};
-  if (job.status !== 'OPEN') {
+  if (job.engagement?.seekerId === profile.id) {
+    return {ok: false, message: 'すでにこの募集に応募済みです。'};
+  }
+  const state = deriveJobState({
+    isPublished: job.isPublished,
+    matched: job.engagement !== null,
+    workDate: job.workDate.toISOString().slice(0, 10),
+    todayJst: todayInJst(),
+  });
+  if (state !== JobState.OPEN) {
     return {ok: false, message: 'この募集はすでに締め切られています。'};
   }
 
@@ -73,14 +84,9 @@ export async function applyToJob(input: {
       const conflict = await findApplicationConflict(tx, profile.id, job);
       if (conflict) throw new ApplicationConflict(conflict);
 
-      // Only the first applicant flips OPEN -> CLOSED; the conditional WHERE
-      // makes the close-and-claim atomic, so a concurrent applicant gets 0 rows.
-      const claimed = await tx.jobPosting.updateMany({
-        where: {id: input.jobId, status: 'OPEN'},
-        data: {status: 'CLOSED'},
-      });
-      if (claimed.count === 0) throw new Error(POSTING_CLOSED);
-
+      // The insert is the atomic claim: Engagement.jobId is unique, so a
+      // concurrent applicant's insert raises a unique violation (mapped to a
+      // "closed" message below) instead of double-matching.
       await tx.engagement.create({
         data: {
           jobId: input.jobId,
@@ -94,11 +100,10 @@ export async function applyToJob(input: {
     if (e instanceof ApplicationConflict) {
       return {ok: false, message: e.message};
     }
-    if (e instanceof Error && e.message === POSTING_CLOSED) {
-      return {ok: false, message: 'この募集はすでに締め切られています。'};
-    }
+    // Unique violation on Engagement.jobId: another applicant (or a double
+    // submit of this one) matched between the pre-check and the insert.
     if (isUniqueViolation(e)) {
-      return {ok: false, message: 'すでにこの募集に応募済みです。'};
+      return {ok: false, message: 'この募集はすでに締め切られています。'};
     }
     throw e;
   }

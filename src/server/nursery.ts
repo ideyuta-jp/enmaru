@@ -2,7 +2,7 @@ import type {NurseryProfile} from '@/generated/prisma/client';
 import {prisma} from '@/lib/prisma';
 import {getObjectStream} from '@/lib/storage';
 import {getCurrentUser, requireRole} from '@/server/auth';
-import {listOpenJobsByNursery} from '@/server/job';
+import {acceptingJobWhere, listOpenJobsByNursery} from '@/server/job';
 import {isUniqueViolation} from '@/server/prisma-error';
 import {
   getNurseryRating,
@@ -323,7 +323,7 @@ export async function getNurseryDashboard(): Promise<NurseryDashboard> {
 
   const [openJobCount, newApplicationCount] = await Promise.all([
     prisma.jobPosting.count({
-      where: {nurseryId: profile.id, status: 'OPEN'},
+      where: {nurseryId: profile.id, ...acceptingJobWhere()},
     }),
     prisma.engagement.count({where: {job: {nurseryId: profile.id}}}),
   ]);

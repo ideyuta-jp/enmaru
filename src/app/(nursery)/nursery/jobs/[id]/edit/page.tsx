@@ -24,7 +24,7 @@ export default async function EditJobPage({params}: Props) {
         <EditJobForm
           jobId={job.id}
           initial={toJobInput(job)}
-          initialStatus={job.status}
+          initialIsPublished={job.isPublished}
         />
       </PageContainer>
       <Footer />

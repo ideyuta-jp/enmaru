@@ -15,7 +15,20 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {deleteJob} from '@/server/job-actions';
-import {JobStatus, type Job} from '@/types/Job';
+import {type Job, type JobState} from '@/types/Job';
+
+// Chip per derived state — OPEN keeps the existing green; MATCHED gets the
+// app's pink family so a formed match reads as an outcome, not a shutdown;
+// the two "no longer applyable" states share the muted gray.
+const STATE_CHIP: Record<
+  JobState,
+  {label: string; bgcolor: string; color: string}
+> = {
+  OPEN: {label: '募集中', bgcolor: '#E8F5E9', color: '#2E7D32'},
+  MATCHED: {label: 'マッチ成立', bgcolor: '#FCE4EC', color: '#C2185B'},
+  EXPIRED: {label: '期限切れ', bgcolor: '#F9F9F9', color: '#AAAAAA'},
+  UNPUBLISHED: {label: '募集非公開中', bgcolor: '#F9F9F9', color: '#AAAAAA'},
+};
 
 interface Props {
   job: Job;
@@ -29,6 +42,7 @@ interface Props {
 // page owns the list.
 export default function NurseryJobRow({job}: Props) {
   const router = useRouter();
+  const chip = STATE_CHIP[job.state];
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,11 +107,11 @@ export default function NurseryJobRow({job}: Props) {
           sx={{display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0}}
         >
           <Chip
-            label={job.status === JobStatus.OPEN ? '公開中' : '終了'}
+            label={chip.label}
             size="small"
             sx={{
-              bgcolor: job.status === JobStatus.OPEN ? '#E8F5E9' : '#F9F9F9',
-              color: job.status === JobStatus.OPEN ? '#2E7D32' : '#AAAAAA',
+              bgcolor: chip.bgcolor,
+              color: chip.color,
               fontSize: '0.7rem',
             }}
           />
