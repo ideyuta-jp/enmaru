@@ -64,7 +64,7 @@ export default function EditJobForm({
       setIsPublished(next);
       router.refresh();
     } catch {
-      setError('公開状態の更新に失敗しました。');
+      setError('募集状態の更新に失敗しました。');
     } finally {
       setUpdatingPublished(false);
     }
@@ -92,7 +92,7 @@ export default function EditJobForm({
             fontSize: '0.75rem',
           }}
         >
-          {isPublished ? '募集を非公開にする' : '募集を公開する'}
+          {isPublished ? '募集を終了する' : '募集を再開する'}
         </Button>
       </Box>
 

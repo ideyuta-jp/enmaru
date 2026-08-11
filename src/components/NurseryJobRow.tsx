@@ -24,10 +24,10 @@ const STATE_CHIP: Record<
   JobState,
   {label: string; bgcolor: string; color: string}
 > = {
-  OPEN: {label: '公開中', bgcolor: '#E8F5E9', color: '#2E7D32'},
+  OPEN: {label: '募集中', bgcolor: '#E8F5E9', color: '#2E7D32'},
   MATCHED: {label: 'マッチ成立', bgcolor: '#FCE4EC', color: '#C2185B'},
   EXPIRED: {label: '期限切れ', bgcolor: '#F9F9F9', color: '#AAAAAA'},
-  UNPUBLISHED: {label: '非公開', bgcolor: '#F9F9F9', color: '#AAAAAA'},
+  UNPUBLISHED: {label: '募集非公開中', bgcolor: '#F9F9F9', color: '#AAAAAA'},
 };
 
 interface Props {
