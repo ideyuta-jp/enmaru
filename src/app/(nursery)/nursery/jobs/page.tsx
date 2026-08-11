@@ -57,7 +57,7 @@ export default async function NurseryJobsPage() {
                   variant="subtitle2"
                   sx={{mb: 1.5, color: '#666666'}}
                 >
-                  公開中（{openJobs.length}件）
+                  募集中（{openJobs.length}件）
                 </Typography>
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
                   {openJobs.map((job) => (
