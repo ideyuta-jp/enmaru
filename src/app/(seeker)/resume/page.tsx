@@ -9,7 +9,11 @@ import ResumeForm from '@/components/ResumeForm';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {requireRole} from '@/server/auth';
-import {getResumeInput, hasUnpublishedResumeChanges} from '@/server/resume';
+import {
+  getResumeInput,
+  hasResumePhoto,
+  hasUnpublishedResumeChanges,
+} from '@/server/resume';
 import {getSeekerProfileInput} from '@/server/seeker';
 import {EMPTY_RESUME} from '@/types/Resume';
 import {UserRole} from '@/types/User';
@@ -48,6 +52,7 @@ export default async function ResumePage() {
   // just ruled out above.
   const resume = (await getResumeInput()) ?? EMPTY_RESUME;
   const unpublishedChanges = await hasUnpublishedResumeChanges();
+  const hasPhoto = await hasResumePhoto();
 
   return (
     <>
@@ -57,6 +62,7 @@ export default async function ResumePage() {
           initial={resume}
           bio={profile.bio}
           unpublishedChanges={unpublishedChanges}
+          hasPhoto={hasPhoto}
         />
       </PageContainer>
       <Footer />

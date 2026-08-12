@@ -2,6 +2,7 @@ import path from 'node:path';
 import {
   Document,
   Font,
+  Image,
   Page,
   StyleSheet,
   Text,
@@ -53,10 +54,13 @@ Font.registerHyphenationCallback((word) =>
 // element, so each "table" is a bordered View with flex-row cells). Kept
 // black-on-white by design — this is an auto-generated document seekers
 // submit for nursery audits, not a chat-deliverable, so the org's brand
-// palette doesn't apply here. No photo box yet: a photo was confirmed as
-// required after all (issue #167), but the box needs the photo-upload
-// feature #167 itself adds, so both land together in that issue.
+// palette doesn't apply here. The 証明写真 box (#167) sits beside the basic
+// info rows, top-right — an empty bordered placeholder when no photo is
+// uploaded yet, matching the printed-résumé convention rather than leaving a
+// blank gap.
 const BORDER = '#000000';
+
+const PHOTO_COL_WIDTH = 90;
 
 // Column widths of the 学歴・職歴 table, shared by the header row (inline
 // style) and the body rows (yearCell/monthCell) so the columns stay aligned.
@@ -88,6 +92,26 @@ const styles = StyleSheet.create({
   },
   valueCell: {flex: 1, padding: 5, justifyContent: 'center'},
   nameValue: {fontSize: 13},
+
+  basicInfoRow: {flexDirection: 'row'},
+  basicInfoFields: {flex: 1},
+  photoCell: {
+    width: PHOTO_COL_WIDTH,
+    borderLeftWidth: 1,
+    borderLeftColor: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+  },
+  // 3:4 — matches the fixed aspect ResumePhotoUpload's crop step always
+  // outputs, but pinned explicitly (rather than leaving height auto) so
+  // objectFit still crops correctly if that ever drifts.
+  photoImage: {
+    width: PHOTO_COL_WIDTH - 8,
+    height: ((PHOTO_COL_WIDTH - 8) * 4) / 3,
+    objectFit: 'cover',
+  },
+  photoPlaceholderText: {fontSize: 8, color: '#999999'},
 
   section: {marginTop: 14},
   sectionTitle: {fontSize: 10, fontWeight: 'bold', marginBottom: 4},
@@ -198,6 +222,9 @@ export interface ResumePdfData extends ResumeInput {
   realName: string;
   furigana: string; // katakana only, from SeekerProfile — '' = unregistered
   bio: string; // from SeekerProfile, read-only on the résumé
+  // 証明写真 (#167), already re-encoded to JPEG by the crop step client-side —
+  // null when the seeker hasn't uploaded one yet.
+  photo: {data: Buffer; format: 'jpg'} | null;
 }
 
 interface InfoRowProps {
@@ -248,34 +275,47 @@ function ResumeDocument({
           <Text style={styles.dateText}>{todayLabel}</Text>
         </View>
 
-        <View style={styles.box}>
-          <InfoRow label="氏名フリガナ">
-            <Text>{data.furigana}</Text>
-          </InfoRow>
-          <InfoRow label="氏名">
-            <Text style={styles.nameValue}>{data.realName}</Text>
-          </InfoRow>
-          <InfoRow label="生年月日">
-            <Text>
-              {data.birthDate && formatYearMonthDay(data.birthDate)}
-              {ageAtToday !== null && `　（満${ageAtToday}歳）`}
-            </Text>
-          </InfoRow>
-          <InfoRow label="住所フリガナ">
-            <Text>{data.addressFurigana}</Text>
-          </InfoRow>
-          <InfoRow label="現住所">
-            <Text>
-              {data.postalCode && `〒${data.postalCode}　`}
-              {address}
-            </Text>
-          </InfoRow>
-          <InfoRow label="電話番号">
-            <Text>{data.phone}</Text>
-          </InfoRow>
-          <InfoRow label="メールアドレス" last>
-            <Text>{data.email}</Text>
-          </InfoRow>
+        <View style={[styles.box, styles.basicInfoRow]}>
+          <View style={styles.basicInfoFields}>
+            <InfoRow label="氏名フリガナ">
+              <Text>{data.furigana}</Text>
+            </InfoRow>
+            <InfoRow label="氏名">
+              <Text style={styles.nameValue}>{data.realName}</Text>
+            </InfoRow>
+            <InfoRow label="生年月日">
+              <Text>
+                {data.birthDate && formatYearMonthDay(data.birthDate)}
+                {ageAtToday !== null && `　（満${ageAtToday}歳）`}
+              </Text>
+            </InfoRow>
+            <InfoRow label="住所フリガナ">
+              <Text>{data.addressFurigana}</Text>
+            </InfoRow>
+            <InfoRow label="現住所">
+              <Text>
+                {data.postalCode && `〒${data.postalCode}　`}
+                {address}
+              </Text>
+            </InfoRow>
+            <InfoRow label="電話番号">
+              <Text>{data.phone}</Text>
+            </InfoRow>
+            <InfoRow label="メールアドレス" last>
+              <Text>{data.email}</Text>
+            </InfoRow>
+          </View>
+          <View style={styles.photoCell}>
+            {data.photo ? (
+              // @react-pdf's Image is a PDF layout primitive, not an HTML
+              // <img>; it has no alt prop (the rule below pattern-matches on
+              // the tag name only).
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image style={styles.photoImage} src={data.photo} />
+            ) : (
+              <Text style={styles.photoPlaceholderText}>写真</Text>
+            )}
+          </View>
         </View>
 
         {historyRows.length > 0 && (

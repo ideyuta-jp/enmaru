@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import {getObjectBuffer, getObjectStream} from '@/lib/storage';
 import {getCurrentUser} from '@/server/auth';
 import type {ValidationResult} from '@/types/ActionResult';
 import {SeekerDocumentType} from '@/types/Document';
@@ -269,4 +270,71 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
       profile.licenses,
     ),
   };
+}
+
+// Whether the signed-in seeker has a 証明写真 uploaded yet — for ResumeForm's
+// "not uploaded" warning (#167 confirmed the photo as required for audits,
+// but the seeker decided a warning should not block saving, so this is
+// informational only).
+export async function hasResumePhoto(): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+  const profile = await prisma.seekerProfile.findUnique({
+    where: {userId: user.id},
+    include: {resume: {select: {photoFileKey: true}}},
+  });
+  return Boolean(profile?.resume?.photoFileKey);
+}
+
+// File bytes for the résumé photo's own preview route, but only for the
+// owning seeker — unlike seeker-documents/[id]/file, admin has no separate
+// need to reach the raw photo: they review the generated résumé PDF (which
+// already has the photo baked in via renderResumePdf), never this file
+// directly. Returns null when not signed in, no profile, or no photo — the
+// route maps that to 404 (no existence disclosure).
+export async function getAccessibleResumePhotoFile(): Promise<{
+  body: ReadableStream;
+  contentType: string;
+} | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const profile = await prisma.seekerProfile.findUnique({
+    where: {userId: user.id},
+    include: {resume: {select: {photoFileKey: true}}},
+  });
+  const key = profile?.resume?.photoFileKey;
+  if (!key) return null;
+
+  try {
+    return await getObjectStream(key);
+  } catch {
+    // Row exists but the R2 object is missing (drift) — treat as not found so
+    // the route keeps its 404-for-everything contract instead of 500-ing.
+    return null;
+  }
+}
+
+// 履歴書PDFに埋め込む証明写真のバイト列。未アップロードなら null。
+//
+// 写真の差し替え自体はPDFを生成しない (#208) — 事務局への提出は「発行する」
+// だけが行うので、発行時にここで最新の写真を読み直す。写真は必ずクロップUIを
+// 通るため常に JPEG。
+export async function loadResumePhoto(
+  profileId: string,
+): Promise<{data: Buffer; format: 'jpg'} | null> {
+  const resume = await prisma.seekerResume.findUnique({
+    where: {seekerId: profileId},
+    select: {photoFileKey: true},
+  });
+  if (!resume?.photoFileKey) return null;
+
+  try {
+    return {
+      data: Buffer.from(await getObjectBuffer(resume.photoFileKey)),
+      format: 'jpg',
+    };
+  } catch {
+    // 行はあるが R2 のオブジェクトが無い (ドリフト)。写真なしで発行する。
+    return null;
+  }
 }

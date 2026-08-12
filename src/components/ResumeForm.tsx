@@ -20,6 +20,7 @@ import ErrorAlert from '@/components/ErrorAlert';
 import LinkBehavior from '@/components/LinkBehavior';
 import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import RepeatableEntryList from '@/components/RepeatableEntryList';
+import ResumePhotoUpload from '@/components/ResumePhotoUpload';
 import SectionHeading from '@/components/SectionHeading';
 import {publishResume, saveResumeDraft} from '@/server/resume-actions';
 import {lookupPostalAddress} from '@/services/address';
@@ -315,9 +316,18 @@ interface Props {
   // 保存済みの内容が提出済みPDFに反映されていないか (server/resume.ts の
   // hasUnpublishedResumeChanges)。発行を促す注意書きの表示に使う。
   unpublishedChanges: boolean;
+  // Whether a 証明写真 (#167) is already uploaded — ResumePhotoUpload owns the
+  // actual upload/delete flow and its own live state; this is only the
+  // page-load starting point.
+  hasPhoto: boolean;
 }
 
-export default function ResumeForm({initial, bio, unpublishedChanges}: Props) {
+export default function ResumeForm({
+  initial,
+  bio,
+  unpublishedChanges,
+  hasPhoto,
+}: Props) {
   const router = useRouter();
   const [form, setForm] = useState<ResumeInput>(initial ?? EMPTY_RESUME);
   // Which action is in flight / last completed — distinct from a plain
@@ -588,6 +598,14 @@ export default function ResumeForm({initial, bio, unpublishedChanges}: Props) {
         noValidate
         sx={{display: 'flex', flexDirection: 'column', gap: 3}}
       >
+        {/* 証明写真 */}
+        <Box>
+          {sectionLabel('証明写真')}
+          <ResumePhotoUpload hasPhoto={hasPhoto} />
+        </Box>
+
+        <Divider />
+
         {/* 基本情報 */}
         <Box>
           {sectionLabel('基本情報')}
