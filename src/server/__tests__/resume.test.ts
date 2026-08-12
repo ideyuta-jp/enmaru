@@ -6,7 +6,10 @@ import {describe, expect, it, vi} from 'vitest';
 vi.mock('@/lib/prisma', () => ({prisma: {}}));
 vi.mock('@/server/auth', () => ({getCurrentUser: vi.fn()}));
 
-import {validateResumeInput} from '@/server/resume';
+import {
+  syncLicenseHistoryWithProfile,
+  validateResumeInput,
+} from '@/server/resume';
 import {
   EMPTY_RESUME,
   MAX_RESUME_DESCRIPTION_LENGTH,
@@ -35,6 +38,18 @@ function workHistory(
     description: '0〜5歳児クラスの保育業務全般',
     startYearMonth: '2013-04',
     endYearMonth: '',
+    ...overrides,
+  };
+}
+
+function license(
+  overrides: Partial<ResumeInput['licenseHistory'][number]> = {},
+) {
+  return {
+    _key: '1',
+    licenseName: '保育士資格',
+    acquiredYearMonth: '2013-03',
+    fromProfile: false,
     ...overrides,
   };
 }
@@ -180,5 +195,107 @@ describe('validateResumeInput', () => {
       ),
     });
     expect(result.ok).toBe(false);
+  });
+
+  it('rejects a license-history row with a blank license name', () => {
+    const result = validateResumeInput({
+      ...EMPTY_RESUME,
+      licenseHistory: [license({licenseName: '   '})],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a license-history row with no acquired date (#210)', () => {
+    const result = validateResumeInput({
+      ...EMPTY_RESUME,
+      licenseHistory: [license({acquiredYearMonth: ''})],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a malformed license acquired year-month', () => {
+    const result = validateResumeInput({
+      ...EMPTY_RESUME,
+      licenseHistory: [license({acquiredYearMonth: '2013/03'})],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects more than the max number of license-history rows', () => {
+    const result = validateResumeInput({
+      ...EMPTY_RESUME,
+      licenseHistory: Array.from({length: MAX_RESUME_HISTORY_ENTRIES + 1}, () =>
+        license(),
+      ),
+    });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('syncLicenseHistoryWithProfile', () => {
+  it('creates a blank fromProfile row per checked profile license', () => {
+    const result = syncLicenseHistoryWithProfile(
+      [],
+      ['保育士資格', '子育て支援員'],
+    );
+    expect(result).toEqual([
+      expect.objectContaining({
+        licenseName: '保育士資格',
+        acquiredYearMonth: '',
+        fromProfile: true,
+      }),
+      expect.objectContaining({
+        licenseName: '子育て支援員',
+        acquiredYearMonth: '',
+        fromProfile: true,
+      }),
+    ]);
+  });
+
+  it('preserves an existing fromProfile row’s acquired date', () => {
+    const result = syncLicenseHistoryWithProfile(
+      [
+        license({
+          licenseName: '保育士資格',
+          acquiredYearMonth: '2013-03',
+          fromProfile: true,
+        }),
+      ],
+      ['保育士資格'],
+    );
+    expect(result).toEqual([
+      expect.objectContaining({
+        licenseName: '保育士資格',
+        acquiredYearMonth: '2013-03',
+        fromProfile: true,
+      }),
+    ]);
+  });
+
+  it('drops a fromProfile row whose license was unchecked on the profile', () => {
+    const result = syncLicenseHistoryWithProfile(
+      [
+        license({
+          licenseName: '子育て支援員',
+          acquiredYearMonth: '2020-01',
+          fromProfile: true,
+        }),
+      ],
+      [],
+    );
+    expect(result).toEqual([]);
+  });
+
+  it('keeps custom (non-profile) rows untouched and after the profile rows', () => {
+    const custom = license({
+      licenseName: '普通自動車第一種運転免許',
+      acquiredYearMonth: '2011-05',
+      fromProfile: false,
+    });
+    const result = syncLicenseHistoryWithProfile([custom], ['保育士資格']);
+    expect(result).toEqual([
+      expect.objectContaining({licenseName: '保育士資格', fromProfile: true}),
+      custom,
+    ]);
   });
 });

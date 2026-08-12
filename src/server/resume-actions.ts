@@ -4,7 +4,10 @@ import {prisma} from '@/lib/prisma';
 import {renderResumePdf} from '@/server/resume-pdf';
 import {requireRole} from '@/server/auth';
 import {storeSeekerDocument} from '@/server/document';
-import {validateResumeInput} from '@/server/resume';
+import {
+  syncLicenseHistoryWithProfile,
+  validateResumeInput,
+} from '@/server/resume';
 import type {ActionResult} from '@/types/ActionResult';
 import {SeekerDocumentType} from '@/types/Document';
 import {type ResumeInput} from '@/types/Resume';
@@ -26,7 +29,15 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
     return {ok: false, message: '先にプロフィールを作成してください。'};
   }
 
-  const validation = validateResumeInput(input);
+  // Re-synced against the profile as of right now (not as of page load) —
+  // a fromProfile row is added/dropped here to match the current checkbox
+  // state before validating (#210 requires every row to carry a date) and
+  // persisting.
+  const licenseHistory = syncLicenseHistoryWithProfile(
+    input.licenseHistory,
+    profile.licenses,
+  );
+  const validation = validateResumeInput({...input, licenseHistory});
   if (!validation.ok) return validation;
 
   const resumeData = {
@@ -76,14 +87,27 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
         order: i,
       })),
     });
+
+    await tx.seekerLicenseHistory.deleteMany({where: {resumeId: resume.id}});
+    await tx.seekerLicenseHistory.createMany({
+      data: licenseHistory.map((l, i) => ({
+        resumeId: resume.id,
+        licenseName: l.licenseName.trim(),
+        acquiredYearMonth: blankToNull(l.acquiredYearMonth),
+        fromProfile: l.fromProfile,
+        order: i,
+      })),
+    });
   });
 
   const pdf = await renderResumePdf({
     ...input,
     realName: profile.realName,
     furigana: profile.furigana ?? '',
-    licenses: profile.licenses,
     bio: profile.bio ?? '',
+    // Overrides the spread above: `input.licenseHistory` is the page-load
+    // snapshot, this is the copy re-synced against the profile just now.
+    licenseHistory,
   });
 
   // Submitted through the same path as a manual upload (storeSeekerDocument),

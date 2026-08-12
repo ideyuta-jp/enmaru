@@ -52,11 +52,7 @@ export default async function ResumePage() {
     <>
       <SessionHeader />
       <PageContainer maxWidth="md">
-        <ResumeForm
-          initial={resume}
-          licenses={profile.licenses}
-          bio={profile.bio}
-        />
+        <ResumeForm initial={resume} bio={profile.bio} />
       </PageContainer>
       <Footer />
     </>
