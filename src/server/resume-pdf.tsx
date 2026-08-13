@@ -196,6 +196,7 @@ export interface ResumePdfData {
   prefecture: string;
   city: string;
   addressLine: string;
+  addressFurigana: string; // katakana only, for hard-to-read place names
   phone: string;
   licenses: string[]; // from SeekerProfile, read-only on the résumé
   bio: string; // from SeekerProfile, read-only on the résumé
@@ -263,6 +264,9 @@ function ResumeDocument({
               {data.birthDate && formatYearMonthDay(data.birthDate)}
               {ageAtToday !== null && `　（満${ageAtToday}歳）`}
             </Text>
+          </InfoRow>
+          <InfoRow label="住所フリガナ">
+            <Text>{data.addressFurigana}</Text>
           </InfoRow>
           <InfoRow label="現住所">
             <Text>

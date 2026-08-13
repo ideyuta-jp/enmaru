@@ -35,6 +35,7 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
     prefecture: blankToNull(input.prefecture),
     city: blankToNull(input.city),
     addressLine: blankToNull(input.addressLine),
+    addressFurigana: blankToNull(input.addressFurigana),
     phone: blankToNull(input.phone),
   };
 
@@ -84,6 +85,7 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
     prefecture: input.prefecture,
     city: input.city,
     addressLine: input.addressLine,
+    addressFurigana: input.addressFurigana,
     phone: input.phone,
     licenses: profile.licenses,
     bio: profile.bio ?? '',

@@ -10,7 +10,11 @@ import {
   isValidYearMonth,
   isYearMonthRangeOutOfOrder,
 } from '@/utils/date';
-import {isValidPhoneNumber, isValidPostalCode} from '@/utils/string';
+import {
+  isValidAddressFurigana,
+  isValidPhoneNumber,
+  isValidPostalCode,
+} from '@/utils/string';
 
 // Validate a résumé submission. ResumeForm's date Selects and row cap already
 // keep well-formed input from the UI, but this is the authoritative backstop
@@ -28,6 +32,9 @@ export function validateResumeInput(
       ok: false,
       message: '郵便番号は「850-0000」の形式で入力してください。',
     };
+  }
+  if (!isValidAddressFurigana(input.addressFurigana)) {
+    return {ok: false, message: '住所のフリガナはカタカナで入力してください。'};
   }
   if (!isValidPhoneNumber(input.phone)) {
     return {ok: false, message: '電話番号の形式が正しくありません。'};
@@ -111,6 +118,7 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
       prefecture: '',
       city: '',
       addressLine: '',
+      addressFurigana: '',
       phone: '',
       education: [],
       workHistory: [],
@@ -123,6 +131,7 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
     prefecture: resume.prefecture ?? '',
     city: resume.city ?? '',
     addressLine: resume.addressLine ?? '',
+    addressFurigana: resume.addressFurigana ?? '',
     phone: resume.phone ?? '',
     education: resume.education.map((e) => ({
       _key: e.id,
