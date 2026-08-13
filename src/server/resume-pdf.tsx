@@ -190,6 +190,7 @@ function buildHistoryRows(
 
 export interface ResumePdfData {
   realName: string;
+  furigana: string; // katakana only, from SeekerProfile — '' = unregistered
   birthDate: string; // 'YYYY-MM-DD'
   postalCode: string;
   prefecture: string;
@@ -200,6 +201,31 @@ export interface ResumePdfData {
   bio: string; // from SeekerProfile, read-only on the résumé
   education: EducationEntryInput[];
   workHistory: WorkHistoryEntryInput[];
+}
+
+interface InfoRowProps {
+  label: string;
+  /** Omits the bottom border, for the last row of a box. */
+  last?: boolean;
+  children: React.ReactNode;
+}
+
+/**
+ * One label/value line of the résumé's top information box.
+ *
+ * @param label - Text for the fixed-width label cell.
+ * @param last - Pass true on the final row so the box's own border is not doubled.
+ * @param children - Rendered into the value cell; a `<Text>` in every current caller.
+ */
+function InfoRow({label, last, children}: InfoRowProps) {
+  return (
+    <View style={last ? styles.rowLast : styles.row}>
+      <View style={styles.labelCell}>
+        <Text>{label}</Text>
+      </View>
+      <View style={styles.valueCell}>{children}</View>
+    </View>
+  );
 }
 
 function ResumeDocument({
@@ -226,44 +252,27 @@ function ResumeDocument({
         </View>
 
         <View style={styles.box}>
-          <View style={styles.row}>
-            <View style={styles.labelCell}>
-              <Text>氏名</Text>
-            </View>
-            <View style={styles.valueCell}>
-              <Text style={styles.nameValue}>{data.realName}</Text>
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.labelCell}>
-              <Text>生年月日</Text>
-            </View>
-            <View style={styles.valueCell}>
-              <Text>
-                {data.birthDate && formatYearMonthDay(data.birthDate)}
-                {ageAtToday !== null && `　（満${ageAtToday}歳）`}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.labelCell}>
-              <Text>現住所</Text>
-            </View>
-            <View style={styles.valueCell}>
-              <Text>
-                {data.postalCode && `〒${data.postalCode}　`}
-                {address}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.rowLast}>
-            <View style={styles.labelCell}>
-              <Text>電話番号</Text>
-            </View>
-            <View style={styles.valueCell}>
-              <Text>{data.phone}</Text>
-            </View>
-          </View>
+          <InfoRow label="氏名フリガナ">
+            <Text>{data.furigana}</Text>
+          </InfoRow>
+          <InfoRow label="氏名">
+            <Text style={styles.nameValue}>{data.realName}</Text>
+          </InfoRow>
+          <InfoRow label="生年月日">
+            <Text>
+              {data.birthDate && formatYearMonthDay(data.birthDate)}
+              {ageAtToday !== null && `　（満${ageAtToday}歳）`}
+            </Text>
+          </InfoRow>
+          <InfoRow label="現住所">
+            <Text>
+              {data.postalCode && `〒${data.postalCode}　`}
+              {address}
+            </Text>
+          </InfoRow>
+          <InfoRow label="電話番号" last>
+            <Text>{data.phone}</Text>
+          </InfoRow>
         </View>
 
         {historyRows.length > 0 && (

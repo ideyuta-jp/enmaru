@@ -123,6 +123,11 @@ model SeekerProfile {
   userId      String @unique
   user        User   @relation(fields: [userId], references: [id])
   realName    String
+  // カタカナのみ（任意）。「フリガナ」表記は日本の商習慣上カタカナ入力を
+  // 意味する（ひらがななら「ふりがな」表記になる）。履歴書PDFの氏名欄に
+  // 表示するためのもの — SeekerProfile側に置くのは、氏名(realName)と同じく
+  // プロフィール全体に紐づく情報であり、履歴書専用データではないため。
+  furigana    String?
   displayName String
 
   // 希望エリア（公開）
