@@ -64,7 +64,9 @@ export function formatTagsWithNote(
  * @param workDate The posting's stored workDate: UTC midnight of the shift's
  *   calendar date, as a Date or its string form ('YYYY-MM-DD' or full ISO).
  * @param workTimeStart The shift's start time on that date, as JST 'HH:mm'.
- * @returns A Date for that JST wall-clock time (an absolute UTC instant).
+ * @returns The moment the shift starts, as a Date. A Date is an absolute
+ *   instant with no timezone of its own — formatted as ISO/UTC it reads 9
+ *   hours earlier than the JST wall clock (09:00 JST -> '...T00:00:00Z').
  *
  * NOTE: The calendar date is read back with UTC getters, matching every other
  * reader of workDate (see acceptingJobWhere in server/job.ts). JST is a fixed
