@@ -102,6 +102,9 @@ mirrors what the reference implementation already has working.
 - Create, edit, and close job postings (title, work content, date, time, optional
   hourly wage, target person, remarks), and set which documents each posting
   requires.
+- Browse and view published seeker profiles (read-only), seeing only the public
+  projection — never a seeker's real name or the match-only fields (see the
+  personal-information boundary).
 - See incoming matches, including the matched seeker's real name (disclosed at
   match time — see the personal-information boundary).
 - File a work-completion report (required — both sides must report; see below).
@@ -130,9 +133,12 @@ every capability above.
 
 - **Personal-information boundary.** A seeker's real name is shown to admin
   always, and to a nursery once they are matched (applying forms the match, so the
-  nursery's match inbox shows it). Street address and phone number are admin-only.
-  Public, seeker, and nursery profile views are each a narrower shape than the
-  stored record.
+  nursery's match inbox shows it). Before any match, a logged-in nursery can browse
+  a seeker's profile only when the seeker has published it, and then sees only the
+  public projection — the real name and the match-only fields (blank period, work
+  history) stay hidden until a match forms. Street address and phone number are
+  admin-only. Public, seeker, and nursery profile views are each a narrower shape
+  than the stored record.
 - **Document gate.** A seeker can apply to a posting only when every document that
   posting requires has been verified by admin. Verification is manual.
 - **Mutual completion confirmation.** Both the seeker and the nursery must file a
@@ -194,9 +200,8 @@ Recorded now so the model accounts for them; built after the MVP flow is solid:
   pushed before the shift.
 - **Past-worker document export.** Nurseries export verified documents of seekers
   who worked in a given period (ZIP, filtered by last work date), for audits.
-- Spec phase-2 items: nursery search/filtering, seeker list for nurseries, staged
-  review publication, browse/apply history, admin dashboard & reports, settings,
-  contact form.
+- Spec phase-2 items: nursery search/filtering, staged review publication,
+  browse/apply history, admin dashboard & reports, settings, contact form.
 
 ### Undecided — needs design before it can be a requirement
 

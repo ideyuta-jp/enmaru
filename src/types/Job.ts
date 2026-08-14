@@ -2,13 +2,19 @@ import {SeekerDocumentType} from '@/types/Document';
 import {toMinutes} from '@/utils/date';
 
 // A spot-work posting created by a nursery.
-export type JobStatus = 'OPEN' | 'CLOSED';
+//
+// A posting's availability is derived, not stored (#185): OPEN means it still
+// accepts applications; the other three name why it doesn't. Derivation lives
+// in server/job.ts (deriveJobState) — the client only ever reads the result.
+export type JobState = 'OPEN' | 'MATCHED' | 'EXPIRED' | 'UNPUBLISHED';
 
-// Status values, so call sites reference these instead of bare string literals
+// State values, so call sites reference these instead of bare string literals
 // (same type+value name pattern as UserRole).
-export const JobStatus = {
+export const JobState = {
   OPEN: 'OPEN',
-  CLOSED: 'CLOSED',
+  MATCHED: 'MATCHED',
+  EXPIRED: 'EXPIRED',
+  UNPUBLISHED: 'UNPUBLISHED',
 } as const;
 
 export interface Job {
@@ -35,7 +41,12 @@ export interface Job {
   remarks: string | null;
   // Document types that must be verified before a seeker may apply.
   requiredDocuments: SeekerDocumentType[];
-  status: JobStatus;
+  // Derived availability (see JobState above).
+  state: JobState;
+  // The nursery's own publish choice — the input the publish toggle edits,
+  // carried alongside the derived state so the form can show the toggle's
+  // current position even when `state` is decided by a stronger fact.
+  isPublished: boolean;
 }
 
 // Compose a tags+note pair into one string for read-only display. The result
@@ -124,7 +135,8 @@ export const EMPTY_JOB: JobInput = {
   targetPersonTags: [],
   targetPersonNote: '',
   remarks: '',
-  // The baseline always-required documents; the nursery can add the stool test.
+  // The baseline always-required documents; the nursery can add the remaining
+  // optional types.
   requiredDocuments: [
     SeekerDocumentType.RESUME,
     SeekerDocumentType.LICENSE,

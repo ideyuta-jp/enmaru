@@ -10,12 +10,12 @@ import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {listNurseryJobs} from '@/server/job';
-import {JobStatus} from '@/types/Job';
+import {JobState} from '@/types/Job';
 
 export default async function NurseryJobsPage() {
   const jobs = await listNurseryJobs();
-  const openJobs = jobs.filter((j) => j.status === JobStatus.OPEN);
-  const closedJobs = jobs.filter((j) => j.status === JobStatus.CLOSED);
+  const openJobs = jobs.filter((j) => j.state === JobState.OPEN);
+  const inactiveJobs = jobs.filter((j) => j.state !== JobState.OPEN);
 
   return (
     <>
@@ -57,7 +57,7 @@ export default async function NurseryJobsPage() {
                   variant="subtitle2"
                   sx={{mb: 1.5, color: '#666666'}}
                 >
-                  公開中（{openJobs.length}件）
+                  募集中（{openJobs.length}件）
                 </Typography>
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
                   {openJobs.map((job) => (
@@ -67,7 +67,7 @@ export default async function NurseryJobsPage() {
               </Box>
             )}
 
-            {closedJobs.length > 0 && (
+            {inactiveJobs.length > 0 && (
               <>
                 <Divider sx={{my: 2}} />
                 <Box>
@@ -75,12 +75,12 @@ export default async function NurseryJobsPage() {
                     variant="subtitle2"
                     sx={{mb: 1.5, color: '#AAAAAA'}}
                   >
-                    終了済み（{closedJobs.length}件）
+                    終了済み（{inactiveJobs.length}件）
                   </Typography>
                   <Box
                     sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}
                   >
-                    {closedJobs.map((job) => (
+                    {inactiveJobs.map((job) => (
                       <NurseryJobRow key={job.id} job={job} />
                     ))}
                   </Box>

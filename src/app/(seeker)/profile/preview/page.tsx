@@ -2,13 +2,13 @@ import type {Metadata} from 'next';
 import {redirect} from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
 import Footer from '@/components/Footer';
 import PageContainer from '@/components/PageContainer';
 import SectionHeading from '@/components/SectionHeading';
+import SeekerPublicProfile from '@/components/SeekerPublicProfile';
 import SessionHeader from '@/components/SessionHeader';
 import {getSeekerProfileInput} from '@/server/seeker';
 
@@ -44,194 +44,62 @@ export default async function ProfilePreviewPage() {
   // way /resume does since #171.
   if (!profile) redirect('/profile');
 
-  const preferredArea = [profile.preferredPrefecture, profile.preferredCity]
-    .filter(Boolean)
-    .join(' ');
-
-  const allPreferredStyle = [
-    ...profile.preferredPeriod,
-    ...profile.preferredTimeSlot,
-  ];
+  // Explicit public projection: hand SeekerPublicProfile only the fields a
+  // nursery can see, so the private ones (realName / blankYears / experience /
+  // ngConditions*) never even reach the shared component.
+  const publicView = {
+    displayName: profile.displayName,
+    preferredPrefecture: profile.preferredPrefecture,
+    preferredCity: profile.preferredCity,
+    licenses: profile.licenses,
+    experienceYears: profile.experienceYears,
+    skills: profile.skills,
+    skillsNote: profile.skillsNote,
+    preferredPeriod: profile.preferredPeriod,
+    preferredTimeSlot: profile.preferredTimeSlot,
+    preferredAgeGroups: profile.preferredAgeGroups,
+    values: profile.values,
+    bio: profile.bio,
+    messageToNursery: profile.messageToNursery,
+  };
 
   return (
     <>
       <SessionHeader />
       <PageContainer maxWidth="sm">
-        <SectionHeading subtitle="マッチング成立後、保育園にはこのように見えます">
+        <SectionHeading subtitle="公開すると、保育園にはこのように見えます">
           プロフィールプレビュー
         </SectionHeading>
 
-        {/* TODO: This seeker card replicates the MatchCard layout in
-            (nursery)/nursery/applications/page.tsx. Extract a shared
-            SeekerProfileCard used by both so this preview cannot drift
-            from the real nursery-facing card. */}
+        {/* 公開範囲: 園向け詳細ページと同じコンポーネントを描画するので、
+            プレビューと実際に園から見える内容は乖離しない。
+            TODO: The post-match view (MatchCard in
+            (nursery)/nursery/applications/page.tsx) still has its own layout;
+            unify it with SeekerPublicProfile + the match-only block below so
+            the matched view cannot drift either. */}
         <Box
           sx={{
             p: {xs: 2, md: 3},
             bgcolor: '#FAFAFA',
             borderRadius: 2,
             border: '1px solid #E0E0E0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
           }}
         >
-          {/* 名前・エリア・勤務スタイルチップ */}
-          <Box>
-            <Typography variant="subtitle1" sx={{fontWeight: 700}}>
-              {profile.displayName}
-              <Typography
-                component="span"
-                variant="caption"
-                color="text.secondary"
-                sx={{ml: 0.5, fontWeight: 400}}
-              >
-                （{profile.realName}）
-              </Typography>
-            </Typography>
-            {preferredArea && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{display: 'block', mt: 0.25}}
-              >
-                希望エリア: {preferredArea}
-              </Typography>
-            )}
-            {allPreferredStyle.length > 0 && (
-              <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.75}}>
-                {allPreferredStyle.map((s) => (
-                  <Chip
-                    key={s}
-                    label={s}
-                    size="small"
-                    sx={{fontSize: '0.65rem', height: 20}}
-                  />
-                ))}
-              </Box>
-            )}
-          </Box>
+          <SeekerPublicProfile seeker={publicView} />
 
-          {/* 資格・経験 */}
-          {(profile.licenses.length > 0 || profile.experienceYears) && (
+          {/* 本名・ブランク期間・職務経歴（マッチング相手のみ） */}
+          {(profile.realName || profile.blankYears || profile.experience) && (
             <>
-              <Divider />
-              <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
-                {profile.licenses.length > 0 && (
-                  <LabeledBlock label="保有資格">
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        gap: 0.5,
-                        flexWrap: 'wrap',
-                        mt: 0.25,
-                      }}
-                    >
-                      {profile.licenses.map((l) => (
-                        <Chip
-                          key={l}
-                          label={l}
-                          size="small"
-                          sx={{fontSize: '0.65rem', height: 20}}
-                        />
-                      ))}
-                    </Box>
-                  </LabeledBlock>
-                )}
-                {profile.experienceYears && (
-                  <LabeledBlock label="保育経験">
-                    <Typography variant="body2">
-                      {profile.experienceYears}
-                    </Typography>
-                  </LabeledBlock>
-                )}
-              </Box>
-            </>
-          )}
-
-          {/* 得意分野 */}
-          {(profile.skills.length > 0 || profile.skillsNote) && (
-            <>
-              <Divider />
-              <Box>
-                <LabeledBlock label="得意分野">
-                  {profile.skills.length > 0 && (
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        gap: 0.5,
-                        flexWrap: 'wrap',
-                        mt: 0.25,
-                        mb: profile.skillsNote ? 0.75 : 0,
-                      }}
-                    >
-                      {profile.skills.map((s) => (
-                        <Chip
-                          key={s}
-                          label={s}
-                          size="small"
-                          sx={{fontSize: '0.65rem', height: 20}}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                  {profile.skillsNote && (
-                    <Typography
-                      variant="body2"
-                      sx={{whiteSpace: 'pre-wrap', mt: 0.5}}
-                    >
-                      {profile.skillsNote}
-                    </Typography>
-                  )}
-                </LabeledBlock>
-              </Box>
-            </>
-          )}
-
-          {/* 大切にしていること */}
-          {profile.values && (
-            <>
-              <Divider />
-              <LabeledBlock label="大切にしていること">
-                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
-                  {profile.values}
-                </Typography>
-              </LabeledBlock>
-            </>
-          )}
-
-          {/* 自己紹介 */}
-          {profile.bio && (
-            <>
-              <Divider />
-              <LabeledBlock label="自己紹介">
-                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
-                  {profile.bio}
-                </Typography>
-              </LabeledBlock>
-            </>
-          )}
-
-          {/* 園の方へひとこと */}
-          {profile.messageToNursery && (
-            <>
-              <Divider />
-              <LabeledBlock label="園の方へひとこと">
-                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
-                  {profile.messageToNursery}
-                </Typography>
-              </LabeledBlock>
-            </>
-          )}
-
-          {/* ブランク期間・職務経歴（マッチング相手のみ） */}
-          {(profile.blankYears || profile.experience) && (
-            <>
-              <Divider />
+              <Divider sx={{mb: 3}} />
               <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
                 <Typography variant="caption" color="text.secondary">
                   以下はマッチング成立後に開示されます
                 </Typography>
+                {profile.realName && (
+                  <LabeledBlock label="本名">
+                    <Typography variant="body2">{profile.realName}</Typography>
+                  </LabeledBlock>
+                )}
                 {profile.blankYears && (
                   <LabeledBlock label="ブランク期間">
                     <Typography variant="body2">

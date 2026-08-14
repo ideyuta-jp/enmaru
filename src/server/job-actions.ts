@@ -5,13 +5,9 @@ import {requireRole} from '@/server/auth';
 import {isSavedNurseryProfile} from '@/server/nursery';
 import type {ActionResult} from '@/types/ActionResult';
 import {ALL_DOCUMENT_TYPES, type SeekerDocumentType} from '@/types/Document';
-import {
-  encodeTransportationExpense,
-  type JobInput,
-  type JobStatus,
-} from '@/types/Job';
+import {encodeTransportationExpense, type JobInput} from '@/types/Job';
 import {UserRole} from '@/types/User';
-import {toMinutes} from '@/utils/date';
+import {toMinutes, todayInJst} from '@/utils/date';
 import {blankToNull} from '@/utils/string';
 
 // Validate + normalize a posting form. Required fields mirror the non-null
@@ -28,12 +24,8 @@ function parseJobInput(
   if (!title || !hasWorkContent || input.workDates.length === 0) {
     return {ok: false, message: 'タイトル・勤務内容・勤務日は必須です。'};
   }
-  // Backstop for the calendar's disablePast. Compare calendar dates in JST
-  // (the service's locale) — the server clock may run in UTC, and
-  // toISOString-style UTC dates lag Japan by 9 hours around midnight.
-  const todayJst = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tokyo',
-  }).format(new Date());
+  // Backstop for the calendar's disablePast.
+  const todayJst = todayInJst();
   if (input.workDates.some((d) => d < todayJst)) {
     return {ok: false, message: '過去の日付は指定できません。'};
   }
@@ -158,10 +150,14 @@ export async function updateJob(
   return {ok: true};
 }
 
-// Open/close one of the signed-in nursery's postings (ownership-checked).
-export async function setJobStatus(
+// Publish/unpublish one of the signed-in nursery's postings
+// (ownership-checked). This only records the nursery's choice — whether the
+// posting actually accepts applications also depends on the derived matched
+// and expired facts (deriveJobState), so re-publishing a matched or expired
+// posting cannot make it applyable again (#185).
+export async function setJobPublished(
   id: string,
-  status: JobStatus,
+  isPublished: boolean,
 ): Promise<ActionResult> {
   const user = await requireRole([UserRole.NURSERY]);
   const owned = await prisma.jobPosting.findFirst({
@@ -170,22 +166,22 @@ export async function setJobStatus(
   });
   if (!owned) return {ok: false, message: '対象の募集が見つかりません。'};
 
-  await prisma.jobPosting.update({where: {id}, data: {status}});
+  await prisma.jobPosting.update({where: {id}, data: {isPublished}});
   return {ok: true};
 }
 
 // Permanently delete one of the signed-in nursery's postings
-// (ownership-checked). Refuses postings that already have at least one
-// Engagement — first-come matching happens the moment a seeker applies, so a
-// matched posting must stay as a record rather than disappear on the seeker.
+// (ownership-checked). Refuses postings that already have their Engagement —
+// first-come matching happens the moment a seeker applies, so a matched
+// posting must stay as a record rather than disappear on the seeker.
 export async function deleteJob(id: string): Promise<ActionResult> {
   const user = await requireRole([UserRole.NURSERY]);
   const owned = await prisma.jobPosting.findFirst({
     where: {id, nursery: {userId: user.id}},
-    select: {_count: {select: {engagements: true}}},
+    select: {engagement: {select: {id: true}}},
   });
   if (!owned) return {ok: false, message: '対象の募集が見つかりません。'};
-  if (owned._count.engagements > 0) {
+  if (owned.engagement) {
     return {ok: false, message: 'マッチング済みの募集は削除できません。'};
   }
 

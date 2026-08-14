@@ -1,11 +1,12 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
@@ -17,17 +18,27 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
+import LinkBehavior from '@/components/LinkBehavior';
 import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import RepeatableEntryList from '@/components/RepeatableEntryList';
 import SectionHeading from '@/components/SectionHeading';
 import {saveResume} from '@/server/resume-actions';
+import {lookupPostalAddress} from '@/services/address';
+import {resolveCity} from '@/types/Area';
 import {
   EMPTY_RESUME,
   type EducationEntryInput,
+  MAX_RESUME_DESCRIPTION_LENGTH,
+  MAX_RESUME_HISTORY_ENTRIES,
   type ResumeInput,
   type WorkHistoryEntryInput,
 } from '@/types/Resume';
-import {formatYearMonthRange} from '@/utils/date';
+import {
+  formatYearMonthRange,
+  isValidBirthDate,
+  isYearMonthRangeOutOfOrder,
+} from '@/utils/date';
+import {isValidPhoneNumber, isValidPostalCode} from '@/utils/string';
 
 const GRADUATION_STATUS_OPTIONS = ['卒業', '中退', '卒業見込み'];
 
@@ -77,6 +88,7 @@ interface DateUnitSelectProps {
   value: string;
   onChange: (value: string) => void;
   minWidth?: number;
+  error?: boolean;
 }
 
 // One unit of a date ('2010年', '4月', '1日') as a single pull-down Select.
@@ -88,6 +100,7 @@ function DateUnitSelect({
   value,
   onChange,
   minWidth = 90,
+  error = false,
 }: DateUnitSelectProps) {
   return (
     <Select
@@ -95,6 +108,7 @@ function DateUnitSelect({
       onChange={(e) => onChange(e.target.value)}
       displayEmpty
       size="small"
+      error={error}
       sx={{minWidth}}
     >
       <MenuItem value="">{unit}</MenuItem>
@@ -112,12 +126,18 @@ interface YearMonthSelectProps {
   label: string;
   value: string; // 'YYYY-MM', '' = unset
   onChange: (value: string) => void;
+  error?: boolean;
 }
 
 // Year + month as two independent pull-down Selects (not a calendar grid) —
 // faster to fill in on mobile than tapping through a month picker, and maps
 // directly onto the 'YYYY-MM' string the rest of the form/server use.
-function YearMonthSelect({label, value, onChange}: YearMonthSelectProps) {
+function YearMonthSelect({
+  label,
+  value,
+  onChange,
+  error = false,
+}: YearMonthSelectProps) {
   // The halves live in local state because a half-picked pair (year chosen,
   // month not yet) cannot be represented in the committed 'YYYY-MM' string —
   // deriving them from `value` would bounce a single pick straight back to
@@ -149,6 +169,7 @@ function YearMonthSelect({label, value, onChange}: YearMonthSelectProps) {
           minWidth={100}
           value={year}
           onChange={(y) => set(y, month)}
+          error={error}
         />
         <DateUnitSelect
           unit="月"
@@ -156,6 +177,7 @@ function YearMonthSelect({label, value, onChange}: YearMonthSelectProps) {
           pad
           value={month}
           onChange={(m) => set(year, m)}
+          error={error}
         />
       </Box>
     </Box>
@@ -165,9 +187,14 @@ function YearMonthSelect({label, value, onChange}: YearMonthSelectProps) {
 interface BirthDateSelectProps {
   value: string; // 'YYYY-MM-DD', '' = unset
   onChange: (value: string) => void;
+  error?: boolean;
 }
 
-function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
+function BirthDateSelect({
+  value,
+  onChange,
+  error = false,
+}: BirthDateSelectProps) {
   // Same local-state reasoning as YearMonthSelect, with three parts.
   const initial = value ? value.split('-') : ['', '', ''];
   const [year, setYear] = useState(initial[0]);
@@ -201,6 +228,7 @@ function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
           minWidth={100}
           value={year}
           onChange={(y) => set(y, month, day)}
+          error={error}
         />
         <DateUnitSelect
           unit="月"
@@ -208,6 +236,7 @@ function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
           pad
           value={month}
           onChange={(m) => set(year, m, day)}
+          error={error}
         />
         <DateUnitSelect
           unit="日"
@@ -215,8 +244,18 @@ function BirthDateSelect({value, onChange}: BirthDateSelectProps) {
           pad
           value={day}
           onChange={(d) => set(year, month, d)}
+          error={error}
         />
       </Box>
+      {error && (
+        <Typography
+          variant="caption"
+          color="error"
+          sx={{display: 'block', mt: 0.5}}
+        >
+          生年月日が正しくありません
+        </Typography>
+      )}
     </Box>
   );
 }
@@ -265,13 +304,55 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
+  // Gates inline field errors — same pattern as JobForm: nothing is marked
+  // invalid until the seeker actually tries to submit.
+  const [submitted, setSubmitted] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   function set<K extends keyof ResumeInput>(key: K, value: ResumeInput[K]) {
     setForm((prev) => ({...prev, [key]: value}));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // TODO: extract a shared postal-code field — NurseryProfileForm carries the
+  // same zipLoading + onBlur lookup + spinner adornment as this one.
+  async function handlePostalCodeBlur() {
+    // Same shape rule as the submit validation — a code the form would
+    // reject shouldn't trigger a lookup either.
+    if (form.postalCode === '' || !isValidPostalCode(form.postalCode)) return;
+    setZipLoading(true);
+    try {
+      const address = await lookupPostalAddress(form.postalCode);
+      if (address) {
+        // The city is a fixed dropdown, so an unmatched lookup leaves it empty
+        // for manual selection rather than guessing.
+        const city = resolveCity(address.prefecture, address.city);
+        setForm((prev) => ({...prev, prefecture: address.prefecture, city}));
+      }
+    } catch {
+      // silently ignore — user can fill in manually
+    } finally {
+      setZipLoading(false);
+    }
+  }
+
+  const birthDateInvalid = !isValidBirthDate(form.birthDate);
+  const postalCodeInvalid = !isValidPostalCode(form.postalCode);
+  const phoneInvalid = !isValidPhoneNumber(form.phone);
+  const educationInvalid = form.education.some(
+    (e) =>
+      !e.schoolName.trim() ||
+      isYearMonthRangeOutOfOrder(e.startYearMonth, e.endYearMonth),
+  );
+  const workHistoryInvalid = form.workHistory.some(
+    (w) =>
+      !w.companyName.trim() ||
+      isYearMonthRangeOutOfOrder(w.startYearMonth, w.endYearMonth),
+  );
+
+  // Reports only whether the save succeeded — failures surface through
+  // `error`, so what happens next (toast, navigation) is the caller's call.
+  async function save(): Promise<boolean> {
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -279,15 +360,76 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       const result = await saveResume(form);
       if (!result.ok) {
         setError(result.message);
-        return;
+        return false;
       }
-      setSaved(true);
-      router.refresh();
+      return true;
     } catch {
       setError('保存に失敗しました。時間をおいて再度お試しください。');
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  // Validated here so errors surface inline next to each field (and the page
+  // scrolls to the first one) instead of as a generic banner. The server
+  // (validateResumeInput in server/resume.ts, called from saveResume)
+  // re-validates everything as the backstop. Every save entry point (submit
+  // button, profile-link autosave) goes through this gate so invalid input
+  // surfaces the same way on each.
+  function validateLocally(): boolean {
+    setSubmitted(true);
+
+    if (
+      birthDateInvalid ||
+      postalCodeInvalid ||
+      phoneInvalid ||
+      educationInvalid ||
+      workHistoryInvalid
+    ) {
+      // Defer to the next tick: the error classes queried below are set by
+      // the re-render that setSubmitted(true) triggers, so they are not in
+      // the DOM yet in this handler.
+      setTimeout(() => {
+        const first = formRef.current?.querySelector<HTMLElement>(
+          '.Mui-error, [aria-invalid="true"]',
+        );
+        first?.scrollIntoView({behavior: 'smooth', block: 'center'});
+      }, 50);
+      return false;
+    }
+    return true;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validateLocally()) return;
+    if (await save()) {
+      setSaved(true);
+      router.refresh();
+    }
+  }
+
+  // A real <a href="/profile">, but in-app navigation is intercepted: following
+  // the link would drop the form's unsaved changes (#175), so save first and
+  // navigate only once that succeeds. Modified clicks (Cmd/Ctrl+click, middle
+  // click) never reach onNavigate — next/link leaves those to the browser, so
+  // they open a new tab and this tab keeps the form as it is.
+  async function handleProfileLinkNavigate(e: {preventDefault: () => void}) {
+    e.preventDefault();
+    // next/link navigates as soon as this returns, so cancel above before
+    // bailing out when a save is already running (this link or the submit
+    // button — a link cannot be disabled). A second saveResume would share
+    // `saving`, and whichever finished first would flip it back — re-enabling
+    // the submit button mid-save — besides queueing another PDF render.
+    // Same for an in-flight postal lookup as on the submit button, except a
+    // link cannot be disabled — bail out here instead.
+    if (saving || zipLoading) return;
+    // Invalid input blocks the navigation with the same inline errors as the
+    // submit button — navigating away silently would drop the fixes #175
+    // exists to preserve.
+    if (!validateLocally()) return;
+    if (await save()) router.push('/profile');
   }
 
   const sectionLabel = (text: string) => (
@@ -296,6 +438,22 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       sx={{fontWeight: 700, mb: 1.5, color: '#666666'}}
     >
       {text}
+    </Typography>
+  );
+
+  // Closes both read-only sections, whose values are edited on /profile.
+  const profileEditNote = (
+    <Typography variant="caption" color="text.secondary">
+      <MuiLink
+        // The theme wires MuiLink to LinkBehavior already; naming it here is
+        // what makes next/link's onNavigate visible to the type checker.
+        component={LinkBehavior}
+        href="/profile"
+        onNavigate={handleProfileLinkNavigate}
+      >
+        プロフィール編集
+      </MuiLink>
+      から変更できます
     </Typography>
   );
 
@@ -324,7 +482,11 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
 
       <Box
         component="form"
+        ref={formRef}
         onSubmit={handleSubmit}
+        // Suppress the browser's native validation UI — errors are rendered
+        // via MUI's error state and the scroll-to-first-error handling above.
+        noValidate
         sx={{display: 'flex', flexDirection: 'column', gap: 3}}
       >
         {/* 基本情報 */}
@@ -334,15 +496,35 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
             <BirthDateSelect
               value={form.birthDate}
               onChange={(v) => set('birthDate', v)}
+              error={submitted && birthDateInvalid}
             />
             <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
               <TextField
                 label="郵便番号"
                 value={form.postalCode}
                 onChange={(e) => set('postalCode', e.target.value)}
+                onBlur={handlePostalCodeBlur}
                 size="small"
                 placeholder="850-0000"
-                sx={{width: 160}}
+                error={submitted && postalCodeInvalid}
+                // helperText rather than a sibling caption so the hint is tied
+                // to the input through aria-describedby. Its default 14px side
+                // margins would push the hint onto a second line, so drop them
+                // and let it use the field's full width. The validation error
+                // takes the hint's slot while it applies.
+                helperText={
+                  submitted && postalCodeInvalid
+                    ? '「850-0000」の形式で入力してください'
+                    : '入力すると住所を自動補完します'
+                }
+                sx={{width: 220, '& .MuiFormHelperText-root': {mx: 0}}}
+                slotProps={{
+                  input: {
+                    endAdornment: zipLoading ? (
+                      <CircularProgress size={16} sx={{mr: 0.5}} />
+                    ) : null,
+                  },
+                }}
               />
               <PrefectureCitySelect
                 prefecture={form.prefecture}
@@ -366,6 +548,12 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
               size="small"
               placeholder="090-1234-5678"
               sx={{maxWidth: 220}}
+              error={submitted && phoneInvalid}
+              helperText={
+                submitted && phoneInvalid
+                  ? '電話番号の形式が正しくありません'
+                  : undefined
+              }
             />
           </Box>
         </Box>
@@ -381,12 +569,20 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
             onChange={(next) => set('education', next)}
             createEmpty={newEducationEntry}
             addButtonLabel="学歴を追加する"
+            maxItems={MAX_RESUME_HISTORY_ENTRIES}
             renderRow={(entry, update) => {
               const rangeText = formatYearMonthRange(
                 entry.startYearMonth,
                 entry.endYearMonth,
                 '在学中',
               );
+              const nameMissing = submitted && !entry.schoolName.trim();
+              const rangeInvalid =
+                submitted &&
+                isYearMonthRangeOutOfOrder(
+                  entry.startYearMonth,
+                  entry.endYearMonth,
+                );
               return (
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
                   <TextField
@@ -395,6 +591,8 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                     onChange={(e) => update({schoolName: e.target.value})}
                     size="small"
                     fullWidth
+                    error={nameMissing}
+                    helperText={nameMissing ? '入力してください' : undefined}
                   />
                   <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
                     <YearMonthSelect
@@ -406,6 +604,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                       label="卒業年月（在学中は空欄）"
                       value={entry.endYearMonth}
                       onChange={(v) => update({endYearMonth: v})}
+                      error={rangeInvalid}
                     />
                     <OptionSelect
                       label="区分"
@@ -414,7 +613,12 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                       onChange={(v) => update({graduationStatus: v})}
                     />
                   </Box>
-                  {rangeText && (
+                  {rangeInvalid && (
+                    <Typography variant="caption" color="error">
+                      卒業年月は入学年月より後にしてください
+                    </Typography>
+                  )}
+                  {!rangeInvalid && rangeText && (
                     <Typography variant="caption" color="text.secondary">
                       {rangeText}
                     </Typography>
@@ -436,12 +640,20 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
             onChange={(next) => set('workHistory', next)}
             createEmpty={newWorkHistoryEntry}
             addButtonLabel="職歴を追加する"
+            maxItems={MAX_RESUME_HISTORY_ENTRIES}
             renderRow={(entry, update) => {
               const rangeText = formatYearMonthRange(
                 entry.startYearMonth,
                 entry.endYearMonth,
                 '現在勤務中',
               );
+              const nameMissing = submitted && !entry.companyName.trim();
+              const rangeInvalid =
+                submitted &&
+                isYearMonthRangeOutOfOrder(
+                  entry.startYearMonth,
+                  entry.endYearMonth,
+                );
               return (
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
                   <TextField
@@ -450,6 +662,8 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                     onChange={(e) => update({companyName: e.target.value})}
                     size="small"
                     fullWidth
+                    error={nameMissing}
+                    helperText={nameMissing ? '入力してください' : undefined}
                   />
                   <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
                     <YearMonthSelect
@@ -461,6 +675,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                       label="退社年月（現在勤務中は空欄）"
                       value={entry.endYearMonth}
                       onChange={(v) => update({endYearMonth: v})}
+                      error={rangeInvalid}
                     />
                     <OptionSelect
                       label="雇用形態"
@@ -477,8 +692,16 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                     multiline
                     rows={2}
                     fullWidth
+                    slotProps={{
+                      htmlInput: {maxLength: MAX_RESUME_DESCRIPTION_LENGTH},
+                    }}
                   />
-                  {rangeText && (
+                  {rangeInvalid && (
+                    <Typography variant="caption" color="error">
+                      退社年月は入社年月より後にしてください
+                    </Typography>
+                  )}
+                  {!rangeInvalid && rangeText && (
                     <Typography variant="caption" color="text.secondary">
                       {rangeText}
                     </Typography>
@@ -505,10 +728,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
               未登録です
             </Typography>
           )}
-          <Typography variant="caption" color="text.secondary">
-            <MuiLink href="/profile">プロフィール編集</MuiLink>
-            から変更できます
-          </Typography>
+          {profileEditNote}
         </Box>
 
         <Divider />
@@ -523,10 +743,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
           >
             {bio || '未登録です'}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            <MuiLink href="/profile">プロフィール編集</MuiLink>
-            から変更できます
-          </Typography>
+          {profileEditNote}
         </Box>
 
         <Box
@@ -539,7 +756,11 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
           <Button
             type="submit"
             variant="contained"
-            disabled={saving}
+            // Also blocked while an autofill is in flight: clicking here blurs
+            // the postal-code field, and save() would read the form before the
+            // looked-up address lands — saving a blank address under a success
+            // toast. The spinner in the field shows why the click is refused.
+            disabled={saving || zipLoading}
             sx={{py: 1.25, flexGrow: {xs: 1, md: 0}, minWidth: {md: 200}}}
           >
             {saving ? '保存中...' : '保存する'}

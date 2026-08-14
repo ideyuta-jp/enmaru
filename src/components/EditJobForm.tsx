@@ -10,21 +10,25 @@ import {useRouter} from 'next/navigation';
 import ErrorAlert from '@/components/ErrorAlert';
 import JobForm from '@/components/JobForm';
 import SectionHeading from '@/components/SectionHeading';
-import {setJobStatus, updateJob} from '@/server/job-actions';
-import {JobStatus, type JobInput} from '@/types/Job';
+import {setJobPublished, updateJob} from '@/server/job-actions';
+import {type JobInput} from '@/types/Job';
 
 interface Props {
   jobId: string;
   initial: JobInput;
-  initialStatus: JobStatus;
+  initialIsPublished: boolean;
 }
 
-export default function EditJobForm({jobId, initial, initialStatus}: Props) {
+export default function EditJobForm({
+  jobId,
+  initial,
+  initialIsPublished,
+}: Props) {
   const router = useRouter();
   const [form, setForm] = useState<JobInput>(initial);
-  const [status, setStatus] = useState<JobStatus>(initialStatus);
+  const [isPublished, setIsPublished] = useState(initialIsPublished);
   const [saving, setSaving] = useState(false);
-  const [updatingJobStatus, setUpdatingJobStatus] = useState(false);
+  const [updatingPublished, setUpdatingPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState(false);
 
@@ -47,22 +51,22 @@ export default function EditJobForm({jobId, initial, initialStatus}: Props) {
     }
   }
 
-  async function handleToggleStatus() {
-    const next = status === JobStatus.OPEN ? JobStatus.CLOSED : JobStatus.OPEN;
-    setUpdatingJobStatus(true);
+  async function handleTogglePublished() {
+    const next = !isPublished;
+    setUpdatingPublished(true);
     setError(null);
     try {
-      const result = await setJobStatus(jobId, next);
+      const result = await setJobPublished(jobId, next);
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      setStatus(next);
+      setIsPublished(next);
       router.refresh();
     } catch {
-      setError('ステータスの更新に失敗しました。');
+      setError('募集状態の更新に失敗しました。');
     } finally {
-      setUpdatingJobStatus(false);
+      setUpdatingPublished(false);
     }
   }
 
@@ -80,15 +84,15 @@ export default function EditJobForm({jobId, initial, initialStatus}: Props) {
         <Button
           variant="outlined"
           size="small"
-          onClick={handleToggleStatus}
-          disabled={updatingJobStatus}
+          onClick={handleTogglePublished}
+          disabled={updatingPublished}
           sx={{
-            borderColor: status === JobStatus.OPEN ? '#AAAAAA' : '#F4A7B9',
-            color: status === JobStatus.OPEN ? '#666666' : '#F4A7B9',
+            borderColor: isPublished ? '#AAAAAA' : '#F4A7B9',
+            color: isPublished ? '#666666' : '#F4A7B9',
             fontSize: '0.75rem',
           }}
         >
-          {status === JobStatus.OPEN ? '募集を終了する' : '募集を再開する'}
+          {isPublished ? '募集を終了する' : '募集を再開する'}
         </Button>
       </Box>
 
