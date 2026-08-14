@@ -19,27 +19,28 @@ export function formatDateTime(value: string | Date): string {
   });
 }
 
-// Absolute instant of a shift's scheduled start. `workDateIso` is a stored
-// timestamp whose Asia/Tokyo calendar date is the shift date (however it was
-// persisted), and `workTimeStart` is a JST 'HH:mm' wall-clock time. We read the
-// Tokyo calendar date explicitly (not the UTC date, which can be a day off) and
-// combine it with the start time as JST. JST is a fixed UTC+9 with no DST, so
-// the UTC instant is just the wall clock minus 9 hours.
+// Absolute instant of a shift's scheduled start. `workDateIso` is the stored
+// workDate — UTC midnight of the shift's calendar date (created via
+// new Date('YYYY-MM-DD'); see acceptingJobWhere in server/job.ts), so the
+// calendar date is read back with UTC getters, matching every other reader of
+// this field. `workTimeStart` is a JST 'HH:mm' wall-clock time on that date.
+// JST is a fixed UTC+9 with no DST, so the UTC instant is just the wall clock
+// minus 9 hours.
 export function scheduledStartAt(
   workDateIso: string,
   workTimeStart: string,
 ): Date {
-  const [y, mo, d] = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-    .format(new Date(workDateIso))
-    .split('-')
-    .map(Number);
+  const workDate = new Date(workDateIso);
   const [hh, mm] = workTimeStart.split(':').map(Number);
-  return new Date(Date.UTC(y, mo - 1, d, hh - 9, mm));
+  return new Date(
+    Date.UTC(
+      workDate.getUTCFullYear(),
+      workDate.getUTCMonth(),
+      workDate.getUTCDate(),
+      hh - 9,
+      mm,
+    ),
+  );
 }
 
 // Whether `now` has reached the point `leadMinutes` before the shift's scheduled

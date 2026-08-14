@@ -55,17 +55,11 @@ describe('formatYearMonthRange', () => {
 });
 
 describe('scheduledStartAt', () => {
-  it('combines the Tokyo date with a JST start time (09:00 JST = 00:00 UTC)', () => {
+  // workDate is stored as UTC midnight of the shift's calendar date, so its
+  // UTC date IS the shift date (see scheduledStartAt's doc comment).
+  it('combines the stored calendar date with a JST start time (09:00 JST = 00:00 UTC)', () => {
     expect(
       scheduledStartAt('2026-08-01T00:00:00.000Z', '09:00').toISOString(),
-    ).toBe('2026-08-01T00:00:00.000Z');
-  });
-
-  it('uses the Asia/Tokyo calendar date, not the UTC date', () => {
-    // Stored instant is 2026-07-31T15:00Z, which is already 2026-08-01 00:00 JST.
-    // The shift date is Aug 1 (JST), so a 09:00 start is 2026-08-01T00:00Z.
-    expect(
-      scheduledStartAt('2026-07-31T15:00:00.000Z', '09:00').toISOString(),
     ).toBe('2026-08-01T00:00:00.000Z');
   });
 
