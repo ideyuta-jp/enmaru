@@ -5,6 +5,7 @@ import {requireRole} from '@/server/auth';
 import {notify} from '@/server/notification';
 import type {ActionResult} from '@/types/ActionResult';
 import {isStartWindowOpen, WORK_START_LEAD_MINUTES} from '@/types/Engagement';
+import {scheduledStartAt} from '@/types/Job';
 import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
 
@@ -51,8 +52,7 @@ export async function startWork(engagementId: string): Promise<ActionResult> {
   }
   if (
     !isStartWindowOpen(
-      engagement.job.workDate,
-      engagement.job.workTimeStart,
+      scheduledStartAt(engagement.job.workDate, engagement.job.workTimeStart),
       new Date(),
     )
   ) {

@@ -10,6 +10,7 @@ import WorkFlowActions from '@/components/WorkFlowActions';
 import {getChatThread} from '@/server/chat';
 import {getEngagementSummary} from '@/server/engagement';
 import {isStartWindowOpen} from '@/types/Engagement';
+import {scheduledStartAt} from '@/types/Job';
 
 interface Props {
   params: Promise<{matchId: string}>;
@@ -38,8 +39,7 @@ export default async function NurseryEngagementPage({params}: Props) {
             workDate={summary.workDate}
             workTimeStart={summary.workTimeStart}
             startWindowInitiallyOpen={isStartWindowOpen(
-              summary.workDate,
-              summary.workTimeStart,
+              scheduledStartAt(summary.workDate, summary.workTimeStart),
               new Date(),
             )}
           />

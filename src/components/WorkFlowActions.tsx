@@ -14,6 +14,7 @@ import {
   isStartWindowOpen,
   WORK_START_LEAD_MINUTES,
 } from '@/types/Engagement';
+import {scheduledStartAt} from '@/types/Job';
 
 interface Props {
   engagementId: string;
@@ -107,7 +108,7 @@ export default function WorkFlowActions({
     const startWindowOpen =
       now === null
         ? startWindowInitiallyOpen
-        : isStartWindowOpen(workDate, workTimeStart, now);
+        : isStartWindowOpen(scheduledStartAt(workDate, workTimeStart), now);
     return (
       <Box>
         <ErrorAlert message={error} />
