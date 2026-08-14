@@ -58,14 +58,20 @@ export function formatTagsWithNote(
   return [...tags, ...(note && note.trim() ? [note] : [])].join('・');
 }
 
-// Absolute instant of a posting's scheduled start. `workDate` is the stored
-// workDate — UTC midnight of the shift's calendar date (created via
-// new Date('YYYY-MM-DD'); see acceptingJobWhere in server/job.ts) — or any of
-// its string forms ('YYYY-MM-DD' or full ISO), so the calendar date is read
-// back with UTC getters, matching every other reader of this field.
-// `workTimeStart` is a JST 'HH:mm' wall-clock time on that date. JST is a
-// fixed UTC+9 with no DST, so the UTC instant is just the wall clock minus 9
-// hours — expressed in minutes so Date.UTC normalizes the carry.
+/**
+ * Computes the exact moment a posting's shift is scheduled to start.
+ *
+ * @param workDate The posting's stored workDate: UTC midnight of the shift's
+ *   calendar date, as a Date or its string form ('YYYY-MM-DD' or full ISO).
+ * @param workTimeStart The shift's start time on that date, as JST 'HH:mm'.
+ * @returns A Date for that JST wall-clock time (an absolute UTC instant).
+ *
+ * NOTE: The calendar date is read back with UTC getters, matching every other
+ * reader of workDate (see acceptingJobWhere in server/job.ts). JST is a fixed
+ * UTC+9 with no DST, so the instant is simply the wall clock minus 9 hours —
+ * passed to Date.UTC in minutes so a negative result carries into the
+ * previous day.
+ */
 export function scheduledStartAt(
   workDate: string | Date,
   workTimeStart: string,

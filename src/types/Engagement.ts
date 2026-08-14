@@ -23,12 +23,23 @@ export const EngagementStatus = {
 // value may later become 60, but it is only ever changed here in code.
 export const WORK_START_LEAD_MINUTES = 30;
 
-// Whether `now` has reached the point `leadMinutes` before the shift's
-// scheduled start — the single gate for the "start work" action, shared by the
-// button (UX lock) and the startWork server action (authoritative gate).
-// `leadMinutes` defaults to WORK_START_LEAD_MINUTES; it is a parameter only so
-// tests can pin the boundary — real call sites never pass it. There is no
-// upper bound: once open the window stays open (a late start is allowed).
+/**
+ * Decides whether the "start work" action is allowed yet — the single gate
+ * shared by the button (UX lock) and the startWork server action
+ * (authoritative gate).
+ *
+ * @param workDate The posting's stored workDate (same shape as
+ *   scheduledStartAt's).
+ * @param workTimeStart The shift's start time, as JST 'HH:mm'.
+ * @param now The clock to judge against.
+ * @param leadMinutes How long before the scheduled start the window opens.
+ *   Defaults to WORK_START_LEAD_MINUTES; a parameter only so tests can pin
+ *   the boundary — real call sites never pass it.
+ * @returns true once `now` is within `leadMinutes` of the scheduled start.
+ *
+ * NOTE: There is no upper bound — once open the window stays open (a late
+ * start is allowed).
+ */
 export function isStartWindowOpen(
   workDate: string | Date,
   workTimeStart: string,
