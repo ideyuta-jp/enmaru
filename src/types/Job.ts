@@ -1,4 +1,5 @@
 import {SeekerDocumentType} from '@/types/Document';
+import {toMinutes} from '@/utils/date';
 
 // A spot-work posting created by a nursery.
 //
@@ -55,6 +56,37 @@ export function formatTagsWithNote(
   note: string | null,
 ): string {
   return [...tags, ...(note && note.trim() ? [note] : [])].join('・');
+}
+
+/**
+ * Computes the exact moment a posting's shift is scheduled to start.
+ *
+ * @param workDate The posting's stored workDate: the shift's calendar date in
+ *   JST (the work day), encoded as UTC midnight of that date. Accepts a Date
+ *   or its string form ('YYYY-MM-DD' or full ISO).
+ * @param workTimeStart The shift's start time on that date, as JST 'HH:mm'.
+ * @returns The moment the shift starts, as a Date.
+ *
+ * NOTE: The calendar date is read back with UTC getters, matching every other
+ * reader of workDate (see acceptingJobWhere in server/job.ts). JST is a fixed
+ * UTC+9 with no DST, so the instant is simply the JST wall clock minus 9
+ * hours — passed to Date.UTC in minutes so a negative result carries into
+ * the previous day.
+ */
+export function scheduledStartAt(
+  workDate: string | Date,
+  workTimeStart: string,
+): Date {
+  const date = new Date(workDate);
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      0,
+      toMinutes(workTimeStart) - 9 * 60,
+    ),
+  );
 }
 
 // The editable shape of a posting — what the create/edit form holds and sends.

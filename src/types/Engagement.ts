@@ -13,6 +13,38 @@ export const EngagementStatus = {
   COMPLETED: 'COMPLETED',
 } as const;
 
+// How many minutes before a shift's scheduled start the seeker may press
+// "start work" (MATCHED -> WORKING). Before this window the action is locked, to
+// stop an accidental early press. Shared by the button (UX lock) and the
+// startWork server action (authoritative gate) so both agree on the boundary.
+// A developer-level constant, not a user/admin setting and not per-posting — the
+// value may later become 60, but it is only ever changed here in code.
+export const WORK_START_LEAD_MINUTES = 30;
+
+/**
+ * Decides whether the "start work" action is allowed yet — the single gate
+ * shared by the button (UX lock) and the startWork server action
+ * (authoritative gate).
+ *
+ * @param scheduledStart The shift's scheduled start. Callers build it from
+ *   the posting's workDate/workTimeStart with scheduledStartAt (types/Job.ts).
+ * @param now The clock to judge against.
+ * @param leadMinutes How long before the scheduled start the window opens.
+ *   Defaults to WORK_START_LEAD_MINUTES; a parameter only so tests can pin
+ *   the boundary — real call sites never pass it.
+ * @returns true once `now` is within `leadMinutes` of the scheduled start.
+ *
+ * NOTE: There is no upper bound — once open the window stays open (a late
+ * start is allowed).
+ */
+export function isStartWindowOpen(
+  scheduledStart: Date,
+  now: Date,
+  leadMinutes: number = WORK_START_LEAD_MINUTES,
+): boolean {
+  return now.getTime() >= scheduledStart.getTime() - leadMinutes * 60_000;
+}
+
 // Mutual-review progress, independent of the work lifecycle: neither side has
 // reviewed, one side has, or both have. Only meaningful once the work is
 // COMPLETED.
