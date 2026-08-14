@@ -26,7 +26,21 @@ import {saveSeekerProfile} from '@/server/seeker-actions';
 import {EMPTY_SEEKER_PROFILE, type SeekerProfileInput} from '@/types/Seeker';
 import {isKatakanaOnly} from '@/utils/string';
 
-const LICENSE_OPTIONS = ['保育士資格', '幼稚園教諭免許', '子育て支援員'];
+const LICENSE_OPTIONS = [
+  '保育士資格',
+  '幼稚園教諭一種免許状',
+  '幼稚園教諭二種免許状',
+  '幼稚園教諭専修免許状',
+  '子育て支援員',
+  '認定ベビーシッター',
+  'チャイルドマインダー',
+  '家庭的保育者（保育ママ）',
+  '病児保育専門士',
+  '児童発達支援管理責任者',
+  '保育補助者',
+  '社会福祉主事任用資格',
+  '普通救命講習修了証',
+];
 
 const EXPERIENCE_YEARS_OPTIONS = [
   '未経験',
