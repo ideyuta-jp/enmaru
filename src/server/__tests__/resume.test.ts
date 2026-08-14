@@ -1,14 +1,15 @@
 import {describe, expect, it, vi} from 'vitest';
 
 // resume.ts pulls in Prisma and the auth/Logto chain at import time; neither
-// is needed to exercise the pure validateResumeInput predicate (same
+// is needed to exercise the pure validation predicates (same
 // isolation approach as chat.test.ts/application.test.ts).
 vi.mock('@/lib/prisma', () => ({prisma: {}}));
 vi.mock('@/server/auth', () => ({getCurrentUser: vi.fn()}));
 
 import {
   syncLicenseHistoryWithProfile,
-  validateResumeInput,
+  validateResumeDraft,
+  validateResumeForPublish,
 } from '@/server/resume';
 import {
   EMPTY_RESUME,
@@ -54,9 +55,9 @@ function license(
   };
 }
 
-describe('validateResumeInput', () => {
+describe('validateResumeDraft', () => {
   it('accepts a fully blank résumé (first-time seeker)', () => {
-    expect(validateResumeInput(EMPTY_RESUME)).toEqual({ok: true});
+    expect(validateResumeDraft(EMPTY_RESUME)).toEqual({ok: true});
   });
 
   it('accepts a fully populated, well-formed résumé', () => {
@@ -70,11 +71,11 @@ describe('validateResumeInput', () => {
       education: [education()],
       workHistory: [workHistory()],
     };
-    expect(validateResumeInput(input)).toEqual({ok: true});
+    expect(validateResumeDraft(input)).toEqual({ok: true});
   });
 
   it('rejects a future birth date', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       birthDate: '2099-01-01',
     });
@@ -82,7 +83,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a calendar-impossible birth date (JS Date would roll it over)', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       birthDate: '2001-02-29',
     });
@@ -90,23 +91,23 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a malformed postal code', () => {
-    const result = validateResumeInput({...EMPTY_RESUME, postalCode: '850'});
+    const result = validateResumeDraft({...EMPTY_RESUME, postalCode: '850'});
     expect(result.ok).toBe(false);
   });
 
   it('accepts a postal code without a hyphen', () => {
     expect(
-      validateResumeInput({...EMPTY_RESUME, postalCode: '8500000'}).ok,
+      validateResumeDraft({...EMPTY_RESUME, postalCode: '8500000'}).ok,
     ).toBe(true);
   });
 
   it('rejects a malformed phone number', () => {
-    const result = validateResumeInput({...EMPTY_RESUME, phone: 'abc-defg'});
+    const result = validateResumeDraft({...EMPTY_RESUME, phone: 'abc-defg'});
     expect(result.ok).toBe(false);
   });
 
   it('rejects a malformed email address', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       email: 'yamada.example.com',
     });
@@ -114,7 +115,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a non-katakana address furigana', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       addressFurigana: 'ながさきけん',
     });
@@ -122,7 +123,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects an education row with a blank school name', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       education: [education({schoolName: '   '})],
     });
@@ -130,7 +131,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects an education row whose graduation predates enrollment', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       education: [
         education({startYearMonth: '2013-04', endYearMonth: '2010-03'}),
@@ -140,7 +141,7 @@ describe('validateResumeInput', () => {
   });
 
   it('accepts an education row still in progress (blank end)', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       education: [education({endYearMonth: ''})],
     });
@@ -148,7 +149,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a work-history row with a blank company name', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       workHistory: [workHistory({companyName: ''})],
     });
@@ -156,7 +157,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a work-history row whose end predates its start', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       workHistory: [
         workHistory({startYearMonth: '2020-04', endYearMonth: '2019-03'}),
@@ -166,7 +167,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a work-history description over the max length', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       workHistory: [
         workHistory({
@@ -178,7 +179,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects more than the max number of education rows', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       education: Array.from({length: MAX_RESUME_HISTORY_ENTRIES + 1}, () =>
         education(),
@@ -188,7 +189,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects more than the max number of work-history rows', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       workHistory: Array.from({length: MAX_RESUME_HISTORY_ENTRIES + 1}, () =>
         workHistory(),
@@ -198,23 +199,23 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects a license-history row with a blank license name', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       licenseHistory: [license({licenseName: '   '})],
     });
     expect(result.ok).toBe(false);
   });
 
-  it('rejects a license-history row with no acquired date (#210)', () => {
-    const result = validateResumeInput({
+  it('accepts a license-history row with no acquired date (#208)', () => {
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       licenseHistory: [license({acquiredYearMonth: ''})],
     });
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
   });
 
   it('rejects a malformed license acquired year-month', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       licenseHistory: [license({acquiredYearMonth: '2013/03'})],
     });
@@ -222,7 +223,7 @@ describe('validateResumeInput', () => {
   });
 
   it('rejects more than the max number of license-history rows', () => {
-    const result = validateResumeInput({
+    const result = validateResumeDraft({
       ...EMPTY_RESUME,
       licenseHistory: Array.from({length: MAX_RESUME_HISTORY_ENTRIES + 1}, () =>
         license(),
@@ -297,5 +298,32 @@ describe('syncLicenseHistoryWithProfile', () => {
       expect.objectContaining({licenseName: '保育士資格', fromProfile: true}),
       custom,
     ]);
+  });
+});
+
+describe('validateResumeForPublish', () => {
+  it('accepts what validateResumeDraft accepts when every date is filled', () => {
+    const result = validateResumeForPublish({
+      ...EMPTY_RESUME,
+      licenseHistory: [license()],
+    });
+    expect(result).toEqual({ok: true});
+  });
+
+  it('rejects a license-history row with no acquired date (#210)', () => {
+    const result = validateResumeForPublish({
+      ...EMPTY_RESUME,
+      licenseHistory: [license({acquiredYearMonth: ''})],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  // 発行時の検証は下書き時の検証を内包する。
+  it('still rejects what validateResumeDraft rejects', () => {
+    const result = validateResumeForPublish({
+      ...EMPTY_RESUME,
+      phone: 'abc-defg',
+    });
+    expect(result.ok).toBe(false);
   });
 });

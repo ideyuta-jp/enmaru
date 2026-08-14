@@ -9,7 +9,7 @@ import ResumeForm from '@/components/ResumeForm';
 import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {requireRole} from '@/server/auth';
-import {getResumeInput} from '@/server/resume';
+import {getResumeInput, hasUnpublishedResumeChanges} from '@/server/resume';
 import {getSeekerProfileInput} from '@/server/seeker';
 import {EMPTY_RESUME} from '@/types/Resume';
 import {UserRole} from '@/types/User';
@@ -47,12 +47,17 @@ export default async function ResumePage() {
   // getResumeInput only returns null when there's no SeekerProfile, which was
   // just ruled out above.
   const resume = (await getResumeInput()) ?? EMPTY_RESUME;
+  const unpublishedChanges = await hasUnpublishedResumeChanges();
 
   return (
     <>
       <SessionHeader />
       <PageContainer maxWidth="md">
-        <ResumeForm initial={resume} bio={profile.bio} />
+        <ResumeForm
+          initial={resume}
+          bio={profile.bio}
+          unpublishedChanges={unpublishedChanges}
+        />
       </PageContainer>
       <Footer />
     </>

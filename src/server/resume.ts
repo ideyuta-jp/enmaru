@@ -1,5 +1,7 @@
 import {prisma} from '@/lib/prisma';
 import {getCurrentUser} from '@/server/auth';
+import type {ValidationResult} from '@/types/ActionResult';
+import {SeekerDocumentType} from '@/types/Document';
 import {
   EMPTY_RESUME,
   type LicenseEntryInput,
@@ -52,14 +54,16 @@ export function syncLicenseHistoryWithProfile(
   return [...profileRows, ...customRows];
 }
 
-// Validate a résumé submission. ResumeForm's date Selects and row cap already
-// keep well-formed input from the UI, but this is the authoritative backstop
-// saveResume (resume-actions.ts) runs before writing — same relationship as
-// parseJobInput/job-actions.ts. Lives here rather than in resume-actions.ts
-// because a 'use server' module may only export async server actions.
-export function validateResumeInput(
-  input: ResumeInput,
-): {ok: true} | {ok: false; message: string} {
+// 一時保存時の検証。入力済みの値の形式と、ユーザーが自分で追加した行
+// (学歴・職歴・自由入力の資格) の名前が埋まっていることだけを見る。履歴書は
+// 書きかけの状態で保存できるべきなので、それ以外の未入力は通す。
+//
+// ResumeForm 側でも同じ内容を検証してインラインにエラーを出すが、こちらが
+// 権威ある backstop で、persistResumeData (resume-actions.ts) が書き込み前に
+// 必ず通す — parseJobInput/job-actions.ts と同じ関係。resume-actions.ts では
+// なくここに置くのは、'use server' モジュールが async な server action しか
+// export できないため。
+export function validateResumeDraft(input: ResumeInput): ValidationResult {
   if (!isValidBirthDate(input.birthDate)) {
     return {ok: false, message: '生年月日が正しくありません。'};
   }
@@ -137,13 +141,25 @@ export function validateResumeInput(
     if (!l.licenseName.trim()) {
       return {ok: false, message: '免許・資格には資格名を入力してください。'};
     }
-    // Required (#210) — unlike education/work-history dates, a license without
-    // its acquisition date isn't a meaningful résumé entry.
-    if (!l.acquiredYearMonth) {
-      return {ok: false, message: '免許・資格には取得年月を入力してください。'};
-    }
     if (!isValidYearMonth(l.acquiredYearMonth)) {
       return {ok: false, message: '免許・資格の取得年月が正しくありません。'};
+    }
+  }
+  return {ok: true};
+}
+
+// 発行時の検証。事務局へ提出する段階なので、下書き時の検証に加えて、提出物と
+// して埋まっていなければならない項目を確認する。
+export function validateResumeForPublish(input: ResumeInput): ValidationResult {
+  const draft = validateResumeDraft(input);
+  if (!draft.ok) return draft;
+
+  // 取得年月は必須 (#210)。下書き側に置けないのは、プロフィール由来の行が
+  // syncLicenseHistoryWithProfile で自動生成されるため — 自分では1行も
+  // 追加していない人が、身に覚えのない行のせいで一時保存すらできなくなる。
+  for (const l of input.licenseHistory) {
+    if (!l.acquiredYearMonth) {
+      return {ok: false, message: '免許・資格には取得年月を入力してください。'};
     }
   }
   return {ok: true};
@@ -153,6 +169,44 @@ export function validateResumeInput(
 // profile yet (a résumé belongs to a SeekerProfile). Maps the stored rows
 // (nullable, ordered relations) to the form shape (empty strings/arrays).
 // Mirrors getSeekerProfileInput (src/server/seeker.ts).
+// 保存済みの内容が、事務局に提出済みのPDFに反映されていないかどうか。
+//
+// SeekerResume.updatedAt は一時保存でも写真の差し替えでも動く (saveResume は
+// 毎回 upsert の update を通すので、学歴などの子テーブルだけの変更でも動く)。
+// SeekerDocument(RESUME).uploadedAt は「発行する」でのみ動く。よって前者が
+// 後者より新しければ、提出済みPDFは古い。提出物がまだ無い場合も未発行とする。
+// 専用のフラグ列を足さずに済むよう、この2つの時刻の比較で判定している。
+export async function hasUnpublishedResumeChanges(): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  const profile = await prisma.seekerProfile.findUnique({
+    where: {userId: user.id},
+    select: {id: true},
+  });
+  if (!profile) return false;
+
+  const resume = await prisma.seekerResume.findUnique({
+    where: {seekerId: profile.id},
+    select: {updatedAt: true},
+  });
+  // 履歴書そのものが未保存なら、発行されていない変更も無い。
+  if (!resume) return false;
+
+  const published = await prisma.seekerDocument.findUnique({
+    where: {
+      seekerId_documentType: {
+        seekerId: profile.id,
+        documentType: SeekerDocumentType.RESUME,
+      },
+    },
+    select: {uploadedAt: true},
+  });
+  if (!published) return true;
+
+  return resume.updatedAt > published.uploadedAt;
+}
+
 export async function getResumeInput(): Promise<ResumeInput | null> {
   const user = await getCurrentUser();
   if (!user) return null;
