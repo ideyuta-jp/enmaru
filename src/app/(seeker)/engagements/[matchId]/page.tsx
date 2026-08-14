@@ -9,6 +9,7 @@ import SessionHeader from '@/components/SessionHeader';
 import WorkFlowActions from '@/components/WorkFlowActions';
 import {getChatThread} from '@/server/chat';
 import {getEngagementSummary} from '@/server/engagement';
+import {isStartWindowOpen} from '@/types/Engagement';
 
 interface Props {
   params: Promise<{matchId: string}>;
@@ -36,6 +37,11 @@ export default async function SeekerEngagementPage({params}: Props) {
             nurseryReported={summary.nurseryReported}
             workDate={summary.workDate}
             workTimeStart={summary.workTimeStart}
+            startWindowInitiallyOpen={isStartWindowOpen(
+              summary.workDate,
+              summary.workTimeStart,
+              new Date(),
+            )}
           />
         </Box>
         <ChatPanel initial={thread} />

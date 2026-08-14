@@ -1,3 +1,5 @@
+import {scheduledStartAt} from '@/types/Job';
+
 // The two axes of an Engagement, mirroring the Prisma enums. These are the
 // source of truth for an engagement's state; the single status chip the UI shows
 // is derived from both at the presentation layer (see StatusChip), not stored as
@@ -20,6 +22,22 @@ export const EngagementStatus = {
 // A developer-level constant, not a user/admin setting and not per-posting — the
 // value may later become 60, but it is only ever changed here in code.
 export const WORK_START_LEAD_MINUTES = 30;
+
+// Whether `now` has reached the point `leadMinutes` before the shift's
+// scheduled start — the single gate for the "start work" action, shared by the
+// button (UX lock) and the startWork server action (authoritative gate).
+// `leadMinutes` defaults to WORK_START_LEAD_MINUTES; it is a parameter only so
+// tests can pin the boundary — real call sites never pass it. There is no
+// upper bound: once open the window stays open (a late start is allowed).
+export function isStartWindowOpen(
+  workDate: string | Date,
+  workTimeStart: string,
+  now: Date,
+  leadMinutes: number = WORK_START_LEAD_MINUTES,
+): boolean {
+  const start = scheduledStartAt(workDate, workTimeStart);
+  return now.getTime() >= start.getTime() - leadMinutes * 60_000;
+}
 
 // Mutual-review progress, independent of the work lifecycle: neither side has
 // reviewed, one side has, or both have. Only meaningful once the work is

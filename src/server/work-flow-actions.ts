@@ -4,10 +4,9 @@ import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import {notify} from '@/server/notification';
 import type {ActionResult} from '@/types/ActionResult';
-import {WORK_START_LEAD_MINUTES} from '@/types/Engagement';
+import {isStartWindowOpen, WORK_START_LEAD_MINUTES} from '@/types/Engagement';
 import {NotificationType} from '@/types/Notification';
 import {UserRole} from '@/types/User';
-import {isStartWindowOpen} from '@/utils/date';
 
 // Which party (if any) the signed-in user is to this engagement. The seeker party
 // is the engagement's seeker; the nursery party owns the posting. Anyone else is
@@ -52,10 +51,9 @@ export async function startWork(engagementId: string): Promise<ActionResult> {
   }
   if (
     !isStartWindowOpen(
-      engagement.job.workDate.toISOString(),
+      engagement.job.workDate,
       engagement.job.workTimeStart,
       new Date(),
-      WORK_START_LEAD_MINUTES,
     )
   ) {
     return {

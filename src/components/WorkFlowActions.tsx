@@ -9,8 +9,11 @@ import Typography from '@mui/material/Typography';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {startWork, submitWorkReport} from '@/server/work-flow-actions';
-import {EngagementStatus, WORK_START_LEAD_MINUTES} from '@/types/Engagement';
-import {isStartWindowOpen} from '@/utils/date';
+import {
+  EngagementStatus,
+  isStartWindowOpen,
+  WORK_START_LEAD_MINUTES,
+} from '@/types/Engagement';
 
 interface Props {
   engagementId: string;
@@ -24,6 +27,12 @@ interface Props {
   // 'HH:mm' JST.
   workDate: string;
   workTimeStart: string;
+  // The gate as evaluated on the server at render time — the button's state
+  // until the client clock takes over after mount, so a seeker who arrives
+  // inside the window sees an enabled button on first paint instead of a false
+  // "30分前から" flash (and hydration stays consistent, since the client can't
+  // read its own clock during the SSR/hydration pass).
+  startWindowInitiallyOpen: boolean;
 }
 
 export default function WorkFlowActions({
@@ -34,16 +43,16 @@ export default function WorkFlowActions({
   nurseryReported,
   workDate,
   workTimeStart,
+  startWindowInitiallyOpen,
 }: Props) {
   const router = useRouter();
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Client clock, resolved after mount (null during SSR/first paint so the
-  // button starts locked and there is no hydration mismatch). The first tick is
-  // deferred (not set synchronously in the effect) and then repeats on an
-  // interval, so the button unlocks on its own when the window opens without a
-  // page reload.
+  // Client clock, resolved after mount (null during SSR/first paint, where
+  // startWindowInitiallyOpen answers instead). The first tick is deferred (not
+  // set synchronously in the effect) and then repeats on an interval, so the
+  // button unlocks on its own when the window opens without a page reload.
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     const tick = () => setNow(new Date());
@@ -94,10 +103,11 @@ export default function WorkFlowActions({
     }
     // Locked until WORK_START_LEAD_MINUTES before the scheduled start, to stop
     // an accidental early press. The server enforces the same gate; this is the
-    // UX half. `now === null` (pre-mount) counts as locked.
+    // UX half. Pre-mount (`now === null`) the server-rendered answer stands in.
     const startWindowOpen =
-      now !== null &&
-      isStartWindowOpen(workDate, workTimeStart, now, WORK_START_LEAD_MINUTES);
+      now === null
+        ? startWindowInitiallyOpen
+        : isStartWindowOpen(workDate, workTimeStart, now);
     return (
       <Box>
         <ErrorAlert message={error} />
