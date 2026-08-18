@@ -8,6 +8,7 @@ import MuiLink from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import DescriptionIcon from '@mui/icons-material/Description';
 import FolderIcon from '@mui/icons-material/Folder';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
@@ -29,6 +30,12 @@ const NAV_CARDS = [
     icon: <AccountCircleIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
     title: 'プロフィール編集',
     description: '自己紹介や希望条件を設定',
+  },
+  {
+    href: '/resume',
+    icon: <DescriptionIcon sx={{fontSize: 36, color: '#F4A7B9'}} />,
+    title: 'WEB履歴書',
+    description: '履歴書をブラウザで作成',
   },
   {
     href: '/nurseries',

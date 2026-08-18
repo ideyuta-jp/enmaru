@@ -1,13 +1,20 @@
 import {SeekerDocumentType} from '@/types/Document';
+import {toMinutes} from '@/utils/date';
 
 // A spot-work posting created by a nursery.
-export type JobStatus = 'OPEN' | 'CLOSED';
+//
+// A posting's availability is derived, not stored (#185): OPEN means it still
+// accepts applications; the other three name why it doesn't. Derivation lives
+// in server/job.ts (deriveJobState) — the client only ever reads the result.
+export type JobState = 'OPEN' | 'MATCHED' | 'EXPIRED' | 'UNPUBLISHED';
 
-// Status values, so call sites reference these instead of bare string literals
+// State values, so call sites reference these instead of bare string literals
 // (same type+value name pattern as UserRole).
-export const JobStatus = {
+export const JobState = {
   OPEN: 'OPEN',
-  CLOSED: 'CLOSED',
+  MATCHED: 'MATCHED',
+  EXPIRED: 'EXPIRED',
+  UNPUBLISHED: 'UNPUBLISHED',
 } as const;
 
 export interface Job {
@@ -24,7 +31,6 @@ export interface Job {
   workTimeStart: string;
   workTimeEnd: string;
   hourlyWage: number | null;
-  qualification: string[];
   // true = paid, false = not paid, null = unset.
   transportationExpense: boolean | null;
   transportationExpenseNote: string | null;
@@ -35,7 +41,12 @@ export interface Job {
   remarks: string | null;
   // Document types that must be verified before a seeker may apply.
   requiredDocuments: SeekerDocumentType[];
-  status: JobStatus;
+  // Derived availability (see JobState above).
+  state: JobState;
+  // The nursery's own publish choice — the input the publish toggle edits,
+  // carried alongside the derived state so the form can show the toggle's
+  // current position even when `state` is decided by a stronger fact.
+  isPublished: boolean;
 }
 
 // Compose a tags+note pair into one string for read-only display. The result
@@ -47,9 +58,41 @@ export function formatTagsWithNote(
   return [...tags, ...(note && note.trim() ? [note] : [])].join('・');
 }
 
+/**
+ * Computes the exact moment a posting's shift is scheduled to start.
+ *
+ * @param workDate The posting's stored workDate: the shift's calendar date in
+ *   JST (the work day), encoded as UTC midnight of that date. Accepts a Date
+ *   or its string form ('YYYY-MM-DD' or full ISO).
+ * @param workTimeStart The shift's start time on that date, as JST 'HH:mm'.
+ * @returns The moment the shift starts, as a Date.
+ *
+ * NOTE: The calendar date is read back with UTC getters, matching every other
+ * reader of workDate (see acceptingJobWhere in server/job.ts). JST is a fixed
+ * UTC+9 with no DST, so the instant is simply the JST wall clock minus 9
+ * hours — passed to Date.UTC in minutes so a negative result carries into
+ * the previous day.
+ */
+export function scheduledStartAt(
+  workDate: string | Date,
+  workTimeStart: string,
+): Date {
+  const date = new Date(workDate);
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      0,
+      toMinutes(workTimeStart) - 9 * 60,
+    ),
+  );
+}
+
 // The editable shape of a posting — what the create/edit form holds and sends.
-// All text fields are plain strings (hourlyWage too, empty = unset) so the form
-// can bind directly; the server parses/validates and maps empty to null.
+// All text fields are plain strings (hourlyWage too) so the form can bind
+// directly; the server parses/validates (hourlyWage is required — empty is
+// rejected, not mapped to null).
 export interface JobInput {
   title: string;
   workContentTags: string[];
@@ -58,7 +101,6 @@ export interface JobInput {
   workTimeStart: string; // 'HH:mm'
   workTimeEnd: string;
   hourlyWage: string;
-  qualification: string[];
   transportationExpense: string; // '' | 'yes' | 'no'
   transportationExpenseNote: string;
   dresscode: string;
@@ -94,14 +136,14 @@ export const EMPTY_JOB: JobInput = {
   workTimeStart: '',
   workTimeEnd: '',
   hourlyWage: '',
-  qualification: [],
   transportationExpense: '',
   transportationExpenseNote: '',
   dresscode: '',
   targetPersonTags: [],
   targetPersonNote: '',
   remarks: '',
-  // The baseline always-required documents; the nursery can add the stool test.
+  // The baseline always-required documents; the nursery can add the remaining
+  // optional types.
   requiredDocuments: [
     SeekerDocumentType.RESUME,
     SeekerDocumentType.LICENSE,
@@ -120,7 +162,6 @@ export function toJobInput(job: Job): JobInput {
     workTimeStart: job.workTimeStart,
     workTimeEnd: job.workTimeEnd,
     hourlyWage: job.hourlyWage?.toString() ?? '',
-    qualification: job.qualification,
     transportationExpense: decodeTransportationExpense(
       job.transportationExpense,
     ),

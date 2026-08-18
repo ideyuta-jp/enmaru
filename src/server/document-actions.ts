@@ -1,8 +1,8 @@
 'use server';
 
 import {prisma} from '@/lib/prisma';
-import {putObject} from '@/lib/storage';
 import {requireRole} from '@/server/auth';
+import {storeSeekerDocument} from '@/server/document';
 import {notify} from '@/server/notification';
 import type {ActionResult} from '@/types/ActionResult';
 import {
@@ -51,21 +51,12 @@ export async function uploadDocument(
     };
   }
 
-  const type = documentType as SeekerDocumentType;
-  const key = `seeker-documents/${profile.id}/${type}`;
-  await putObject(key, new Uint8Array(await file.arrayBuffer()), file.type);
-
-  await prisma.seekerDocument.upsert({
-    where: {seekerId_documentType: {seekerId: profile.id, documentType: type}},
-    update: {
-      fileKey: key,
-      status: SeekerDocumentStatus.PENDING,
-      rejectionReason: null,
-      uploadedAt: new Date(),
-      verifiedAt: null,
-    },
-    create: {seekerId: profile.id, documentType: type, fileKey: key},
-  });
+  await storeSeekerDocument(
+    profile.id,
+    documentType as SeekerDocumentType,
+    new Uint8Array(await file.arrayBuffer()),
+    file.type,
+  );
   return {ok: true};
 }
 

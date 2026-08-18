@@ -33,6 +33,7 @@ export async function saveSeekerProfile(
     experience: blankToNull(input.experience),
     preferredPeriod: input.preferredPeriod,
     preferredTimeSlot: input.preferredTimeSlot,
+    preferredAgeGroups: input.preferredAgeGroups,
     values: blankToNull(input.values),
     bio: blankToNull(input.bio),
     messageToNursery: blankToNull(input.messageToNursery),

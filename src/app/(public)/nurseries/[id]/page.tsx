@@ -324,7 +324,7 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                           {job.workTimeStart}〜{job.workTimeEnd}
                         </Typography>
                       </Box>
-                      {job.hourlyWage && (
+                      {job.hourlyWage !== null && (
                         <Typography variant="caption" color="text.secondary">
                           時給{job.hourlyWage.toLocaleString()}円
                         </Typography>

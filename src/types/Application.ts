@@ -29,6 +29,8 @@ export interface ApplyTarget {
   workDate: string;
   workTimeStart: string;
   workTimeEnd: string;
+  // Whether the posting still accepts applications (the derived OPEN state:
+  // published, unmatched, not expired — see server/job.ts deriveJobState).
   isOpen: boolean;
   alreadyApplied: boolean;
   missingDocuments: SeekerDocumentType[];

@@ -8,11 +8,11 @@ import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import MuiLink from '@mui/material/Link';
+import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import {useRouter} from 'next/navigation';
 
-import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeading from '@/components/SectionHeading';
 import {applyToJob} from '@/server/application-actions';
 import type {ApplyTarget} from '@/types/Application';
@@ -58,7 +58,20 @@ export default function ApplicationForm({target}: {target: ApplyTarget}) {
   return (
     <>
       <SectionHeading>応募する</SectionHeading>
-      <ErrorAlert message={error} />
+
+      {/* TODO: extract a shared toast component — this Snackbar+Alert structure
+          is the 5th copy (EditJobForm, NewJobForm, SeekerProfileForm and
+          NurseryProfileForm have the success variant). */}
+      <Snackbar
+        open={error !== null}
+        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+      >
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      </Snackbar>
 
       <Box
         sx={{
@@ -80,15 +93,18 @@ export default function ApplicationForm({target}: {target: ApplyTarget}) {
         </Typography>
       </Box>
 
-      {!target.isOpen && (
+      {/* The applicant's own match reads as "already applied", not "closed":
+          with the 1:1 Engagement model, alreadyApplied always implies !isOpen,
+          so checking isOpen first would never let this notice show. */}
+      {target.alreadyApplied && (
         <Alert severity="info" sx={{mb: 3}}>
-          この募集はすでに締め切られています。
+          この募集にはすでに応募済みです。
         </Alert>
       )}
 
-      {target.isOpen && target.alreadyApplied && (
+      {!target.alreadyApplied && !target.isOpen && (
         <Alert severity="info" sx={{mb: 3}}>
-          この募集にはすでに応募済みです。
+          この募集はすでに締め切られています。
         </Alert>
       )}
 

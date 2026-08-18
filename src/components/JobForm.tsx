@@ -22,7 +22,6 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {PickerDay, type PickerDayProps} from '@mui/x-date-pickers/PickerDay';
 import dayjs, {type Dayjs} from 'dayjs';
 
-import CheckboxGroup from '@/components/CheckboxGroup';
 import TagSelector from '@/components/TagSelector';
 import {
   ALL_DOCUMENT_TYPES,
@@ -49,12 +48,6 @@ const WORK_CONTENT_TAGS = [
   '制作活動のサポート',
   '事務補助',
   '保育全般',
-];
-
-const QUALIFICATION_OPTIONS = [
-  '保育士資格必須',
-  '幼稚園教諭免許可',
-  '資格不問（保育補助可）',
 ];
 
 const DRESSCODE_CHIPS = [
@@ -251,15 +244,6 @@ export default function JobForm({
     }));
   }
 
-  function toggleQualification(value: string) {
-    setForm((prev) => ({
-      ...prev,
-      qualification: prev.qualification.includes(value)
-        ? prev.qualification.filter((q) => q !== value)
-        : [...prev.qualification, value],
-    }));
-  }
-
   function toggleDate(date: Dayjs) {
     const key = date.format('YYYY-MM-DD');
     setForm((prev) => {
@@ -287,7 +271,8 @@ export default function JobForm({
       workContentMissing ||
       form.workDates.length === 0 ||
       !form.workTimeStart ||
-      !form.workTimeEnd;
+      !form.workTimeEnd ||
+      !form.hourlyWage.trim();
     // Duration in minutes — ordering alone isn't enough since a posting must
     // be at least one hour long (mirrors job-actions.ts).
     const timeDiff =
@@ -317,11 +302,24 @@ export default function JobForm({
     onSubmit(e);
   }
 
+  // Enter in a single-line field would otherwise submit the form natively;
+  // block that so a stray Enter while typing (title, hourly wage, etc.)
+  // doesn't fire an early/accidental submit. Textareas are unaffected since
+  // Enter there already just inserts a newline rather than submitting, and
+  // buttons (the submit button itself, calendar day cells) are excluded so
+  // keyboard activation keeps working.
+  function handleFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+      e.preventDefault();
+    }
+  }
+
   return (
     <Box
       component="form"
       ref={formRef}
       onSubmit={handleSubmit}
+      onKeyDown={handleFormKeyDown}
       // Suppress the browser's native validation UI — errors are rendered via
       // MUI's error state and the scroll-to-first-error handling above.
       noValidate
@@ -482,24 +480,17 @@ export default function JobForm({
 
       {/* 時給 */}
       <TextField
-        label="時給（円・任意）"
+        label="時給（円・必須）"
         type="number"
         value={form.hourlyWage}
         onChange={(e) => set('hourlyWage', e.target.value)}
+        required
         size="small"
         slotProps={{htmlInput: {min: 1}}}
-        helperText="未定の場合は空欄のままにしてください"
-      />
-
-      <Divider />
-
-      {/* 募集に必要な資格 */}
-      <CheckboxGroup
-        label="募集に必要な資格"
-        options={QUALIFICATION_OPTIONS}
-        selected={form.qualification}
-        onToggle={toggleQualification}
-        row={false}
+        error={submitted && !form.hourlyWage.trim()}
+        helperText={
+          submitted && !form.hourlyWage.trim() ? '入力してください' : undefined
+        }
       />
 
       <Divider />

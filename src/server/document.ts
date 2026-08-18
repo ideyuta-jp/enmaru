@@ -1,13 +1,41 @@
 import {prisma} from '@/lib/prisma';
-import {getObjectStream} from '@/lib/storage';
+import {getObjectStream, putObject} from '@/lib/storage';
 import {getCurrentUser, requireRole} from '@/server/auth';
 import {
   ALL_DOCUMENT_TYPES,
   type AdminDocument,
   type MyDocument,
-  type SeekerDocumentStatus,
+  SeekerDocumentStatus,
+  type SeekerDocumentType,
 } from '@/types/Document';
 import {UserRole} from '@/types/User';
+
+// Store a finished file as the seeker's submitted document — one R2 object and
+// one SeekerDocument row per (seeker, type). Both submission paths
+// (document-actions.ts's manual upload and resume-actions.ts's generated
+// résumé PDF) go through here so the key scheme and the reset-to-PENDING
+// re-review semantics can never drift apart. Callers are responsible for
+// authorization: seekerId must belong to the already-authenticated seeker.
+export async function storeSeekerDocument(
+  seekerId: string,
+  documentType: SeekerDocumentType,
+  body: Uint8Array,
+  contentType: string,
+): Promise<void> {
+  const key = `seeker-documents/${seekerId}/${documentType}`;
+  await putObject(key, body, contentType);
+  await prisma.seekerDocument.upsert({
+    where: {seekerId_documentType: {seekerId, documentType}},
+    update: {
+      fileKey: key,
+      status: SeekerDocumentStatus.PENDING,
+      rejectionReason: null,
+      uploadedAt: new Date(),
+      verifiedAt: null,
+    },
+    create: {seekerId, documentType, fileKey: key},
+  });
+}
 
 // The signed-in seeker's documents, one entry per type (status null = not yet
 // submitted). Guarded to SEEKER.
