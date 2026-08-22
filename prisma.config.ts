@@ -13,6 +13,11 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: process.env['DATABASE_URL'],
+    // Prefer the direct (unpooled) endpoint when provided: `prisma migrate`
+    // needs session features the Neon pooler doesn't support. Netlify sets
+    // DATABASE_URL_UNPOOLED for the build-time `prisma migrate deploy` while
+    // the runtime keeps the pooled DATABASE_URL (src/lib/prisma.ts). Local dev
+    // sets only DATABASE_URL, which already points at the direct endpoint.
+    url: process.env['DATABASE_URL_UNPOOLED'] ?? process.env['DATABASE_URL'],
   },
 });
