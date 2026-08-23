@@ -107,16 +107,39 @@ and change the password themselves via the "forgot password" link.
 
 ## Running database migrations
 
-Deploys do **not** run migrations: the Netlify build is `prisma generate &&
-next build` only, so applying a schema change to a database is a manual step
-(automating this is tracked in #78). New migration files are created during
-development with `pnpm db:migrate` (`prisma migrate dev`, dev branch only);
-applying already-committed migrations to an environment uses `prisma migrate
-deploy`.
+Deploys apply migrations automatically: the Netlify build command is
+`pnpm exec prisma migrate deploy && pnpm run build`, so every deploy first
+applies the pending committed migrations to that deploy context's database —
+the prod Neon branch for production deploys (from `main`), the dev Neon branch
+for `dev` branch deploys — and only then builds. Neon branches are database
+branches, unrelated to the git branches beyond this mapping: there is no `prod`
+git branch. If the migration step fails, the build fails and the
+previous deploy keeps serving. One caveat: if the migration succeeds but the
+subsequent build fails, the schema is already updated while the old code is
+still live — recover by fixing the build and redeploying.
+
+The build-time migration connects through `DATABASE_URL_UNPOOLED`, a Netlify
+environment variable holding the **direct (unpooled)** connection string, set
+per deploy context (Production / Branch deploys) alongside the pooled
+`DATABASE_URL` the runtime uses. `prisma migrate` needs session features the
+Neon pooler doesn't support, so `prisma.config.ts` points the Prisma CLI at
+`DATABASE_URL_UNPOOLED` when it is set, falling back to `DATABASE_URL` (local
+dev sets only the latter, already the direct endpoint).
+
+New migration files are still created during development with `pnpm db:migrate`
+(`prisma migrate dev`, dev Neon branch only); applying already-committed migrations
+to an environment uses `prisma migrate deploy`, which the deploy now runs for
+you.
 
 **Never run `pnpm db:migrate` against prod** — `migrate dev` is for authoring
 migrations (shadow database, interactive, can reset). Prod only ever gets
 `migrate deploy`, which applies pending committed migrations non-interactively.
+
+### Applying migrations manually (fallback)
+
+Normally deploys handle this. Run `migrate deploy` by hand only when a
+database needs migrating outside a deploy — e.g. recovering from a failed
+build-time migration, or baselining.
 
 To migrate **prod** (run from a checkout of the released commit, usually `main`):
 
@@ -129,16 +152,18 @@ To migrate **prod** (run from a checkout of the released commit, usually `main`)
    would otherwise parse):
    ```bash
    cd <your enmaru checkout>   # on the released commit (main)
-   DATABASE_URL='<prod direct connection string>' pnpm exec prisma migrate deploy
+   DATABASE_URL_UNPOOLED='<prod direct connection string>' pnpm exec prisma migrate deploy
    ```
-   The inline `DATABASE_URL` takes precedence over any `.env.local` (same pattern
-   as the admin grant above). It applies any pending migrations, or prints
-   "No pending migrations" if the database is already up to date.
+   Use `DATABASE_URL_UNPOOLED` (not `DATABASE_URL`) — it is what
+   `prisma.config.ts` prefers, so the inline value wins over anything in
+   `.env.local` and the command cannot silently target the dev database. It
+   applies any pending migrations, or prints "No pending migrations" if the
+   database is already up to date.
 
 If the database already has tables but no Prisma migration history, `migrate
 deploy` stops with `P3005` (schema not empty) — that database must be baselined
 first; do not force it blindly.
 
-The same command migrates **dev** with the dev branch's direct `DATABASE_URL`
-(or just run `pnpm db:migrate` locally, which both creates and applies against the
-dev branch from `.env.local`).
+The same command migrates **dev** with the dev Neon branch's direct connection
+string in `DATABASE_URL_UNPOOLED` (or just run `pnpm db:migrate` locally, which
+both creates and applies against the dev Neon branch from `.env.local`).

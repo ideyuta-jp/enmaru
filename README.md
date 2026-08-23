@@ -81,9 +81,16 @@ Deploys are automatic via Netlify's GitHub integration:
 - **dev** — push to the `dev` branch (Netlify branch deploy) →
   https://dev--marvelous-crepe-8a78fb.netlify.app
 
+The Netlify build command runs `prisma migrate deploy` before the build, so pending
+committed migrations are applied to the deploy context's database as part of every
+deploy. Migrations connect through the direct (unpooled) `DATABASE_URL_UNPOOLED`
+env var, not the pooled runtime `DATABASE_URL` — see
+[`docs/operations.md`](docs/operations.md#running-database-migrations).
+
 Set the environment variables per deploy context (Production / Branch deploys) in the
-Netlify site settings (the same keys as `.env.example`). No deploy workflow lives in this
-repo; GitHub Actions only runs the quality-gate CI.
+Netlify site settings (the same keys as `.env.example`, plus the
+`DATABASE_URL_UNPOOLED` above). No deploy workflow lives in this repo; GitHub Actions
+only runs the quality-gate CI.
 
 ## Commands
 
