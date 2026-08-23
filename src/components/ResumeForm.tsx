@@ -38,7 +38,11 @@ import {
   isValidBirthDate,
   isYearMonthRangeOutOfOrder,
 } from '@/utils/date';
-import {isValidPhoneNumber, isValidPostalCode} from '@/utils/string';
+import {
+  isValidAddressFurigana,
+  isValidPhoneNumber,
+  isValidPostalCode,
+} from '@/utils/string';
 
 const GRADUATION_STATUS_OPTIONS = ['卒業', '中退', '卒業見込み'];
 
@@ -308,6 +312,11 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
   // Gates inline field errors — same pattern as JobForm: nothing is marked
   // invalid until the seeker actually tries to submit.
   const [submitted, setSubmitted] = useState(false);
+  // 住所フリガナだけは submitted ではなくこちらでゲートする。IME を通す
+  // フィールドなので、別のフィールド起因で submitted が立った状態から
+  // 入力を始めると、変換確定前のひらがなに反応して入力中に赤くなる。
+  // true になるのは blur 時と、送信時に値が不正だったときだけ。
+  const [addressFuriganaTouched, setAddressFuriganaTouched] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   function set<K extends keyof ResumeInput>(key: K, value: ResumeInput[K]) {
@@ -338,6 +347,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
 
   const birthDateInvalid = !isValidBirthDate(form.birthDate);
   const postalCodeInvalid = !isValidPostalCode(form.postalCode);
+  const addressFuriganaInvalid = !isValidAddressFurigana(form.addressFurigana);
   const phoneInvalid = !isValidPhoneNumber(form.phone);
   const educationInvalid = form.education.some(
     (e) =>
@@ -379,10 +389,12 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
   // surfaces the same way on each.
   function validateLocally(): boolean {
     setSubmitted(true);
+    if (addressFuriganaInvalid) setAddressFuriganaTouched(true);
 
     if (
       birthDateInvalid ||
       postalCodeInvalid ||
+      addressFuriganaInvalid ||
       phoneInvalid ||
       educationInvalid ||
       workHistoryInvalid
@@ -540,6 +552,21 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
               onChange={(e) => set('addressLine', e.target.value)}
               size="small"
               fullWidth
+            />
+            <TextField
+              label="住所フリガナ"
+              value={form.addressFurigana}
+              onChange={(e) => set('addressFurigana', e.target.value)}
+              size="small"
+              fullWidth
+              placeholder="ナガサキケン ナガサキシ サクラマチ"
+              onBlur={() => setAddressFuriganaTouched(true)}
+              error={addressFuriganaTouched && addressFuriganaInvalid}
+              helperText={
+                addressFuriganaTouched && addressFuriganaInvalid
+                  ? 'カタカナで入力してください'
+                  : '任意 — 難読地名の場合にご記入ください'
+              }
             />
             <TextField
               label="電話番号"

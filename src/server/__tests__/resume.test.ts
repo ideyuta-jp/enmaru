@@ -49,6 +49,7 @@ describe('validateResumeInput', () => {
       ...EMPTY_RESUME,
       birthDate: '1995-04-01',
       postalCode: '850-0000',
+      addressFurigana: 'ナガサキケン ナガサキシ',
       phone: '090-1234-5678',
       education: [education()],
       workHistory: [workHistory()],
@@ -85,6 +86,14 @@ describe('validateResumeInput', () => {
 
   it('rejects a malformed phone number', () => {
     const result = validateResumeInput({...EMPTY_RESUME, phone: 'abc-defg'});
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a non-katakana address furigana', () => {
+    const result = validateResumeInput({
+      ...EMPTY_RESUME,
+      addressFurigana: 'ながさきけん',
+    });
     expect(result.ok).toBe(false);
   });
 

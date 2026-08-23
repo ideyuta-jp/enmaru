@@ -37,6 +37,7 @@ export interface ResumeInput {
   prefecture: string;
   city: string;
   addressLine: string;
+  addressFurigana: string; // see isValidAddressFurigana
   phone: string;
   education: EducationEntryInput[];
   workHistory: WorkHistoryEntryInput[];
@@ -57,6 +58,7 @@ export const EMPTY_RESUME: ResumeInput = {
   prefecture: '',
   city: '',
   addressLine: '',
+  addressFurigana: '',
   phone: '',
   education: [],
   workHistory: [],

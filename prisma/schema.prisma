@@ -189,14 +189,18 @@ model SeekerResume {
   seeker   SeekerProfile @relation(fields: [seekerId], references: [id])
 
   // 生年月日・住所・電話番号（管理者のみ）
-  birthDate   DateTime?
-  postalCode  String?
-  prefecture  String?
-  city        String?
-  addressLine String?
-  phone       String?
+  birthDate       DateTime?
+  postalCode      String?
+  prefecture      String?
+  city            String?
+  addressLine     String?
+  // カタカナのみ（任意）。難読地名対応のため住所の読み仮名を保持する。氏名の
+  // フリガナ（SeekerProfile.furigana）とは保持先のテーブルが異なる — 住所は
+  // 履歴書専用データのためこちらに置く。
+  addressFurigana String?
+  phone           String?
   // 証明写真（R2オブジェクトキー）。アップロードUIは今回未実装、将来追加用（#167）。
-  photoFileKey String?
+  photoFileKey    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
