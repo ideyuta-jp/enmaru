@@ -10,8 +10,9 @@ Two long-lived branches map to two Netlify environments:
 
 Work branches (`feature/...`, `fix/...`, etc.) open their PR against `dev`. Once
 verified on the dev deploy, `dev` is promoted to `main` to release. So merging a
-work PR is _not_ releasing — promoting `dev` → `main` is. There is no release tag.
-Keep both branches deployable: CI green, verified behavior.
+work PR is _not_ releasing — promoting `dev` → `main` is, and that promotion gets
+a version tag (see [Releases](#releases)). Keep both branches deployable: CI
+green, verified behavior.
 
 For the step-by-step path from starting a task to requesting review, see
 [`docs/development.md`](../development.md) — this file carries the
@@ -168,6 +169,20 @@ the work, this cleanup is the agent's job.
   [`docs/operations.md`](../operations.md#running-database-migrations). Note
   that the dev database is shared by local development and the dev deploy, so
   `pnpm db:migrate` on a work branch changes it for everyone.
+
+## Releases
+
+Promoting `dev` → `main` is the release. Tag the promotion commit — the one
+production deployed from — with an annotated tag:
+
+```bash
+git tag -a v1.2.0 -m "Release v1.2.0"
+git push origin v1.2.0
+```
+
+Versions are semver with a `v` prefix (`v1.0.0` through `v1.1.3` so far).
+Annotated (`-a`) rather than lightweight, so the tag records who cut the release
+and when.
 
 ## Issues
 
