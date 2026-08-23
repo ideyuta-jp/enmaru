@@ -162,8 +162,9 @@ the work, this cleanup is the agent's job.
 - **Never edit or rename an applied migration.** Prisma records each applied
   migration's checksum in `_prisma_migrations`; changing the file afterwards
   makes every database that ran it report drift and demand a reset.
-- Deploys do not run migrations; applying them to an environment is a manual
-  step — see
+- Deploys apply migrations automatically: the Netlify build runs
+  `prisma migrate deploy` before the build, against the deploy context's
+  database — see
   [`docs/operations.md`](../operations.md#running-database-migrations). Note
   that the dev database is shared by local development and the dev deploy, so
   `pnpm db:migrate` on a work branch changes it for everyone.
