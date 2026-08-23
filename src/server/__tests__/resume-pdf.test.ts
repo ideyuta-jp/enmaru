@@ -9,6 +9,7 @@ describe('renderResumePdf', () => {
   it('renders a valid PDF (magic bytes) for a minimal résumé', async () => {
     const buf = await renderResumePdf({
       realName: '山田花子',
+      furigana: '',
       birthDate: '',
       postalCode: '',
       prefecture: '',
@@ -26,6 +27,7 @@ describe('renderResumePdf', () => {
   it('does not throw with populated Japanese-text education/work history', async () => {
     const buf = await renderResumePdf({
       realName: '山田花子',
+      furigana: 'ヤマダハナコ',
       birthDate: '1995-04-01',
       postalCode: '850-0000',
       prefecture: '長崎県',

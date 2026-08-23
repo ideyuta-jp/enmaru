@@ -24,6 +24,7 @@ export async function getSeekerProfileInput(): Promise<SeekerProfileInput | null
 
   return {
     realName: p.realName,
+    furigana: p.furigana ?? '',
     displayName: p.displayName,
     preferredPrefecture: p.preferredPrefecture ?? '',
     preferredCity: p.preferredCity ?? '',

@@ -78,6 +78,7 @@ export async function saveResume(input: ResumeInput): Promise<ActionResult> {
 
   const pdf = await renderResumePdf({
     realName: profile.realName,
+    furigana: profile.furigana ?? '',
     birthDate: input.birthDate,
     postalCode: input.postalCode,
     prefecture: input.prefecture,

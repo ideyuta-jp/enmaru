@@ -16,3 +16,14 @@ export function isValidPostalCode(value: string): boolean {
 export function isValidPhoneNumber(value: string): boolean {
   return value === '' || /^0\d{1,4}-?\d{1,4}-?\d{3,4}$/.test(value);
 }
+
+// フリガナ fields (name/address) must be katakana only — that's what the label
+// itself signals in Japanese business convention (フリガナ = katakana,
+// ふりがな = hiragana). '' also passes — these fields are optional, so a blank
+// value isn't a format error, only a filled-but-non-katakana one is. The
+// Katakana Unicode block (U+30A0–U+30FF) already includes the middle dot (・)
+// and prolonged sound mark (ー); the two space characters are listed
+// explicitly rather than via \s, which would also admit tabs and newlines.
+export function isKatakanaOnly(value: string): boolean {
+  return value === '' || /^[゠-ヿ 　]+$/.test(value);
+}
