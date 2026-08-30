@@ -17,6 +17,7 @@
     "db:studio": "prisma studio",
     "admin:grant": "node --env-file=.env.local scripts/grant-admin.mjs",
     "email:update": "node --env-file=.env.local scripts/update-email.mjs",
+    "license:replace": "node --env-file=.env.local scripts/replace-license.mjs",
     "screenshot": "node --env-file=.env.local scripts/screenshot.mjs",
     "work:start": "node scripts/start-work.mjs",
     "postinstall": "prisma generate"

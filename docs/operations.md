@@ -105,6 +105,43 @@ target.
 The customer can then sign in with their real email and the initial password,
 and change the password themselves via the "forgot password" link.
 
+## Replacing a seeker's 保有資格
+
+`SeekerProfile.licenses` stores each qualification's label text, so changing
+`LICENSE_OPTIONS` in `SeekerProfileForm` leaves existing profiles on the old
+label. A checkbox no longer exists for it, so the seeker sees it (rendered by
+`CheckboxGroup` as a retired value) and can uncheck it — but they cannot be
+migrated automatically when one option was split into several, because only
+they know which one they hold.
+
+That is the case for #211, which split 幼稚園教諭免許 into 一種/二種/専修免許状.
+Ask the affected seekers which one they hold, then apply each answer:
+
+```bash
+cd <your enmaru checkout>
+# Dev
+pnpm license:replace seeker@example.com 幼稚園教諭免許 幼稚園教諭一種免許状 --dry-run
+# Prod — pass the production DATABASE_URL explicitly instead
+DATABASE_URL="<prod connection string>" node scripts/replace-license.mjs \
+  seeker@example.com 幼稚園教諭免許 幼稚園教諭一種免許状
+```
+
+The script shows the target database host (labelled dev / prod when it is a
+known Neon endpoint) and the before/after array, then asks for confirmation
+before writing anything (add `--dry-run` to stop after the preview). It
+refuses a replacement that is not one of the current `LICENSE_OPTIONS`, a
+seeker who does not hold the old label, and one who already holds the new one.
+The replaced value keeps its position in the array.
+
+Find who still needs it with:
+
+```sql
+SELECT u."email", p."realName", p."licenses"
+FROM "SeekerProfile" p
+JOIN "User" u ON u."id" = p."userId"
+WHERE '幼稚園教諭免許' = ANY(p."licenses");
+```
+
 ## Running database migrations
 
 Deploys apply migrations automatically: the Netlify build command is
