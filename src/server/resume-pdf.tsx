@@ -8,7 +8,11 @@ import {
   View,
   renderToBuffer,
 } from '@react-pdf/renderer';
-import type {EducationEntryInput, WorkHistoryEntryInput} from '@/types/Resume';
+import type {
+  EducationEntryInput,
+  ResumeInput,
+  WorkHistoryEntryInput,
+} from '@/types/Resume';
 import {
   calcAge,
   formatYearMonthCells,
@@ -188,20 +192,14 @@ function buildHistoryRows(
   return rows;
 }
 
-export interface ResumePdfData {
+// The résumé's own fields are exactly ResumeInput, so they are inherited
+// rather than restated — a field added to the form then reaches the PDF
+// without a matching line here and at the renderResumePdf call site.
+export interface ResumePdfData extends ResumeInput {
   realName: string;
   furigana: string; // katakana only, from SeekerProfile — '' = unregistered
-  birthDate: string; // 'YYYY-MM-DD'
-  postalCode: string;
-  prefecture: string;
-  city: string;
-  addressLine: string;
-  addressFurigana: string; // katakana only, for hard-to-read place names
-  phone: string;
   licenses: string[]; // from SeekerProfile, read-only on the résumé
   bio: string; // from SeekerProfile, read-only on the résumé
-  education: EducationEntryInput[];
-  workHistory: WorkHistoryEntryInput[];
 }
 
 interface InfoRowProps {
@@ -274,8 +272,11 @@ function ResumeDocument({
               {address}
             </Text>
           </InfoRow>
-          <InfoRow label="電話番号" last>
+          <InfoRow label="電話番号">
             <Text>{data.phone}</Text>
+          </InfoRow>
+          <InfoRow label="メールアドレス" last>
+            <Text>{data.email}</Text>
           </InfoRow>
         </View>
 

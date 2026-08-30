@@ -39,6 +39,8 @@ export interface ResumeInput {
   addressLine: string;
   addressFurigana: string; // see isValidAddressFurigana
   phone: string;
+  // 履歴書上の連絡先（任意）。ログイン用アカウントのメールアドレスとは別物。
+  email: string;
   education: EducationEntryInput[];
   workHistory: WorkHistoryEntryInput[];
 }
@@ -60,6 +62,7 @@ export const EMPTY_RESUME: ResumeInput = {
   addressLine: '',
   addressFurigana: '',
   phone: '',
+  email: '',
   education: [],
   workHistory: [],
 };

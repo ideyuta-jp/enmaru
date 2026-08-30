@@ -40,6 +40,7 @@ import {
 } from '@/utils/date';
 import {
   isValidAddressFurigana,
+  isValidEmail,
   isValidPhoneNumber,
   isValidPostalCode,
 } from '@/utils/string';
@@ -349,6 +350,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
   const postalCodeInvalid = !isValidPostalCode(form.postalCode);
   const addressFuriganaInvalid = !isValidAddressFurigana(form.addressFurigana);
   const phoneInvalid = !isValidPhoneNumber(form.phone);
+  const emailInvalid = !isValidEmail(form.email);
   const educationInvalid = form.education.some(
     (e) =>
       !e.schoolName.trim() ||
@@ -396,6 +398,7 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       postalCodeInvalid ||
       addressFuriganaInvalid ||
       phoneInvalid ||
+      emailInvalid ||
       educationInvalid ||
       workHistoryInvalid
     ) {
@@ -580,6 +583,21 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
                 submitted && phoneInvalid
                   ? '電話番号の形式が正しくありません'
                   : undefined
+              }
+            />
+            <TextField
+              label="メールアドレス（任意）"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+              size="small"
+              type="email"
+              placeholder="yamada@example.com"
+              sx={{maxWidth: 320}}
+              error={submitted && emailInvalid}
+              helperText={
+                submitted && emailInvalid
+                  ? 'メールアドレスの形式が正しくありません'
+                  : '連絡はメールが良い方はご記入ください'
               }
             />
           </Box>

@@ -51,6 +51,7 @@ describe('validateResumeInput', () => {
       postalCode: '850-0000',
       addressFurigana: 'ナガサキケン ナガサキシ',
       phone: '090-1234-5678',
+      email: 'yamada@example.com',
       education: [education()],
       workHistory: [workHistory()],
     };
@@ -86,6 +87,14 @@ describe('validateResumeInput', () => {
 
   it('rejects a malformed phone number', () => {
     const result = validateResumeInput({...EMPTY_RESUME, phone: 'abc-defg'});
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a malformed email address', () => {
+    const result = validateResumeInput({
+      ...EMPTY_RESUME,
+      email: 'yamada.example.com',
+    });
     expect(result.ok).toBe(false);
   });
 

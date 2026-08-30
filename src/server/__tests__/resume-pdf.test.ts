@@ -17,6 +17,7 @@ describe('renderResumePdf', () => {
       addressLine: '',
       addressFurigana: '',
       phone: '',
+      email: '',
       licenses: [],
       bio: '',
       education: [],
@@ -36,6 +37,7 @@ describe('renderResumePdf', () => {
       addressLine: '桜町1-2-3',
       addressFurigana: 'ナガサキケン ナガサキシ サクラマチ1-2-3',
       phone: '090-1234-5678',
+      email: 'yamada@example.com',
       licenses: ['保育士資格', '幼稚園教諭免許'],
       bio: '子どもたちと笑顔で向き合うことを大切にしています。',
       education: [
