@@ -5,7 +5,6 @@ import {useRouter} from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
@@ -28,12 +27,14 @@ import {resolveCity} from '@/types/Area';
 import {
   EMPTY_RESUME,
   type EducationEntryInput,
+  type LicenseEntryInput,
   MAX_RESUME_DESCRIPTION_LENGTH,
   MAX_RESUME_HISTORY_ENTRIES,
   type ResumeInput,
   type WorkHistoryEntryInput,
 } from '@/types/Resume';
 import {
+  formatYearMonth,
   formatYearMonthRange,
   isValidBirthDate,
   isYearMonthRangeOutOfOrder,
@@ -81,6 +82,15 @@ function newWorkHistoryEntry(): WorkHistoryEntryInput {
     description: '',
     startYearMonth: '',
     endYearMonth: '',
+  };
+}
+
+function newLicenseEntry(): LicenseEntryInput {
+  return {
+    _key: crypto.randomUUID(),
+    licenseName: '',
+    acquiredYearMonth: '',
+    fromProfile: false,
   };
 }
 
@@ -298,12 +308,13 @@ function OptionSelect({label, options, value, onChange}: OptionSelectProps) {
 interface Props {
   initial: ResumeInput;
   // Read-only, sourced from the seeker's existing profile (single source of
-  // truth — not duplicated as editable fields here).
-  licenses: string[];
+  // truth — not duplicated as an editable field here). Unlike licenses
+  // (#195), bio has no résumé-specific copy: the résumé always shows
+  // whatever the profile currently says.
   bio: string;
 }
 
-export default function ResumeForm({initial, licenses, bio}: Props) {
+export default function ResumeForm({initial, bio}: Props) {
   const router = useRouter();
   const [form, setForm] = useState<ResumeInput>(initial ?? EMPTY_RESUME);
   const [saving, setSaving] = useState(false);
@@ -322,6 +333,18 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
 
   function set<K extends keyof ResumeInput>(key: K, value: ResumeInput[K]) {
     setForm((prev) => ({...prev, [key]: value}));
+  }
+
+  // Updates a single fromProfile license row's acquired date by _key —
+  // the only field those rows allow editing (licenseName is server-derived,
+  // see syncLicenseHistoryWithProfile in server/resume.ts).
+  function setProfileLicenseAcquiredDate(key: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      licenseHistory: prev.licenseHistory.map((l) =>
+        l._key === key ? {...l, acquiredYearMonth: value} : l,
+      ),
+    }));
   }
 
   // TODO: extract a shared postal-code field — NurseryProfileForm carries the
@@ -361,6 +384,14 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       !w.companyName.trim() ||
       isYearMonthRangeOutOfOrder(w.startYearMonth, w.endYearMonth),
   );
+  const licenseHistoryInvalid = form.licenseHistory.some(
+    (l) => !l.licenseName.trim() || !l.acquiredYearMonth,
+  );
+  // Split for rendering only — submitted as one combined array. Profile rows
+  // (server-synced against SeekerProfileInput.licenses) are shown read-only
+  // except for their date; custom rows keep the existing add/remove editor.
+  const profileLicenseRows = form.licenseHistory.filter((l) => l.fromProfile);
+  const customLicenseRows = form.licenseHistory.filter((l) => !l.fromProfile);
 
   // Reports only whether the save succeeded — failures surface through
   // `error`, so what happens next (toast, navigation) is the caller's call.
@@ -400,7 +431,8 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
       phoneInvalid ||
       emailInvalid ||
       educationInvalid ||
-      workHistoryInvalid
+      workHistoryInvalid ||
+      licenseHistoryInvalid
     ) {
       // Defer to the next tick: the error classes queried below are set by
       // the re-render that setSubmitted(true) triggers, so they are not in
@@ -456,7 +488,8 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
     </Typography>
   );
 
-  // Closes both read-only sections, whose values are edited on /profile.
+  // Shared by the 免許・資格 profile-derived rows and the 自己PR section —
+  // both show profile-sourced content the seeker can only change on /profile.
   const profileEditNote = (
     <Typography variant="caption" color="text.secondary">
       <MuiLink
@@ -759,21 +792,128 @@ export default function ResumeForm({initial, licenses, bio}: Props) {
 
         <Divider />
 
-        {/* 免許・資格（読み取り専用） */}
+        {/* 免許・資格 */}
         <Box>
           {sectionLabel('免許・資格')}
-          {licenses.length > 0 ? (
-            <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1}}>
-              {licenses.map((l) => (
-                <Chip key={l} label={l} size="small" />
-              ))}
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-              未登録です
-            </Typography>
-          )}
-          {profileEditNote}
+
+          {/* プロフィールの保有資格（自動反映・資格名は編集不可、取得年月のみ入力） */}
+          <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2}}>
+            {profileLicenseRows.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                プロフィールで保有資格が選択されていません
+              </Typography>
+            ) : (
+              profileLicenseRows.map((entry) => {
+                const dateMissing = submitted && !entry.acquiredYearMonth;
+                const acquiredText = formatYearMonth(entry.acquiredYearMonth);
+                return (
+                  <Box
+                    key={entry._key}
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 1.5,
+                      bgcolor: '#FAFAFA',
+                      borderRadius: 1,
+                      border: '1px solid #E0E0E0',
+                    }}
+                  >
+                    <Typography sx={{fontWeight: 700, minWidth: 160}}>
+                      {entry.licenseName}
+                    </Typography>
+                    <Box>
+                      <YearMonthSelect
+                        label="取得年月"
+                        value={entry.acquiredYearMonth}
+                        onChange={(v) =>
+                          setProfileLicenseAcquiredDate(entry._key, v)
+                        }
+                        error={dateMissing}
+                      />
+                      {dateMissing ? (
+                        <Typography
+                          variant="caption"
+                          color="error"
+                          sx={{display: 'block', mt: 0.5}}
+                        >
+                          取得年月を入力してください
+                        </Typography>
+                      ) : (
+                        acquiredText && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{display: 'block', mt: 0.5}}
+                          >
+                            取得：{acquiredText}
+                          </Typography>
+                        )
+                      )}
+                    </Box>
+                  </Box>
+                );
+              })
+            )}
+            {profileEditNote}
+          </Box>
+
+          <Divider sx={{my: 2}} />
+
+          {/* 追加の免許・資格（保育に限らず自由に追加可能） */}
+          <RepeatableEntryList<LicenseEntryInput>
+            label="保育に関わらない資格も含め、資格ごとに1件追加してください"
+            items={customLicenseRows}
+            onChange={(next) =>
+              setForm((prev) => ({
+                ...prev,
+                licenseHistory: [
+                  ...prev.licenseHistory.filter((l) => l.fromProfile),
+                  ...next,
+                ],
+              }))
+            }
+            createEmpty={newLicenseEntry}
+            addButtonLabel="免許・資格を追加する"
+            maxItems={MAX_RESUME_HISTORY_ENTRIES - profileLicenseRows.length}
+            renderRow={(entry, update) => {
+              const nameMissing = submitted && !entry.licenseName.trim();
+              const dateMissing = submitted && !entry.acquiredYearMonth;
+              const acquiredText = formatYearMonth(entry.acquiredYearMonth);
+              return (
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                  <TextField
+                    label="免許・資格名"
+                    value={entry.licenseName}
+                    onChange={(e) => update({licenseName: e.target.value})}
+                    size="small"
+                    fullWidth
+                    placeholder="普通自動車第一種運転免許"
+                    error={nameMissing}
+                    helperText={nameMissing ? '入力してください' : undefined}
+                  />
+                  <YearMonthSelect
+                    label="取得年月"
+                    value={entry.acquiredYearMonth}
+                    onChange={(v) => update({acquiredYearMonth: v})}
+                    error={dateMissing}
+                  />
+                  {dateMissing ? (
+                    <Typography variant="caption" color="error">
+                      取得年月を入力してください
+                    </Typography>
+                  ) : (
+                    acquiredText && (
+                      <Typography variant="caption" color="text.secondary">
+                        取得：{acquiredText}
+                      </Typography>
+                    )
+                  )}
+                </Box>
+              );
+            }}
+          />
         </Box>
 
         <Divider />

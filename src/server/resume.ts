@@ -2,6 +2,7 @@ import {prisma} from '@/lib/prisma';
 import {getCurrentUser} from '@/server/auth';
 import {
   EMPTY_RESUME,
+  type LicenseEntryInput,
   MAX_RESUME_DESCRIPTION_LENGTH,
   MAX_RESUME_HISTORY_ENTRIES,
   type ResumeInput,
@@ -17,6 +18,39 @@ import {
   isValidPhoneNumber,
   isValidPostalCode,
 } from '@/utils/string';
+
+// Keeps the fromProfile rows of a résumé's license history in lockstep with
+// the seeker's current profile.licenses (the public "保有資格" checkboxes,
+// SeekerProfileForm.tsx). One row per currently-checked license, in profile
+// order, reusing an existing row's _key/acquiredYearMonth when its name
+// still matches (so an already-entered date survives an unrelated résumé
+// edit) and starting a fresh blank row otherwise. A fromProfile row for a
+// license the seeker has since unchecked is dropped — its acquired date
+// cannot be re-attached if the box is re-checked later, which is an
+// accepted trade-off for keeping the two in sync automatically (#209).
+// Non-profile ("＋免許・資格を追加する") rows are untouched and returned
+// after, preserving their relative order. Called from both getResumeInput
+// (so the form always shows the current checkbox state) and saveResume (so
+// a save reflects the profile as of the moment it runs, not as of page load).
+export function syncLicenseHistoryWithProfile(
+  current: LicenseEntryInput[],
+  profileLicenses: string[],
+): LicenseEntryInput[] {
+  const existingByName = new Map(
+    current.filter((l) => l.fromProfile).map((l) => [l.licenseName, l]),
+  );
+  const profileRows = profileLicenses.map((licenseName) => {
+    const existing = existingByName.get(licenseName);
+    return {
+      _key: existing?._key ?? crypto.randomUUID(),
+      licenseName,
+      acquiredYearMonth: existing?.acquiredYearMonth ?? '',
+      fromProfile: true,
+    };
+  });
+  const customRows = current.filter((l) => !l.fromProfile);
+  return [...profileRows, ...customRows];
+}
 
 // Validate a résumé submission. ResumeForm's date Selects and row cap already
 // keep well-formed input from the UI, but this is the authoritative backstop
@@ -93,6 +127,25 @@ export function validateResumeInput(
       };
     }
   }
+  if (input.licenseHistory.length > MAX_RESUME_HISTORY_ENTRIES) {
+    return {
+      ok: false,
+      message: `免許・資格は${MAX_RESUME_HISTORY_ENTRIES}件までです。`,
+    };
+  }
+  for (const l of input.licenseHistory) {
+    if (!l.licenseName.trim()) {
+      return {ok: false, message: '免許・資格には資格名を入力してください。'};
+    }
+    // Required (#210) — unlike education/work-history dates, a license without
+    // its acquisition date isn't a meaningful résumé entry.
+    if (!l.acquiredYearMonth) {
+      return {ok: false, message: '免許・資格には取得年月を入力してください。'};
+    }
+    if (!isValidYearMonth(l.acquiredYearMonth)) {
+      return {ok: false, message: '免許・資格の取得年月が正しくありません。'};
+    }
+  }
   return {ok: true};
 }
 
@@ -114,13 +167,18 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
     include: {
       education: {orderBy: {order: 'asc'}},
       workHistory: {orderBy: {order: 'asc'}},
+      licenseHistory: {orderBy: {order: 'asc'}},
     },
   });
   if (!resume) {
     // First-time default only — once a résumé row exists its own (possibly
     // blank) email is used as-is below, so an intentional clear stays cleared
     // rather than springing back to the login address on reload.
-    return {...EMPTY_RESUME, email: user.email};
+    return {
+      ...EMPTY_RESUME,
+      email: user.email,
+      licenseHistory: syncLicenseHistoryWithProfile([], profile.licenses),
+    };
   }
 
   return {
@@ -147,5 +205,14 @@ export async function getResumeInput(): Promise<ResumeInput | null> {
       startYearMonth: w.startYearMonth ?? '',
       endYearMonth: w.endYearMonth ?? '',
     })),
+    licenseHistory: syncLicenseHistoryWithProfile(
+      resume.licenseHistory.map((l) => ({
+        _key: l.id,
+        licenseName: l.licenseName,
+        acquiredYearMonth: l.acquiredYearMonth ?? '',
+        fromProfile: l.fromProfile,
+      })),
+      profile.licenses,
+    ),
   };
 }

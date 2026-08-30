@@ -31,6 +31,21 @@ export interface WorkHistoryEntryInput {
   endYearMonth: string; // '' = 現在勤務中 (currently employed)
 }
 
+// One 免許・資格 entry — one row per license/certification. When fromProfile
+// is true, this row mirrors one of the checked boxes in
+// SeekerProfileInput.licenses (the public profile's fixed 3-choice checkbox
+// list) — licenseName is server-derived and read-only in ResumeForm, only
+// acquiredYearMonth is editable. When false, it is a résumé-only row added
+// via ResumeForm's "＋免許・資格を追加する" (e.g. a driver's license) with
+// both fields freely editable. See syncLicenseHistoryWithProfile
+// (server/resume.ts) for how fromProfile rows stay in sync with the profile.
+export interface LicenseEntryInput {
+  _key: string;
+  licenseName: string;
+  acquiredYearMonth: string; // 'YYYY-MM', '' = unset (rejected at save — #210)
+  fromProfile: boolean;
+}
+
 export interface ResumeInput {
   birthDate: string; // 'YYYY-MM-DD', '' = unset
   postalCode: string;
@@ -43,6 +58,7 @@ export interface ResumeInput {
   email: string;
   education: EducationEntryInput[];
   workHistory: WorkHistoryEntryInput[];
+  licenseHistory: LicenseEntryInput[];
 }
 
 // Row cap for 学歴/職歴 — RepeatableEntryList otherwise lets a client add rows
@@ -65,4 +81,5 @@ export const EMPTY_RESUME: ResumeInput = {
   email: '',
   education: [],
   workHistory: [],
+  licenseHistory: [],
 };

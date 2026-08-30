@@ -18,10 +18,10 @@ describe('renderResumePdf', () => {
       addressFurigana: '',
       phone: '',
       email: '',
-      licenses: [],
       bio: '',
       education: [],
       workHistory: [],
+      licenseHistory: [],
     });
     expect(buf.subarray(0, 4).toString('ascii')).toBe('%PDF');
   });
@@ -38,7 +38,6 @@ describe('renderResumePdf', () => {
       addressFurigana: 'ナガサキケン ナガサキシ サクラマチ1-2-3',
       phone: '090-1234-5678',
       email: 'yamada@example.com',
-      licenses: ['保育士資格', '幼稚園教諭免許'],
       bio: '子どもたちと笑顔で向き合うことを大切にしています。',
       education: [
         {
@@ -57,6 +56,20 @@ describe('renderResumePdf', () => {
           description: '0〜5歳児クラスの保育業務全般',
           startYearMonth: '2013-04',
           endYearMonth: '',
+        },
+      ],
+      licenseHistory: [
+        {
+          _key: '1',
+          licenseName: '保育士資格',
+          acquiredYearMonth: '2013-03',
+          fromProfile: true,
+        },
+        {
+          _key: '2',
+          licenseName: '普通自動車第一種運転免許',
+          acquiredYearMonth: '2011-05',
+          fromProfile: false,
         },
       ],
     });

@@ -114,7 +114,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   contentCell: {flex: 1, padding: 4},
-  contentCellSingle: {flex: 1, padding: 4, borderLeftWidth: 0},
   centerText: {textAlign: 'center'},
   rightText: {textAlign: 'right', paddingRight: 8},
 
@@ -198,7 +197,6 @@ function buildHistoryRows(
 export interface ResumePdfData extends ResumeInput {
   realName: string;
   furigana: string; // katakana only, from SeekerProfile — '' = unregistered
-  licenses: string[]; // from SeekerProfile, read-only on the résumé
   bio: string; // from SeekerProfile, read-only on the résumé
 }
 
@@ -299,6 +297,8 @@ function ResumeDocument({
               {historyRows.map((row, i) => (
                 <View
                   key={i}
+                  // 免許・資格テーブルと同じ理由で行を分割させない。
+                  wrap={false}
                   style={
                     i === historyRows.length - 1 ? styles.rowLast : styles.row
                   }
@@ -320,24 +320,44 @@ function ResumeDocument({
           </View>
         )}
 
-        {data.licenses.length > 0 && (
+        {data.licenseHistory.length > 0 && (
           <View style={styles.section}>
             <View style={styles.box}>
               <View style={styles.tableHeaderRow}>
+                <Text style={[styles.tableHeaderCell, {width: YEAR_COL_WIDTH}]}>
+                  年
+                </Text>
+                <Text
+                  style={[styles.tableHeaderCell, {width: MONTH_COL_WIDTH}]}
+                >
+                  月
+                </Text>
                 <Text style={[styles.tableHeaderCell, {flex: 1}]}>
                   免許・資格
                 </Text>
               </View>
-              {data.licenses.map((license, i) => (
-                <View
-                  key={license}
-                  style={
-                    i === data.licenses.length - 1 ? styles.rowLast : styles.row
-                  }
-                >
-                  <Text style={styles.contentCellSingle}>{license}</Text>
-                </View>
-              ))}
+              {data.licenseHistory.map((entry, i) => {
+                const {year, month} = formatYearMonthCells(
+                  entry.acquiredYearMonth,
+                );
+                return (
+                  <View
+                    key={entry._key}
+                    // 行の途中でページが変わると文字が上下に切れ、罫線も
+                    // 片方のページにしか出ない。行ごと次ページへ送る。
+                    wrap={false}
+                    style={
+                      i === data.licenseHistory.length - 1
+                        ? styles.rowLast
+                        : styles.row
+                    }
+                  >
+                    <Text style={styles.yearCell}>{year}</Text>
+                    <Text style={styles.monthCell}>{month}</Text>
+                    <Text style={styles.contentCell}>{entry.licenseName}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
