@@ -11,10 +11,6 @@ import Typography from '@mui/material/Typography';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
-const OUTPUT_W = 1280;
-const OUTPUT_H = 720; // 16:9
-const ASPECT = 16 / 9;
-
 // Modal: p:2 (16px each side = 32px), inner box: p:3 (24px each side = 48px)
 function computeCropW() {
   return Math.max(0, Math.min(window.innerWidth - 32, 560) - 48);
@@ -24,13 +20,25 @@ interface Props {
   imageSrc: string;
   onConfirm: (blob: Blob) => void;
   onCancel: () => void;
+  // 何の画像を編集しているかは呼び出し側の関心なので、既定値は持たない。
+  title: string;
+  // 切り抜き枠の縦横比と、書き出す固定サイズJPEGの寸法。用途ごとに違う
+  // (保育園のメイン写真は16:9、証明写真は3:4) ため、これも呼び出し側が決める。
+  outputWidth: number;
+  outputHeight: number;
 }
 
-export default function NurseryCropEditor({
+// 画像を拡大・移動して固定比率で切り抜き、JPEGとして書き出すモーダル。
+// 用途に依存しない — 寸法とタイトルはすべて呼び出し側から受け取る。
+export default function ImageCropEditor({
   imageSrc,
   onConfirm,
   onCancel,
+  title,
+  outputWidth: OUTPUT_W,
+  outputHeight: OUTPUT_H,
 }: Props) {
+  const ASPECT = OUTPUT_W / OUTPUT_H;
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({x: 0, y: 0});
   const [naturalSize, setNaturalSize] = useState({w: 0, h: 0});
@@ -164,7 +172,7 @@ export default function NurseryCropEditor({
         }}
       >
         <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 2}}>
-          メイン写真の編集
+          {title}
         </Typography>
 
         {/* Crop frame */}
@@ -173,7 +181,7 @@ export default function NurseryCropEditor({
             position: 'relative',
             width: '100%',
             height: cropH > 0 ? cropH : 'auto',
-            aspectRatio: '16 / 9',
+            aspectRatio: `${OUTPUT_W} / ${OUTPUT_H}`,
             bgcolor: '#111111',
             borderRadius: 1,
             overflow: 'hidden',

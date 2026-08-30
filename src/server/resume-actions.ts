@@ -1,10 +1,11 @@
 'use server';
 
 import {prisma} from '@/lib/prisma';
-import {renderResumePdf} from '@/server/resume-pdf';
 import {requireRole} from '@/server/auth';
+import {renderResumePdf} from '@/server/resume-pdf';
 import {storeSeekerDocument} from '@/server/document';
 import {
+  loadResumePhoto,
   syncLicenseHistoryWithProfile,
   validateResumeDraft,
   validateResumeForPublish,
@@ -144,6 +145,9 @@ export async function publishResume(input: ResumeInput): Promise<ActionResult> {
     realName: profile.realName,
     furigana: profile.furigana ?? '',
     bio: profile.bio ?? '',
+    // 写真は resume-photo-actions.ts が別経路で更新するので、発行のたびに
+    // 保存済みの最新を読み直す (#167)。
+    photo: await loadResumePhoto(profile.id),
   });
 
   // Submitted through the same path as a manual upload (storeSeekerDocument),

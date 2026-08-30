@@ -63,3 +63,14 @@ export async function getObjectStream(
     contentType: res.ContentType ?? 'application/octet-stream',
   };
 }
+
+// Fetch an object's full bytes — for embedding (e.g. the résumé photo baked
+// into resume-pdf.tsx via @react-pdf/renderer's <Image>), which needs the
+// whole buffer up front rather than a stream. Throws if the key does not
+// exist.
+export async function getObjectBuffer(key: string): Promise<Uint8Array> {
+  const res = await r2.send(
+    new GetObjectCommand({Bucket: R2_BUCKET, Key: key}),
+  );
+  return res.Body!.transformToByteArray();
+}

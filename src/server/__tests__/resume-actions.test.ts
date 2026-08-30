@@ -21,6 +21,8 @@ const {mockProfile, renderResumePdf, storeSeekerDocument} = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     seekerProfile: {findUnique: vi.fn().mockResolvedValue(mockProfile)},
+    // publishResume が発行時に証明写真を読む (#167)。未アップロード扱い。
+    seekerResume: {findUnique: vi.fn().mockResolvedValue({photoFileKey: null})},
     $transaction: vi.fn(async (fn) =>
       fn({
         seekerResume: {upsert: vi.fn().mockResolvedValue({id: 'resume-1'})},

@@ -5,6 +5,13 @@ import {renderResumePdf} from '@/server/resume-pdf';
 // resume-pdf.tsx has no Prisma/auth imports (pure render logic), so no
 // vi.mock(...) isolation is needed here, unlike chat.test.ts/application.test.ts.
 
+// Minimal valid 1x1 JPEG — enough for @react-pdf/renderer's <Image> to decode
+// without throwing, without needing a real photo fixture on disk.
+const MINIMAL_JPEG = Buffer.from(
+  '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMDAwMDAwMDAwMEAwMEBQYFBQUFBggHBgYGBwoIBwcHBwcICQoKCgoKCQwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAX/2gAIAQEAAD8AKv/Z',
+  'base64',
+);
+
 describe('renderResumePdf', () => {
   it('renders a valid PDF (magic bytes) for a minimal résumé', async () => {
     const buf = await renderResumePdf({
@@ -22,6 +29,28 @@ describe('renderResumePdf', () => {
       education: [],
       workHistory: [],
       licenseHistory: [],
+      photo: null,
+    });
+    expect(buf.subarray(0, 4).toString('ascii')).toBe('%PDF');
+  });
+
+  it('embeds an uploaded 証明写真 without throwing', async () => {
+    const buf = await renderResumePdf({
+      realName: '山田花子',
+      furigana: '',
+      birthDate: '',
+      postalCode: '',
+      prefecture: '',
+      city: '',
+      addressLine: '',
+      addressFurigana: '',
+      phone: '',
+      email: '',
+      bio: '',
+      education: [],
+      workHistory: [],
+      licenseHistory: [],
+      photo: {data: MINIMAL_JPEG, format: 'jpg'},
     });
     expect(buf.subarray(0, 4).toString('ascii')).toBe('%PDF');
   });
@@ -72,6 +101,7 @@ describe('renderResumePdf', () => {
           fromProfile: false,
         },
       ],
+      photo: null,
     });
     expect(buf.subarray(0, 4).toString('ascii')).toBe('%PDF');
   });
