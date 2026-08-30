@@ -21,7 +21,7 @@ import LinkBehavior from '@/components/LinkBehavior';
 import PrefectureCitySelect from '@/components/PrefectureCitySelect';
 import RepeatableEntryList from '@/components/RepeatableEntryList';
 import SectionHeading from '@/components/SectionHeading';
-import {saveResume} from '@/server/resume-actions';
+import {publishResume, saveResumeDraft} from '@/server/resume-actions';
 import {lookupPostalAddress} from '@/services/address';
 import {resolveCity} from '@/types/Area';
 import {
@@ -312,18 +312,29 @@ interface Props {
   // (#195), bio has no résumé-specific copy: the résumé always shows
   // whatever the profile currently says.
   bio: string;
+  // 保存済みの内容が提出済みPDFに反映されていないか (server/resume.ts の
+  // hasUnpublishedResumeChanges)。発行を促す注意書きの表示に使う。
+  unpublishedChanges: boolean;
 }
 
-export default function ResumeForm({initial, bio}: Props) {
+export default function ResumeForm({initial, bio, unpublishedChanges}: Props) {
   const router = useRouter();
   const [form, setForm] = useState<ResumeInput>(initial ?? EMPTY_RESUME);
-  const [saving, setSaving] = useState(false);
+  // Which action is in flight / last completed — distinct from a plain
+  // boolean so the two buttons (#208) can show their own loading state and
+  // the success toast can say the right thing ("一時保存しました" vs "発行しました").
+  const [savingMode, setSavingMode] = useState<'draft' | 'publish' | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [savedMode, setSavedMode] = useState<'draft' | 'publish' | null>(null);
   const [zipLoading, setZipLoading] = useState(false);
   // Gates inline field errors — same pattern as JobForm: nothing is marked
   // invalid until the seeker actually tries to submit.
   const [submitted, setSubmitted] = useState(false);
+  // submitted と別に持つのは、取得年月の未入力を「発行する」を押したときだけ
+  // 赤くするため。一時保存は成功しているのに赤字が出ると混乱する。
+  const [publishAttempted, setPublishAttempted] = useState(false);
   // 住所フリガナだけは submitted ではなくこちらでゲートする。IME を通す
   // フィールドなので、別のフィールド起因で submitted が立った状態から
   // 入力を始めると、変換確定前のひらがなに反応して入力中に赤くなる。
@@ -384,8 +395,16 @@ export default function ResumeForm({initial, bio}: Props) {
       !w.companyName.trim() ||
       isYearMonthRangeOutOfOrder(w.startYearMonth, w.endYearMonth),
   );
+  // 一時保存も止める条件。自分で追加した行の名前が空なのは、その行自体が
+  // 成立していないため。
   const licenseHistoryInvalid = form.licenseHistory.some(
-    (l) => !l.licenseName.trim() || !l.acquiredYearMonth,
+    (l) => !l.licenseName.trim(),
+  );
+  // 「発行する」だけを止める条件 (#210)。プロフィール由来の行は
+  // syncLicenseHistoryWithProfile が自動生成するので、これを一時保存の条件に
+  // 入れると、自分では1行も追加していない人が何も保存できなくなる。
+  const licenseDateMissing = form.licenseHistory.some(
+    (l) => !l.acquiredYearMonth,
   );
   // Split for rendering only — submitted as one combined array. Profile rows
   // (server-synced against SeekerProfileInput.licenses) are shown read-only
@@ -395,12 +414,16 @@ export default function ResumeForm({initial, bio}: Props) {
 
   // Reports only whether the save succeeded — failures surface through
   // `error`, so what happens next (toast, navigation) is the caller's call.
-  async function save(): Promise<boolean> {
-    setSaving(true);
+  // `mode` picks which server action runs: 'draft' persists without touching
+  // the PDF/submission, 'publish' also generates and submits it (#208).
+  async function save(mode: 'draft' | 'publish'): Promise<boolean> {
+    setSavingMode(mode);
     setError(null);
-    setSaved(false);
+    setSavedMode(null);
     try {
-      const result = await saveResume(form);
+      const result = await (mode === 'draft'
+        ? saveResumeDraft(form)
+        : publishResume(form));
       if (!result.ok) {
         setError(result.message);
         return false;
@@ -410,17 +433,26 @@ export default function ResumeForm({initial, bio}: Props) {
       setError('保存に失敗しました。時間をおいて再度お試しください。');
       return false;
     } finally {
-      setSaving(false);
+      setSavingMode(null);
     }
   }
 
-  // Validated here so errors surface inline next to each field (and the page
-  // scrolls to the first one) instead of as a generic banner. The server
-  // (validateResumeInput in server/resume.ts, called from saveResume)
-  // re-validates everything as the backstop. Every save entry point (submit
-  // button, profile-link autosave) goes through this gate so invalid input
-  // surfaces the same way on each.
-  function validateLocally(): boolean {
+  // Defer to the next tick: the error classes queried here are set by the
+  // re-render the gate's setState triggers, so they are not in the DOM yet
+  // when the handler runs.
+  function scrollToFirstError() {
+    setTimeout(() => {
+      const first = formRef.current?.querySelector<HTMLElement>(
+        '.Mui-error, [aria-invalid="true"]',
+      );
+      first?.scrollIntoView({behavior: 'smooth', block: 'center'});
+    }, 50);
+  }
+
+  // 一時保存時の検証。サーバの validateResumeDraft (server/resume.ts) と対に
+  // なる内容を、フィールド横にインラインで出すためにここでも持つ。権威ある
+  // backstop はあくまでサーバ側。
+  function validateDraftLocally(): boolean {
     setSubmitted(true);
     if (addressFuriganaInvalid) setAddressFuriganaTouched(true);
 
@@ -434,25 +466,40 @@ export default function ResumeForm({initial, bio}: Props) {
       workHistoryInvalid ||
       licenseHistoryInvalid
     ) {
-      // Defer to the next tick: the error classes queried below are set by
-      // the re-render that setSubmitted(true) triggers, so they are not in
-      // the DOM yet in this handler.
-      setTimeout(() => {
-        const first = formRef.current?.querySelector<HTMLElement>(
-          '.Mui-error, [aria-invalid="true"]',
-        );
-        first?.scrollIntoView({behavior: 'smooth', block: 'center'});
-      }, 50);
+      scrollToFirstError();
       return false;
     }
     return true;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  // 発行時の検証。サーバの validateResumeForPublish と対になる。
+  function validatePublishLocally(): boolean {
+    setPublishAttempted(true);
+    if (!validateDraftLocally()) return false;
+    if (licenseDateMissing) {
+      scrollToFirstError();
+      return false;
+    }
+    return true;
+  }
+
+  // The form's onSubmit — bound to the "発行する" button (type="submit"), so
+  // pressing Enter in a field also publishes, matching the pre-#208 default.
+  async function handlePublish(e: React.FormEvent) {
     e.preventDefault();
-    if (!validateLocally()) return;
-    if (await save()) {
-      setSaved(true);
+    if (!validatePublishLocally()) return;
+    if (await save('publish')) {
+      setSavedMode('publish');
+      router.refresh();
+    }
+  }
+
+  // "一時保存する" (#208) — a plain button (type="button"), not a form submit,
+  // since it must not trigger the "発行する" submit handler.
+  async function handleSaveDraft() {
+    if (!validateDraftLocally()) return;
+    if (await save('draft')) {
+      setSavedMode('draft');
       router.refresh();
     }
   }
@@ -461,22 +508,24 @@ export default function ResumeForm({initial, bio}: Props) {
   // the link would drop the form's unsaved changes (#175), so save first and
   // navigate only once that succeeds. Modified clicks (Cmd/Ctrl+click, middle
   // click) never reach onNavigate — next/link leaves those to the browser, so
-  // they open a new tab and this tab keeps the form as it is.
+  // they open a new tab and this tab keeps the form as it is. Saves as a
+  // draft (#208), not a publish — navigating away isn't an explicit "発行する"
+  // action, so it shouldn't regenerate the PDF or resubmit it for review.
   async function handleProfileLinkNavigate(e: {preventDefault: () => void}) {
     e.preventDefault();
     // next/link navigates as soon as this returns, so cancel above before
-    // bailing out when a save is already running (this link or the submit
-    // button — a link cannot be disabled). A second saveResume would share
-    // `saving`, and whichever finished first would flip it back — re-enabling
-    // the submit button mid-save — besides queueing another PDF render.
-    // Same for an in-flight postal lookup as on the submit button, except a
-    // link cannot be disabled — bail out here instead.
-    if (saving || zipLoading) return;
+    // bailing out when a save is already running (this link or either
+    // button — a link cannot be disabled). A second save would share
+    // `savingMode`, and whichever finished first would flip it back —
+    // re-enabling the buttons mid-save. Same for an in-flight postal lookup
+    // as on the buttons, except a link cannot be disabled — bail out here
+    // instead.
+    if (savingMode !== null || zipLoading) return;
     // Invalid input blocks the navigation with the same inline errors as the
     // submit button — navigating away silently would drop the fixes #175
     // exists to preserve.
-    if (!validateLocally()) return;
-    if (await save()) router.push('/profile');
+    if (!validateDraftLocally()) return;
+    if (await save('draft')) router.push('/profile');
   }
 
   const sectionLabel = (text: string) => (
@@ -518,20 +567,22 @@ export default function ResumeForm({initial, bio}: Props) {
       <ErrorAlert message={error} />
 
       <Snackbar
-        open={saved}
+        open={savedMode !== null}
         autoHideDuration={3000}
-        onClose={() => setSaved(false)}
+        onClose={() => setSavedMode(null)}
         anchorOrigin={{vertical: 'top', horizontal: 'right'}}
       >
-        <Alert severity="success" onClose={() => setSaved(false)}>
-          保存し、履歴書PDFを生成しました
+        <Alert severity="success" onClose={() => setSavedMode(null)}>
+          {savedMode === 'draft'
+            ? '一時保存しました'
+            : '保存し、履歴書PDFを発行しました'}
         </Alert>
       </Snackbar>
 
       <Box
         component="form"
         ref={formRef}
-        onSubmit={handleSubmit}
+        onSubmit={handlePublish}
         // Suppress the browser's native validation UI — errors are rendered
         // via MUI's error state and the scroll-to-first-error handling above.
         noValidate
@@ -804,7 +855,8 @@ export default function ResumeForm({initial, bio}: Props) {
               </Typography>
             ) : (
               profileLicenseRows.map((entry) => {
-                const dateMissing = submitted && !entry.acquiredYearMonth;
+                const dateMissing =
+                  publishAttempted && !entry.acquiredYearMonth;
                 const acquiredText = formatYearMonth(entry.acquiredYearMonth);
                 return (
                   <Box
@@ -879,7 +931,7 @@ export default function ResumeForm({initial, bio}: Props) {
             maxItems={MAX_RESUME_HISTORY_ENTRIES - profileLicenseRows.length}
             renderRow={(entry, update) => {
               const nameMissing = submitted && !entry.licenseName.trim();
-              const dateMissing = submitted && !entry.acquiredYearMonth;
+              const dateMissing = publishAttempted && !entry.acquiredYearMonth;
               const acquiredText = formatYearMonth(entry.acquiredYearMonth);
               return (
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
@@ -931,25 +983,49 @@ export default function ResumeForm({initial, bio}: Props) {
           {profileEditNote}
         </Box>
 
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 1.5,
-            flexDirection: {xs: 'column', sm: 'row'},
-          }}
-        >
-          <Button
-            type="submit"
-            variant="contained"
-            // Also blocked while an autofill is in flight: clicking here blurs
-            // the postal-code field, and save() would read the form before the
-            // looked-up address lands — saving a blank address under a success
-            // toast. The spinner in the field shows why the click is refused.
-            disabled={saving || zipLoading}
-            sx={{py: 1.25, flexGrow: {xs: 1, md: 0}, minWidth: {md: 200}}}
+        <Box>
+          {unpublishedChanges && (
+            <Alert severity="info" sx={{mb: 2}}>
+              保存された内容はまだ発行されていません。事務局に提出するには「発行する」を押してください。
+            </Alert>
+          )}
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1.5,
+              flexDirection: {xs: 'column', sm: 'row'},
+            }}
           >
-            {saving ? '保存中...' : '保存する'}
-          </Button>
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={handleSaveDraft}
+              // Also blocked while an autofill is in flight: clicking here
+              // blurs the postal-code field, and save() would read the form
+              // before the looked-up address lands — saving a blank address
+              // under a success toast. The spinner in the field shows why
+              // the click is refused.
+              disabled={savingMode !== null || zipLoading}
+              sx={{py: 1.25, flexGrow: {xs: 1, md: 0}, minWidth: {md: 200}}}
+            >
+              {savingMode === 'draft' ? '保存中...' : '一時保存する'}
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={savingMode !== null || zipLoading}
+              sx={{py: 1.25, flexGrow: {xs: 1, md: 0}, minWidth: {md: 200}}}
+            >
+              {savingMode === 'publish' ? '発行中...' : '発行する'}
+            </Button>
+          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mt: 1}}
+          >
+            「発行する」を押すと事務局にアップロードされます。
+          </Typography>
         </Box>
       </Box>
     </>

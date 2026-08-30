@@ -390,8 +390,9 @@ function ResumeDocument({
 }
 
 // Renders the seeker's résumé data to a PDF buffer, entirely in Node (no
-// browser). Used by resume-actions.ts's saveResume to produce the file stored
-// as SeekerDocument(RESUME).
+// browser). Used by resume-actions.ts's publishResume (#208 — the "発行する"
+// action; saveResumeDraft does not call this) to produce the file stored as
+// SeekerDocument(RESUME).
 export async function renderResumePdf(data: ResumePdfData): Promise<Buffer> {
   return renderToBuffer(<ResumeDocument data={data} todayIso={todayInJst()} />);
 }
