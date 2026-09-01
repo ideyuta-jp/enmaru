@@ -88,3 +88,16 @@ two full-page shots: `pnpm screenshot /profile before` produces
 `before-mobile.png` (390×844) and `before-desktop.png` (1280×800). Both
 patterns are gitignored, so they never end up in a commit. Drag the files
 into the PR description to attach them.
+
+Dragging is a browser action, so it is not available when a coding agent opens
+the PR from the terminal. For that case put an [imgBB](https://api.imgbb.com/)
+key in `.env.local` as `IMGBB_API_KEY` (see `.env.example`) and upload the file
+to get an embeddable URL:
+
+```bash
+curl -s -X POST https://api.imgbb.com/1/upload \
+  --form "key=$IMGBB_API_KEY" --form "image=@after-desktop.png"
+```
+
+The key is developer tooling only — nothing in the app reads it, and it belongs
+in `.env.local` (git-ignored) rather than a file of its own.
