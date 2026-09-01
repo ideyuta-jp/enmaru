@@ -34,7 +34,7 @@ export function todayInJst(): string {
 // error, only a filled-but-malformed one is). The year/month Selects in
 // ResumeForm can only ever commit a well-formed pair, but a direct action
 // call bypasses that — this is the server-side backstop
-// (validateResumeInput in server/resume.ts).
+// (validateResumeDraft in server/resume.ts).
 export function isValidYearMonth(value: string): boolean {
   return value === '' || /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 }
@@ -44,7 +44,7 @@ export function isValidYearMonth(value: string): boolean {
 // exist on the calendar: JS rolls them over instead of failing ('2001-02-29'
 // parses to 2001-03-01), so a parse-only NaN check would let a silently
 // different date get stored. Future dates are rejected against the JST
-// calendar day. Shared by ResumeForm (inline error) and validateResumeInput
+// calendar day. Shared by ResumeForm (inline error) and validateResumeDraft
 // (server backstop).
 export function isValidBirthDate(value: string): boolean {
   if (value === '') return true;
@@ -72,7 +72,7 @@ export function calcAge(birthDate: string, todayIso: string): number | null {
 
 // A start/end 'YYYY-MM' pair is out of order only once both halves are set —
 // a still-open-ended entry (在学中/現在勤務中) has nothing to compare
-// against. Shared by ResumeForm (inline error) and validateResumeInput
+// against. Shared by ResumeForm (inline error) and validateResumeDraft
 // (server backstop).
 export function isYearMonthRangeOutOfOrder(
   start: string,

@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -24,8 +24,23 @@ import SectionHeading from '@/components/SectionHeading';
 import TagSelector from '@/components/TagSelector';
 import {saveSeekerProfile} from '@/server/seeker-actions';
 import {EMPTY_SEEKER_PROFILE, type SeekerProfileInput} from '@/types/Seeker';
+import {isKatakanaOnly} from '@/utils/string';
 
-const LICENSE_OPTIONS = ['保育士資格', '幼稚園教諭免許', '子育て支援員'];
+const LICENSE_OPTIONS = [
+  '保育士資格',
+  '幼稚園教諭一種免許状',
+  '幼稚園教諭二種免許状',
+  '幼稚園教諭専修免許状',
+  '子育て支援員',
+  '認定ベビーシッター',
+  'チャイルドマインダー',
+  '家庭的保育者（保育ママ）',
+  '病児保育専門士',
+  '児童発達支援管理責任者',
+  '保育補助者',
+  '社会福祉主事任用資格',
+  '普通救命講習修了証',
+];
 
 const EXPERIENCE_YEARS_OPTIONS = [
   '未経験',
@@ -130,10 +145,17 @@ export default function SeekerProfileForm({initial}: Props) {
   const [form, setForm] = useState<SeekerProfileInput>(
     initial ?? EMPTY_SEEKER_PROFILE,
   );
+  const furiganaRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // フリガナのインラインエラーを出すかどうか。フリガナは IME を通るフィールド
+  // なので、ResumeForm のような「変更のたびに評価」だと変換確定前のひらがなに
+  // 反応して入力中ずっとエラー表示になる。blur と送信時だけ評価する。
+  const [furiganaTouched, setFuriganaTouched] = useState(false);
+
+  const furiganaInvalid = !isKatakanaOnly(form.furigana);
 
   function set<K extends keyof SeekerProfileInput>(
     key: K,
@@ -154,8 +176,18 @@ export default function SeekerProfileForm({initial}: Props) {
     });
   }
 
+  // サーバー側 (saveSeekerProfile) の検証は backstop として残したうえで、
+  // 往復前に同じ述語で弾いてエラーを該当フィールドの位置に出す。
+  function validateLocally(): boolean {
+    if (!furiganaInvalid) return true;
+    setFuriganaTouched(true);
+    furiganaRef.current?.scrollIntoView({behavior: 'smooth', block: 'center'});
+    return false;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateLocally()) return;
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -175,6 +207,7 @@ export default function SeekerProfileForm({initial}: Props) {
   }
 
   async function handlePreview() {
+    if (!validateLocally()) return;
     setPreviewing(true);
     setError(null);
     // The preview page reads from the DB, so the form must be persisted before
@@ -257,6 +290,21 @@ export default function SeekerProfileForm({initial}: Props) {
               size="small"
               required
               helperText="マッチング相手のみ — マッチング成立後に保育園に開示されます"
+            />
+            <TextField
+              label="フリガナ"
+              value={form.furigana}
+              onChange={(e) => set('furigana', e.target.value)}
+              onBlur={() => setFuriganaTouched(true)}
+              ref={furiganaRef}
+              error={furiganaTouched && furiganaInvalid}
+              size="small"
+              placeholder="ヤマダ タロウ"
+              helperText={
+                furiganaTouched && furiganaInvalid
+                  ? 'カタカナで入力してください。'
+                  : '任意 — カタカナで入力してください。履歴書PDFに表示されます'
+              }
             />
             <TextField
               label="表示名"

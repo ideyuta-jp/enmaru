@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import CloseIcon from '@mui/icons-material/Close';
 
-import NurseryCropEditor from '@/components/NurseryCropEditor';
+import ImageCropEditor from '@/components/ImageCropEditor';
 import {
   deleteNurseryPhoto,
   uploadNurseryPhoto,
@@ -18,6 +18,10 @@ import {
   MAX_NURSERY_PHOTO_BYTES,
   MAX_NURSERY_SUB_PHOTOS,
 } from '@/types/Nursery';
+
+// メイン写真はカードやギャラリーで横長に使うため 16:9。
+const MAIN_PHOTO_WIDTH = 1280;
+const MAIN_PHOTO_HEIGHT = 720;
 
 interface Photo {
   id: string;
@@ -115,8 +119,11 @@ export default function NurseryPhotoUpload({
   return (
     <>
       {cropSrc && (
-        <NurseryCropEditor
+        <ImageCropEditor
           imageSrc={cropSrc}
+          title="メイン写真の編集"
+          outputWidth={MAIN_PHOTO_WIDTH}
+          outputHeight={MAIN_PHOTO_HEIGHT}
           onConfirm={(blob) => {
             setCropSrc(null);
             doUpload(blob);

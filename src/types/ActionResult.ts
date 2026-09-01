@@ -7,3 +7,7 @@
 export type ActionResult =
   | {ok: true; count?: number}
   | {ok: false; message: string};
+
+// 入力の検証結果。ActionResult と同じ「失敗はメッセージで返す」規約だが、
+// Server Action の戻り値ではなく、その手前で走る検証の戻り値。
+export type ValidationResult = {ok: true} | {ok: false; message: string};

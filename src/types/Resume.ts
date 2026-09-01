@@ -31,24 +31,62 @@ export interface WorkHistoryEntryInput {
   endYearMonth: string; // '' = 現在勤務中 (currently employed)
 }
 
+// One 免許・資格 entry — one row per license/certification. When fromProfile
+// is true, this row mirrors one of the checked boxes in
+// SeekerProfileInput.licenses (the public profile's fixed 3-choice checkbox
+// list) — licenseName is server-derived and read-only in ResumeForm, only
+// acquiredYearMonth is editable. When false, it is a résumé-only row added
+// via ResumeForm's "＋免許・資格を追加する" (e.g. a driver's license) with
+// both fields freely editable. See syncLicenseHistoryWithProfile
+// (server/resume.ts) for how fromProfile rows stay in sync with the profile.
+export interface LicenseEntryInput {
+  _key: string;
+  licenseName: string;
+  acquiredYearMonth: string; // 'YYYY-MM', '' = unset (rejected at save — #210)
+  fromProfile: boolean;
+}
+
 export interface ResumeInput {
   birthDate: string; // 'YYYY-MM-DD', '' = unset
   postalCode: string;
   prefecture: string;
   city: string;
   addressLine: string;
+  addressFurigana: string; // see isValidAddressFurigana
   phone: string;
+  // 履歴書上の連絡先（任意）。ログイン用アカウントのメールアドレスとは別物。
+  email: string;
   education: EducationEntryInput[];
   workHistory: WorkHistoryEntryInput[];
+  licenseHistory: LicenseEntryInput[];
 }
 
 // Row cap for 学歴/職歴 — RepeatableEntryList otherwise lets a client add rows
 // without limit; ResumeForm disables its "add" button at this count and
-// saveResume rejects a direct call that exceeds it anyway.
+// validateResumeDraft (server/resume.ts) rejects a direct call that exceeds
+// it anyway.
 export const MAX_RESUME_HISTORY_ENTRIES = 20;
 
+// 証明写真 (#167) upload constraints, shared by the client pre-check and the
+// authoritative server-side validation — same pattern as
+// types/Nursery.ts's MAX_NURSERY_PHOTO_BYTES/ALLOWED_NURSERY_PHOTO_MIME_TYPES.
+// Kept as this concept's own constants rather than importing Nursery's, even
+// though the values coincide (docs/design.md: one concept, many
+// manifestations). All three accepted types can be opened into a cropping
+// canvas; the crop step (ResumePhotoUpload, via ImageCropEditor) always
+// re-encodes the result to JPEG before upload, so the file that actually
+// reaches storage/the PDF is always 'image/jpeg' regardless of which of these
+// the seeker originally picked.
+export const MAX_RESUME_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+export const ALLOWED_RESUME_PHOTO_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
 // Char cap for 職歴 the free-text description (業務内容) — ResumeForm enforces
-// via the TextField's native maxLength, saveResume re-checks as the backstop.
+// via the TextField's native maxLength, validateResumeDraft re-checks as the
+// backstop.
 export const MAX_RESUME_DESCRIPTION_LENGTH = 1000;
 
 export const EMPTY_RESUME: ResumeInput = {
@@ -57,7 +95,10 @@ export const EMPTY_RESUME: ResumeInput = {
   prefecture: '',
   city: '',
   addressLine: '',
+  addressFurigana: '',
   phone: '',
+  email: '',
   education: [],
   workHistory: [],
+  licenseHistory: [],
 };

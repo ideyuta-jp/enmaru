@@ -5,7 +5,7 @@ import {requireRole} from '@/server/auth';
 import type {ActionResult} from '@/types/ActionResult';
 import type {SeekerProfileInput} from '@/types/Seeker';
 import {UserRole} from '@/types/User';
-import {blankToNull} from '@/utils/string';
+import {blankToNull, isKatakanaOnly} from '@/utils/string';
 
 // Create or update the current seeker's profile. Guarded to SEEKER. Keyed by
 // userId, so the same action serves both first save and edits.
@@ -19,9 +19,13 @@ export async function saveSeekerProfile(
   if (!realName || !displayName) {
     return {ok: false, message: '本名と表示名は必須です。'};
   }
+  if (!isKatakanaOnly(input.furigana)) {
+    return {ok: false, message: 'フリガナはカタカナで入力してください。'};
+  }
 
   const data = {
     realName,
+    furigana: blankToNull(input.furigana),
     displayName,
     preferredPrefecture: blankToNull(input.preferredPrefecture),
     preferredCity: blankToNull(input.preferredCity),

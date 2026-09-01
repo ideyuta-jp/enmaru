@@ -2,13 +2,18 @@ import path from 'node:path';
 import {
   Document,
   Font,
+  Image,
   Page,
   StyleSheet,
   Text,
   View,
   renderToBuffer,
 } from '@react-pdf/renderer';
-import type {EducationEntryInput, WorkHistoryEntryInput} from '@/types/Resume';
+import type {
+  EducationEntryInput,
+  ResumeInput,
+  WorkHistoryEntryInput,
+} from '@/types/Resume';
 import {
   calcAge,
   formatYearMonthCells,
@@ -49,10 +54,13 @@ Font.registerHyphenationCallback((word) =>
 // element, so each "table" is a bordered View with flex-row cells). Kept
 // black-on-white by design — this is an auto-generated document seekers
 // submit for nursery audits, not a chat-deliverable, so the org's brand
-// palette doesn't apply here. No photo box yet: a photo was confirmed as
-// required after all (issue #167), but the box needs the photo-upload
-// feature #167 itself adds, so both land together in that issue.
+// palette doesn't apply here. The 証明写真 box (#167) sits beside the basic
+// info rows, top-right — an empty bordered placeholder when no photo is
+// uploaded yet, matching the printed-résumé convention rather than leaving a
+// blank gap.
 const BORDER = '#000000';
+
+const PHOTO_COL_WIDTH = 90;
 
 // Column widths of the 学歴・職歴 table, shared by the header row (inline
 // style) and the body rows (yearCell/monthCell) so the columns stay aligned.
@@ -85,6 +93,26 @@ const styles = StyleSheet.create({
   valueCell: {flex: 1, padding: 5, justifyContent: 'center'},
   nameValue: {fontSize: 13},
 
+  basicInfoRow: {flexDirection: 'row'},
+  basicInfoFields: {flex: 1},
+  photoCell: {
+    width: PHOTO_COL_WIDTH,
+    borderLeftWidth: 1,
+    borderLeftColor: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+  },
+  // 3:4 — matches the fixed aspect ResumePhotoUpload's crop step always
+  // outputs, but pinned explicitly (rather than leaving height auto) so
+  // objectFit still crops correctly if that ever drifts.
+  photoImage: {
+    width: PHOTO_COL_WIDTH - 8,
+    height: ((PHOTO_COL_WIDTH - 8) * 4) / 3,
+    objectFit: 'cover',
+  },
+  photoPlaceholderText: {fontSize: 8, color: '#999999'},
+
   section: {marginTop: 14},
   sectionTitle: {fontSize: 10, fontWeight: 'bold', marginBottom: 4},
 
@@ -110,7 +138,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   contentCell: {flex: 1, padding: 4},
-  contentCellSingle: {flex: 1, padding: 4, borderLeftWidth: 0},
   centerText: {textAlign: 'center'},
   rightText: {textAlign: 'right', paddingRight: 8},
 
@@ -188,18 +215,41 @@ function buildHistoryRows(
   return rows;
 }
 
-export interface ResumePdfData {
+// The résumé's own fields are exactly ResumeInput, so they are inherited
+// rather than restated — a field added to the form then reaches the PDF
+// without a matching line here and at the renderResumePdf call site.
+export interface ResumePdfData extends ResumeInput {
   realName: string;
-  birthDate: string; // 'YYYY-MM-DD'
-  postalCode: string;
-  prefecture: string;
-  city: string;
-  addressLine: string;
-  phone: string;
-  licenses: string[]; // from SeekerProfile, read-only on the résumé
+  furigana: string; // katakana only, from SeekerProfile — '' = unregistered
   bio: string; // from SeekerProfile, read-only on the résumé
-  education: EducationEntryInput[];
-  workHistory: WorkHistoryEntryInput[];
+  // 証明写真 (#167), already re-encoded to JPEG by the crop step client-side —
+  // null when the seeker hasn't uploaded one yet.
+  photo: {data: Buffer; format: 'jpg'} | null;
+}
+
+interface InfoRowProps {
+  label: string;
+  /** Omits the bottom border, for the last row of a box. */
+  last?: boolean;
+  children: React.ReactNode;
+}
+
+/**
+ * One label/value line of the résumé's top information box.
+ *
+ * @param label - Text for the fixed-width label cell.
+ * @param last - Pass true on the final row so the box's own border is not doubled.
+ * @param children - Rendered into the value cell; a `<Text>` in every current caller.
+ */
+function InfoRow({label, last, children}: InfoRowProps) {
+  return (
+    <View style={last ? styles.rowLast : styles.row}>
+      <View style={styles.labelCell}>
+        <Text>{label}</Text>
+      </View>
+      <View style={styles.valueCell}>{children}</View>
+    </View>
+  );
 }
 
 function ResumeDocument({
@@ -225,44 +275,46 @@ function ResumeDocument({
           <Text style={styles.dateText}>{todayLabel}</Text>
         </View>
 
-        <View style={styles.box}>
-          <View style={styles.row}>
-            <View style={styles.labelCell}>
-              <Text>氏名</Text>
-            </View>
-            <View style={styles.valueCell}>
+        <View style={[styles.box, styles.basicInfoRow]}>
+          <View style={styles.basicInfoFields}>
+            <InfoRow label="氏名フリガナ">
+              <Text>{data.furigana}</Text>
+            </InfoRow>
+            <InfoRow label="氏名">
               <Text style={styles.nameValue}>{data.realName}</Text>
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.labelCell}>
-              <Text>生年月日</Text>
-            </View>
-            <View style={styles.valueCell}>
+            </InfoRow>
+            <InfoRow label="生年月日">
               <Text>
                 {data.birthDate && formatYearMonthDay(data.birthDate)}
                 {ageAtToday !== null && `　（満${ageAtToday}歳）`}
               </Text>
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.labelCell}>
-              <Text>現住所</Text>
-            </View>
-            <View style={styles.valueCell}>
+            </InfoRow>
+            <InfoRow label="住所フリガナ">
+              <Text>{data.addressFurigana}</Text>
+            </InfoRow>
+            <InfoRow label="現住所">
               <Text>
                 {data.postalCode && `〒${data.postalCode}　`}
                 {address}
               </Text>
-            </View>
-          </View>
-          <View style={styles.rowLast}>
-            <View style={styles.labelCell}>
-              <Text>電話番号</Text>
-            </View>
-            <View style={styles.valueCell}>
+            </InfoRow>
+            <InfoRow label="電話番号">
               <Text>{data.phone}</Text>
-            </View>
+            </InfoRow>
+            <InfoRow label="メールアドレス" last>
+              <Text>{data.email}</Text>
+            </InfoRow>
+          </View>
+          <View style={styles.photoCell}>
+            {data.photo ? (
+              // @react-pdf's Image is a PDF layout primitive, not an HTML
+              // <img>; it has no alt prop (the rule below pattern-matches on
+              // the tag name only).
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image style={styles.photoImage} src={data.photo} />
+            ) : (
+              <Text style={styles.photoPlaceholderText}>写真</Text>
+            )}
           </View>
         </View>
 
@@ -285,6 +337,8 @@ function ResumeDocument({
               {historyRows.map((row, i) => (
                 <View
                   key={i}
+                  // 免許・資格テーブルと同じ理由で行を分割させない。
+                  wrap={false}
                   style={
                     i === historyRows.length - 1 ? styles.rowLast : styles.row
                   }
@@ -306,24 +360,44 @@ function ResumeDocument({
           </View>
         )}
 
-        {data.licenses.length > 0 && (
+        {data.licenseHistory.length > 0 && (
           <View style={styles.section}>
             <View style={styles.box}>
               <View style={styles.tableHeaderRow}>
+                <Text style={[styles.tableHeaderCell, {width: YEAR_COL_WIDTH}]}>
+                  年
+                </Text>
+                <Text
+                  style={[styles.tableHeaderCell, {width: MONTH_COL_WIDTH}]}
+                >
+                  月
+                </Text>
                 <Text style={[styles.tableHeaderCell, {flex: 1}]}>
                   免許・資格
                 </Text>
               </View>
-              {data.licenses.map((license, i) => (
-                <View
-                  key={license}
-                  style={
-                    i === data.licenses.length - 1 ? styles.rowLast : styles.row
-                  }
-                >
-                  <Text style={styles.contentCellSingle}>{license}</Text>
-                </View>
-              ))}
+              {data.licenseHistory.map((entry, i) => {
+                const {year, month} = formatYearMonthCells(
+                  entry.acquiredYearMonth,
+                );
+                return (
+                  <View
+                    key={entry._key}
+                    // 行の途中でページが変わると文字が上下に切れ、罫線も
+                    // 片方のページにしか出ない。行ごと次ページへ送る。
+                    wrap={false}
+                    style={
+                      i === data.licenseHistory.length - 1
+                        ? styles.rowLast
+                        : styles.row
+                    }
+                  >
+                    <Text style={styles.yearCell}>{year}</Text>
+                    <Text style={styles.monthCell}>{month}</Text>
+                    <Text style={styles.contentCell}>{entry.licenseName}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -356,8 +430,9 @@ function ResumeDocument({
 }
 
 // Renders the seeker's résumé data to a PDF buffer, entirely in Node (no
-// browser). Used by resume-actions.ts's saveResume to produce the file stored
-// as SeekerDocument(RESUME).
+// browser). Used by resume-actions.ts's publishResume (#208 — the "発行する"
+// action; saveResumeDraft does not call this) to produce the file stored as
+// SeekerDocument(RESUME).
 export async function renderResumePdf(data: ResumePdfData): Promise<Buffer> {
   return renderToBuffer(<ResumeDocument data={data} todayIso={todayInJst()} />);
 }

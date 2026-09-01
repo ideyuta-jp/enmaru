@@ -4,6 +4,7 @@
 // empty strings to null when persisting.
 export interface SeekerProfileInput {
   realName: string;
+  furigana: string; // katakana only — see isKatakanaOnly
   displayName: string;
   preferredPrefecture: string;
   preferredCity: string;
@@ -27,6 +28,7 @@ export interface SeekerProfileInput {
 // A blank profile for the create case (no profile yet).
 export const EMPTY_SEEKER_PROFILE: SeekerProfileInput = {
   realName: '',
+  furigana: '',
   displayName: '',
   preferredPrefecture: '',
   preferredCity: '',
