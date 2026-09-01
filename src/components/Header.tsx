@@ -47,6 +47,7 @@ const ADMIN_NAV: NavItem[] = [
   {label: 'マッチング管理', href: '/admin/matches'},
   {label: '書類確認', href: '/admin/documents'},
   {label: '評価確認', href: '/admin/reviews'},
+  {label: 'ユーザー管理', href: '/admin/users'},
 ];
 
 const PUBLIC_NAV: NavItem[] = [
