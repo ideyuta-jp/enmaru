@@ -109,6 +109,14 @@ model User {
   // LINE Messaging API user id, obtained from the required friend-add at
   // registration. Null until the friend-add completes.
   lineUserId String?   @unique
+  // Last completed sign-in, stamped in the Logto callback (see
+  // src/app/callback/route.ts). Logto owns the authoritative record; this is a
+  // local mirror so the admin user list can be rendered from one database query
+  // instead of the Logto Management API (#223). Two deliberate limits: rows
+  // predating this field stay null, and a return visit on a live session cookie
+  // never passes through the callback — so this is the last SIGN-IN, not the
+  // last access.
+  lastSignInAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
