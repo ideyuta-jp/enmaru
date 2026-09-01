@@ -28,17 +28,6 @@ export default function CheckboxGroup({
   note,
   row = true,
 }: Props) {
-  // 保存済みだが options に無い値も、チェック済みとして末尾に描画する。
-  // 描画しないと、選択肢の差し替えで取り残された値が画面に現れないまま配列に
-  // 残り続け、本人に外す手段が無くなる。外したあとは options に無いので選び
-  // 直せない — 新しい選択肢へ移ってもらうのが狙い。
-  //
-  // これは「保有資格」の「幼稚園教諭免許」を一種・二種・専修へ細分化した
-  // #211 の移行措置であり、恒久的な仕組みではない。恒久化すると、以後の
-  // 語彙変更でデータのドリフトを画面上で隠し続けることになる。該当ユーザーが
-  // 全員選び直したら削除する — 削除条件と確認用クエリは #220 を参照。
-  const retired = selected.filter((v) => !options.includes(v));
-
   return (
     <FormControl component="fieldset" fullWidth>
       <FormLabel
@@ -66,7 +55,7 @@ export default function CheckboxGroup({
         </Typography>
       )}
       <FormGroup row={row}>
-        {[...options, ...retired].map((opt) => (
+        {options.map((opt) => (
           <FormControlLabel
             key={opt}
             control={
