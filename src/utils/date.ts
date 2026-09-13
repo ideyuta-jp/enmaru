@@ -19,6 +19,28 @@ export function formatDateTime(value: string | Date): string {
   });
 }
 
+// 'YYYY/M/D' in JST. Accepts an ISO string or a Date. For dates rendered on
+// the server (Server Components, PDFs): the server clock may run in UTC, so the
+// zone is pinned instead of inherited — unlike formatDateTime above, which runs
+// in the browser and shows the viewer's zone.
+export function formatDateWithYear(value: string | Date): string {
+  return new Date(value).toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'});
+}
+
+// 'YYYY/M/D HH:mm' in JST — the year-carrying sibling of formatDateTime, for
+// timestamps where staleness has to be visible (an account's last sign-in).
+// Zone pinned for the same reason as formatDateWithYear.
+export function formatDateTimeWithYear(value: string | Date): string {
+  return new Date(value).toLocaleString('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 // Today's calendar date in JST as 'YYYY-MM-DD'. Compare calendar dates in
 // the service's locale — the server clock may run in UTC, and
 // toISOString-style UTC dates lag Japan by 9 hours around midnight. The

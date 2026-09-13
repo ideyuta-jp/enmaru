@@ -1,12 +1,14 @@
 import {prisma} from '@/lib/prisma';
 import {requireRole} from '@/server/auth';
 import {SeekerDocumentStatus} from '@/types/Document';
+import {EngagementStatus} from '@/types/Engagement';
 import {
-  AdminUserFilter,
-  AdminUserSort,
   deriveProfileState,
   dormantCutoff,
+  type DocumentCounts,
   type AdminUser,
+  AdminUserFilter,
+  AdminUserSort,
   UserRole,
 } from '@/types/User';
 import type {Prisma} from '@/generated/prisma/client';
@@ -71,6 +73,8 @@ const NO_ENGAGEMENTS: EngagementStats = {
   lastWorkDate: null,
 };
 
+const NO_DOCUMENTS: DocumentCounts = {approved: 0, pending: 0, rejected: 0};
+
 // Engagement tallies keyed by profile id, for both sides at once: a seeker
 // reaches its engagements directly, a nursery through its postings. One query
 // for the whole page rather than one per row (the N+1 the nursery ratings query
@@ -107,7 +111,7 @@ async function engagementStatsByProfile(
   };
 
   for (const e of engagements) {
-    const completed = e.status === 'COMPLETED';
+    const completed = e.status === EngagementStatus.COMPLETED;
     const workDate = e.job.workDate.toISOString().slice(0, 10);
     tally(e.seekerId, completed, workDate);
     tally(e.job.nurseryId, completed, workDate);
@@ -118,8 +122,8 @@ async function engagementStatsByProfile(
 // Verified-document tallies per seeker profile, in one grouped query.
 async function documentCountsBySeeker(
   seekerIds: string[],
-): Promise<Map<string, AdminUser['documentCounts']>> {
-  const counts = new Map<string, AdminUser['documentCounts']>();
+): Promise<Map<string, DocumentCounts>> {
+  const counts = new Map<string, DocumentCounts>();
   if (seekerIds.length === 0) return counts;
 
   const grouped = await prisma.seekerDocument.groupBy({
@@ -129,15 +133,13 @@ async function documentCountsBySeeker(
   });
 
   for (const row of grouped) {
-    const cur = counts.get(row.seekerId) ?? {
-      approved: 0,
-      pending: 0,
-      rejected: 0,
-    };
+    const cur = counts.get(row.seekerId) ?? {...NO_DOCUMENTS};
     const n = row._count._all;
+    // Each status is matched explicitly: a status added later must be given a
+    // column here, not silently folded into one of these three.
     if (row.status === SeekerDocumentStatus.APPROVED) cur.approved += n;
     else if (row.status === SeekerDocumentStatus.PENDING) cur.pending += n;
-    else cur.rejected += n;
+    else if (row.status === SeekerDocumentStatus.REJECTED) cur.rejected += n;
     counts.set(row.seekerId, cur);
   }
   return counts;
@@ -154,23 +156,25 @@ export async function listAllUsers(options?: {
 }): Promise<AdminUser[]> {
   await requireRole([UserRole.ADMIN]);
 
+  // The two selects are exactly the AdminSeekerProfile / AdminNurseryProfile
+  // shapes, so the rows pass through to the result untouched.
   const users = await prisma.user.findMany({
     where: whereForFilter(options?.filter, new Date()),
     include: {
       seekerProfile: {
         select: {
           id: true,
-          isPublished: true,
           displayName: true,
           realName: true,
+          isPublished: true,
         },
       },
       nurseryProfile: {
         select: {
           id: true,
-          isPublished: true,
           nurseryName: true,
           contactName: true,
+          isPublished: true,
         },
       },
     },
@@ -195,31 +199,22 @@ export async function listAllUsers(options?: {
   ]);
 
   return users.map((u) => {
-    const profile = u.seekerProfile ?? u.nurseryProfile ?? null;
-    const profileId = profile?.id;
+    const profile = u.seekerProfile ?? u.nurseryProfile;
     return {
       id: u.id,
       email: u.email,
       role: u.role,
-      isActive: u.isActive,
-      name:
-        u.seekerProfile?.displayName ?? u.nurseryProfile?.nurseryName ?? null,
-      realName:
-        u.seekerProfile?.realName ?? u.nurseryProfile?.contactName ?? null,
+      seekerProfile: u.seekerProfile,
+      nurseryProfile: u.nurseryProfile,
       profileState: deriveProfileState(profile),
       createdAt: u.createdAt.toISOString(),
       lastSignInAt: u.lastSignInAt?.toISOString() ?? null,
       agreedAt: u.agreedAt?.toISOString() ?? null,
       lineLinked: u.lineUserId !== null,
-      documentCounts: (u.seekerProfile &&
-        documentCounts.get(u.seekerProfile.id)) || {
-        approved: 0,
-        pending: 0,
-        rejected: 0,
-      },
-      ...(profileId
-        ? (engagementStats.get(profileId) ?? NO_ENGAGEMENTS)
-        : NO_ENGAGEMENTS),
+      documentCounts:
+        (u.seekerProfile && documentCounts.get(u.seekerProfile.id)) ??
+        NO_DOCUMENTS,
+      ...((profile && engagementStats.get(profile.id)) ?? NO_ENGAGEMENTS),
     };
   });
 }

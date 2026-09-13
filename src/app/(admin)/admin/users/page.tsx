@@ -22,15 +22,23 @@ export const metadata: Metadata = {
 
 const FILTERS: {label: string; filter?: AdminUserFilter}[] = [
   {label: 'すべて', filter: undefined},
-  ...(
-    [
-      AdminUserFilter.SEEKER,
-      AdminUserFilter.NURSERY,
-      AdminUserFilter.ADMIN,
-      AdminUserFilter.DOCUMENT_PENDING,
-      AdminUserFilter.DORMANT,
-    ] as AdminUserFilter[]
-  ).map((filter) => ({label: ADMIN_USER_FILTER_LABEL[filter], filter})),
+  {
+    label: ADMIN_USER_FILTER_LABEL.SEEKER,
+    filter: AdminUserFilter.SEEKER,
+  },
+  {
+    label: ADMIN_USER_FILTER_LABEL.NURSERY,
+    filter: AdminUserFilter.NURSERY,
+  },
+  {label: ADMIN_USER_FILTER_LABEL.ADMIN, filter: AdminUserFilter.ADMIN},
+  {
+    label: ADMIN_USER_FILTER_LABEL.DOCUMENT_PENDING,
+    filter: AdminUserFilter.DOCUMENT_PENDING,
+  },
+  {
+    label: ADMIN_USER_FILTER_LABEL.DORMANT,
+    filter: AdminUserFilter.DORMANT,
+  },
 ];
 
 const SORTS: AdminUserSort[] = [
@@ -39,11 +47,14 @@ const SORTS: AdminUserSort[] = [
 ];
 
 // The query string is user input: anything that is not a known value falls back
-// to the default rather than reaching the query.
+// to the default rather than reaching the query. Validated against the type's
+// own value set, not the display list above, so the two cannot drift.
+function isAdminUserFilter(value: string): value is AdminUserFilter {
+  return (Object.values(AdminUserFilter) as string[]).includes(value);
+}
+
 function parseFilter(value: string | undefined): AdminUserFilter | undefined {
-  return FILTERS.some((f) => f.filter === value)
-    ? (value as AdminUserFilter)
-    : undefined;
+  return value !== undefined && isAdminUserFilter(value) ? value : undefined;
 }
 
 function parseSort(value: string | undefined): AdminUserSort {

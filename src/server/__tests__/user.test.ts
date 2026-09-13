@@ -2,11 +2,11 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 // user.ts pulls in the Prisma client and the auth/Logto chain at import time.
 // Only the user.update path is exercised here, so stub both (factory form, so
-// the real modules never load — same isolation as chat.test.ts).
-const update = vi.fn();
-vi.mock('@/lib/prisma', () => ({
-  prisma: {user: {update: (...args: never[]) => update(...args)}},
-}));
+// the real modules never load — same isolation as chat.test.ts). vi.mock
+// factories are hoisted above imports, so the shared spy goes through
+// vi.hoisted (as resume-actions.test.ts does).
+const {update} = vi.hoisted(() => ({update: vi.fn()}));
+vi.mock('@/lib/prisma', () => ({prisma: {user: {update}}}));
 vi.mock('@/server/auth', () => ({requireRole: vi.fn()}));
 
 import {recordSignIn} from '@/server/user';

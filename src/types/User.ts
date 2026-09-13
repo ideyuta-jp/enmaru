@@ -1,3 +1,6 @@
+import type {AdminNurseryProfile} from '@/types/Nursery';
+import type {AdminSeekerProfile} from '@/types/Seeker';
+
 // Account role. Mirrors the `Role` enum in the Prisma schema; kept as a
 // hand-written union so the UI layer does not depend on generated server code.
 export type UserRole = 'SEEKER' | 'NURSERY' | 'ADMIN';
@@ -31,8 +34,8 @@ export const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 // How far a user has taken their role's profile. Not stored: derived from the
-// profile row's existence plus its isPublished flag, which is the same pair for
-// SeekerProfile and NurseryProfile (see deriveProfileState).
+// profile's existence plus its isPublished flag, which both SeekerProfile and
+// NurseryProfile carry (see deriveProfileState).
 export type ProfileState = 'NONE' | 'DRAFT' | 'PUBLISHED';
 
 export const ProfileState = {
@@ -47,11 +50,12 @@ export const PROFILE_STATE_LABEL: Record<ProfileState, string> = {
   PUBLISHED: '公開中',
 };
 
-// Profile row (or its absence) -> display state. Pure so both roles share one
-// rule and it can be unit-tested without a database. An admin has no profile of
-// either kind, which lands on NONE.
+// Either role's profile (or its absence) -> display state. Takes the admin-facing
+// profile shapes so both roles share one rule, and stays pure so it can be
+// unit-tested without a database. An admin has no profile of either kind, which
+// lands on NONE.
 export function deriveProfileState(
-  profile: {isPublished: boolean} | null,
+  profile: AdminSeekerProfile | AdminNurseryProfile | null,
 ): ProfileState {
   if (!profile) return ProfileState.NONE;
   return profile.isPublished ? ProfileState.PUBLISHED : ProfileState.DRAFT;
@@ -62,27 +66,37 @@ export function deriveProfileState(
 // behavior is gated on it.
 export const DORMANT_DAYS = 30;
 
-// Whether an account counts as dormant. A user who has never signed in since
-// User.lastSignInAt was introduced (null) is NOT dormant: the null is missing
-// data, and calling it dormant would flag every pre-existing account on the day
-// this shipped. Exported for the filter's cutoff and for display.
-export function dormantCutoff(now: Date, days: number = DORMANT_DAYS): Date {
-  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+// The instant DORMANT_DAYS before `now`: a last sign-in strictly before it counts
+// as dormant. Fixed to DORMANT_DAYS (no width parameter) so the filter label and
+// the query cannot drift apart. The dormant filter compares User.lastSignInAt
+// against this with `lt`, which leaves null out on purpose: a user who has not
+// signed in since the field was introduced is missing data, not absent, and
+// calling them dormant would flag every pre-existing account on the day this
+// shipped.
+export function dormantCutoff(now: Date): Date {
+  return new Date(now.getTime() - DORMANT_DAYS * 24 * 60 * 60 * 1000);
 }
 
-// One account as the admin user list sees it. Admins may see the real name and
-// the email always (docs/requirements.md's personal-information boundary), so
-// this shape is admin-only — never reuse it for a nursery- or seeker-facing
-// view.
+// Seeker document verification tallies, by status.
+export interface DocumentCounts {
+  approved: number;
+  pending: number;
+  rejected: number;
+}
+
+// One user of any role as the admin user list sees it (the same "as the admin
+// console sees it" prefix as AdminDocument / AdminMatch — not a user who IS an
+// admin): the User row's own facts, the role's profile (at most one of the two
+// is set; both are null for an admin, and for a user who has not created a
+// profile yet), and per-user tallies. Admins may see real names and emails
+// always (docs/requirements.md's personal-information boundary), so this shape
+// is admin-only — never reuse it for a nursery- or seeker-facing view.
 export interface AdminUser {
   id: string;
   email: string;
   role: UserRole;
-  isActive: boolean;
-  // Seeker: displayName / realName. Nursery: nurseryName / contactName.
-  // Both null for an admin, and for a user who has not created a profile yet.
-  name: string | null;
-  realName: string | null;
+  seekerProfile: AdminSeekerProfile | null;
+  nurseryProfile: AdminNurseryProfile | null;
   profileState: ProfileState;
   createdAt: string;
   // ISO timestamp, or null when the user has not signed in since the field was
@@ -91,8 +105,8 @@ export interface AdminUser {
   agreedAt: string | null;
   // Whether LINE pushes can actually reach this user (User.lineUserId is set).
   lineLinked: boolean;
-  // Seeker document verification, by status. All zero for a nursery/admin.
-  documentCounts: {approved: number; pending: number; rejected: number};
+  // All zero for a nursery/admin.
+  documentCounts: DocumentCounts;
   // Engagements this user is a party to, as seeker or as nursery.
   engagementCount: number;
   completedCount: number;

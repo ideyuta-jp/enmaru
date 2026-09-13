@@ -15,6 +15,7 @@ import {
   ROLE_LABEL,
   type AdminUser,
 } from '@/types/User';
+import {formatDateTimeWithYear, formatDateWithYear} from '@/utils/date';
 
 // Read-only console, so this stays a Server Component: filtering and sorting are
 // plain links handled by the page, and nothing here needs the client bundle.
@@ -24,20 +25,6 @@ const PROFILE_STATE_STYLE: Record<ProfileState, {bg: string; color: string}> = {
   DRAFT: {bg: '#FFF8E1', color: '#F9A825'},
   PUBLISHED: {bg: '#E8F5E9', color: '#2E7D32'},
 };
-
-// Dates carry the year: unlike a chat timestamp, "last signed in" is only
-// meaningful when a stale account is visibly stale.
-const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString('ja-JP');
-
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
 function ProfileStateChip({state}: {state: ProfileState}) {
   return (
@@ -54,12 +41,12 @@ function ProfileStateChip({state}: {state: ProfileState}) {
 }
 
 // A table cell always needs something in it, but a card must not carry a row of
-// dashes — so the two summaries below take `dense` for the card, which drops
-// them entirely when there is nothing to report.
-const hasDocuments = (user: AdminUser) => {
+// dashes — so the two summaries below render "—" for the table, while the card
+// checks the same emptiness up front and leaves the row out entirely.
+function hasDocuments(user: AdminUser) {
   const {approved, pending, rejected} = user.documentCounts;
   return approved + pending + rejected > 0;
-};
+}
 
 // Documents are a seeker-only concept, and the count that matters to an operator
 // is what is waiting on them — so pending leads and is the only part colored.
@@ -106,7 +93,7 @@ function EngagementSummary({user}: {user: AdminUser}) {
       </Typography>
       {user.lastWorkDate && (
         <Typography variant="caption" color="text.secondary">
-          最終勤務 {formatDate(user.lastWorkDate)}
+          最終勤務 {formatDateWithYear(user.lastWorkDate)}
         </Typography>
       )}
     </>
@@ -123,22 +110,31 @@ function LastSignIn({value}: {value: string | null}) {
       </Typography>
     );
   }
-  return <Typography variant="caption">{formatDateTime(value)}</Typography>;
+  return (
+    <Typography variant="caption">{formatDateTimeWithYear(value)}</Typography>
+  );
 }
 
+// The public-facing name and the admin-only real name, from whichever profile
+// the role has: a seeker's displayName / realName, a nursery's nurseryName /
+// contactName. An admin, or a user with no profile yet, has neither.
 function AccountCell({user}: {user: AdminUser}) {
+  const name =
+    user.seekerProfile?.displayName ?? user.nurseryProfile?.nurseryName;
+  const realName =
+    user.seekerProfile?.realName ?? user.nurseryProfile?.contactName;
   return (
     <>
       <Typography variant="body2" sx={{fontWeight: 600}}>
-        {user.name ?? '（プロフィール未作成）'}
+        {name ?? '（プロフィール未作成）'}
       </Typography>
-      {user.realName && (
+      {realName && (
         <Typography
           variant="caption"
           color="text.secondary"
           sx={{display: 'block'}}
         >
-          {user.realName}
+          {realName}
         </Typography>
       )}
       <Typography
@@ -213,7 +209,7 @@ export default function AdminUsersTable({users}: {users: AdminUser[]}) {
               color="text.secondary"
               sx={{display: 'block'}}
             >
-              登録 {formatDate(user.createdAt)} / LINE
+              登録 {formatDateWithYear(user.createdAt)} / LINE
               {user.lineLinked ? '連携済' : '未連携'} /{' '}
               {user.agreedAt ? '規約同意済' : '規約未同意'}
             </Typography>
@@ -278,7 +274,7 @@ export default function AdminUsersTable({users}: {users: AdminUser[]}) {
                 </TableCell>
                 <TableCell sx={{minWidth: 110}}>
                   <Typography variant="caption" color="text.secondary">
-                    {formatDate(user.createdAt)}
+                    {formatDateWithYear(user.createdAt)}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -286,7 +282,7 @@ export default function AdminUsersTable({users}: {users: AdminUser[]}) {
                     sx={{display: 'block'}}
                   >
                     {user.agreedAt
-                      ? `規約同意 ${formatDate(user.agreedAt)}`
+                      ? `規約同意 ${formatDateWithYear(user.agreedAt)}`
                       : '規約未同意'}
                   </Typography>
                 </TableCell>

@@ -2,6 +2,8 @@ import {describe, expect, it} from 'vitest';
 
 import {
   calcAge,
+  formatDateTimeWithYear,
+  formatDateWithYear,
   formatYearMonth,
   formatYearMonthCells,
   formatYearMonthDay,
@@ -96,5 +98,20 @@ describe('formatYearMonthRange', () => {
     expect(formatYearMonthRange('2013-04', '2014', '現在')).toBe(
       '2013年4月 〜',
     );
+  });
+});
+
+// Server-rendered timestamps must read as JST no matter where the server clock
+// runs: 15:30 UTC on Aug 31 is already Sep 1 in Japan.
+describe('formatDateWithYear / formatDateTimeWithYear', () => {
+  const iso = '2026-08-31T15:30:00.000Z';
+
+  it('renders the JST calendar date with the year', () => {
+    expect(formatDateWithYear(iso)).toBe('2026/9/1');
+    expect(formatDateWithYear(new Date(iso))).toBe('2026/9/1');
+  });
+
+  it('renders the JST date and time with the year', () => {
+    expect(formatDateTimeWithYear(iso)).toBe('2026/9/1 00:30');
   });
 });
