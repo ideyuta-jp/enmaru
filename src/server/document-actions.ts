@@ -10,6 +10,7 @@ import {
   ALLOWED_DOCUMENT_MIME_TYPES,
   DOCUMENT_TYPE_LABEL,
   MAX_DOCUMENT_BYTES,
+  MAX_DOCUMENT_MB,
   SeekerDocumentStatus,
   type SeekerDocumentType,
 } from '@/types/Document';
@@ -42,7 +43,10 @@ export async function uploadDocument(
     return {ok: false, message: 'ファイルを選択してください。'};
   }
   if (file.size > MAX_DOCUMENT_BYTES) {
-    return {ok: false, message: 'ファイルサイズは10MBまでにしてください。'};
+    return {
+      ok: false,
+      message: `ファイルサイズは${MAX_DOCUMENT_MB}MBまでにしてください。`,
+    };
   }
   if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type)) {
     return {

@@ -58,8 +58,19 @@ export const DOCUMENT_STATUS_LABEL: Record<SeekerDocumentStatus, string> = {
 };
 
 // Upload constraints, shared by the client pre-check and the authoritative
-// server-side validation (single source of truth across tiers).
-export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
+// server-side validation (single source of truth across tiers). This value
+// is capped by infrastructure, not app preference: uploadDocument (a Server
+// Action) always goes through a Netlify Function, whose synchronous-function
+// payload limit is a hard, non-configurable 6 MB. Binary bodies sent through
+// that path pick up ~33% overhead (base64/multipart encoding), so the usable
+// file-size ceiling is roughly 6 MB ÷ 1.33 ≈ 4.5 MB — and Netlify's own
+// support forum has a reported failure as low as 4.69 MB. 4 MB keeps a
+// deliberate safety margin under that, chosen after 10 MB (the previous
+// value) turned out to fail in practice on real uploads (#231). Raising this
+// again requires bypassing the Netlify Function path entirely (e.g. a
+// presigned direct-to-R2 upload), not just editing this number.
+export const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024; // 4 MB
+export const MAX_DOCUMENT_MB = MAX_DOCUMENT_BYTES / (1024 * 1024);
 // HEIC (image/heic) is deliberately omitted. iPhone photos are HEIC, but iOS
 // Safari auto-converts the picked file to JPEG when `accept` does NOT list
 // image/heic — so the common "take/pick a photo" path already arrives as a

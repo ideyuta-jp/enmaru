@@ -2,11 +2,19 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Document uploads go through a Server Action; raise the default 1 MB body
-    // limit. A little above the 10 MB content cap (server/document-actions.ts
-    // + the client check) to allow for multipart overhead near the limit.
+    // Document uploads go through a Server Action; raise the default 1 MB
+    // body limit. Set a little above the 4 MB content cap
+    // (types/Document.ts's MAX_DOCUMENT_BYTES + the client check) for
+    // multipart overhead, but — critically — kept BELOW Netlify Functions'
+    // hard, non-configurable 6 MB payload ceiling (#231). Staying under that
+    // ceiling means Next's own body-size guard is what actually rejects an
+    // oversized request (a clean 413 the client can catch and explain),
+    // instead of the request silently failing at Netlify's infra layer with
+    // no usable error. Previously 12mb, which sat *above* Netlify's ceiling
+    // and defeated this guard entirely — every oversized upload fell through
+    // to the infra-level failure instead.
     serverActions: {
-      bodySizeLimit: '12mb',
+      bodySizeLimit: '5mb',
     },
   },
   // server/resume-pdf.tsx reads the embedded résumé fonts via a runtime

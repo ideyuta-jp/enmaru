@@ -16,9 +16,11 @@ import {
   DOCUMENT_STATUS_LABEL,
   DOCUMENT_TYPE_LABEL,
   MAX_DOCUMENT_BYTES,
+  MAX_DOCUMENT_MB,
   SeekerDocumentStatus,
   type MyDocument,
 } from '@/types/Document';
+import {isBodySizeLimitError} from '@/utils/upload';
 
 const STATUS_STYLE: Record<SeekerDocumentStatus, {bg: string; color: string}> =
   {
@@ -53,7 +55,7 @@ export default function DocumentUploadRow({
     // Reject oversize files before sending, so the user gets a clear message
     // (and we never hit the Server Action body limit). The server re-checks.
     if (file.size > MAX_DOCUMENT_BYTES) {
-      setError('ファイルサイズは10MBまでにしてください。');
+      setError(`ファイルサイズは${MAX_DOCUMENT_MB}MBまでにしてください。`);
       return;
     }
     setBusy(true);
@@ -68,8 +70,12 @@ export default function DocumentUploadRow({
         return;
       }
       router.refresh();
-    } catch {
-      setError('アップロードに失敗しました。時間をおいて再度お試しください。');
+    } catch (e) {
+      setError(
+        isBodySizeLimitError(e)
+          ? `ファイルサイズが大きすぎます。${MAX_DOCUMENT_MB}MB以下にしてください。`
+          : 'アップロードに失敗しました。時間をおいて再度お試しください。',
+      );
     } finally {
       setBusy(false);
     }
