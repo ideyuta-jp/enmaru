@@ -2,8 +2,9 @@ import {describe, expect, it} from 'vitest';
 
 import {
   calcAge,
+  formatDate,
+  formatDateTime,
   formatDateTimeWithYear,
-  formatDateWithYear,
   formatYearMonth,
   formatYearMonthCells,
   formatYearMonthDay,
@@ -101,17 +102,26 @@ describe('formatYearMonthRange', () => {
   });
 });
 
-// Server-rendered timestamps must read as JST no matter where the server clock
-// runs: 15:30 UTC on Aug 31 is already Sep 1 in Japan.
-describe('formatDateWithYear / formatDateTimeWithYear', () => {
+// Every instant formatter renders in JST no matter where the clock runs: 15:30
+// UTC on Aug 31 is already Sep 1 in Japan. These expectations hold under any
+// host TZ (run the file with TZ=UTC to see the pin doing its work).
+describe('formatDate / formatDateTime / formatDateTimeWithYear', () => {
   const iso = '2026-08-31T15:30:00.000Z';
 
-  it('renders the JST calendar date with the year', () => {
-    expect(formatDateWithYear(iso)).toBe('2026/9/1');
-    expect(formatDateWithYear(new Date(iso))).toBe('2026/9/1');
+  it('formatDate renders the JST calendar date with the year', () => {
+    expect(formatDate(iso)).toBe('2026/9/1');
+    expect(formatDate(new Date(iso))).toBe('2026/9/1');
   });
 
-  it('renders the JST date and time with the year', () => {
+  it("formatDate keeps a date-only 'YYYY-MM-DD' on its own day", () => {
+    expect(formatDate('2026-09-01')).toBe('2026/9/1');
+  });
+
+  it('formatDateTime renders month/day and time without the year', () => {
+    expect(formatDateTime(iso)).toBe('9/1 00:30');
+  });
+
+  it('formatDateTimeWithYear renders the full JST date and time', () => {
     expect(formatDateTimeWithYear(iso)).toBe('2026/9/1 00:30');
   });
 });

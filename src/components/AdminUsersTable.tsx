@@ -15,7 +15,7 @@ import {
   ROLE_LABEL,
   type AdminUser,
 } from '@/types/User';
-import {formatDateTimeWithYear, formatDateWithYear} from '@/utils/date';
+import {formatDate, formatDateTimeWithYear} from '@/utils/date';
 
 // Read-only console, so this stays a Server Component: filtering and sorting are
 // plain links handled by the page, and nothing here needs the client bundle.
@@ -93,7 +93,7 @@ function EngagementSummary({user}: {user: AdminUser}) {
       </Typography>
       {user.lastWorkDate && (
         <Typography variant="caption" color="text.secondary">
-          最終勤務 {formatDateWithYear(user.lastWorkDate)}
+          最終勤務 {formatDate(user.lastWorkDate)}
         </Typography>
       )}
     </>
@@ -209,7 +209,7 @@ export default function AdminUsersTable({users}: {users: AdminUser[]}) {
               color="text.secondary"
               sx={{display: 'block'}}
             >
-              登録 {formatDateWithYear(user.createdAt)} / LINE
+              登録 {formatDate(user.createdAt)} / LINE
               {user.lineLinked ? '連携済' : '未連携'} /{' '}
               {user.agreedAt ? '規約同意済' : '規約未同意'}
             </Typography>
@@ -274,7 +274,7 @@ export default function AdminUsersTable({users}: {users: AdminUser[]}) {
                 </TableCell>
                 <TableCell sx={{minWidth: 110}}>
                   <Typography variant="caption" color="text.secondary">
-                    {formatDateWithYear(user.createdAt)}
+                    {formatDate(user.createdAt)}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -282,7 +282,7 @@ export default function AdminUsersTable({users}: {users: AdminUser[]}) {
                     sx={{display: 'block'}}
                   >
                     {user.agreedAt
-                      ? `規約同意 ${formatDateWithYear(user.agreedAt)}`
+                      ? `規約同意 ${formatDate(user.agreedAt)}`
                       : '規約未同意'}
                   </Typography>
                 </TableCell>
