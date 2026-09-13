@@ -15,7 +15,7 @@ import {
   ROLE_LABEL,
   type AdminUser,
 } from '@/types/User';
-import {formatDate, formatDateTimeWithYear} from '@/utils/date';
+import {formatDate, formatDateTime} from '@/utils/date';
 
 // Read-only console, so this stays a Server Component: filtering and sorting are
 // plain links handled by the page, and nothing here needs the client bundle.
@@ -110,9 +110,7 @@ function LastSignIn({value}: {value: string | null}) {
       </Typography>
     );
   }
-  return (
-    <Typography variant="caption">{formatDateTimeWithYear(value)}</Typography>
-  );
+  return <Typography variant="caption">{formatDateTime(value)}</Typography>;
 }
 
 // The public-facing name and the admin-only real name, from whichever profile

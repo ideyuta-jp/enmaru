@@ -23,7 +23,7 @@ import {
 } from '@/server/notification-actions';
 import {fetchNotifications} from '@/services/notification';
 import {type Notification, NotificationType} from '@/types/Notification';
-import {formatDateTime} from '@/utils/date';
+import {formatMonthDayTime} from '@/utils/date';
 
 interface Props {
   open: boolean;
@@ -207,7 +207,7 @@ export default function NotificationDrawer({open, onClose, onChanged}: Props) {
                     variant="caption"
                     sx={{color: '#AAAAAA', display: 'block', mt: 0.25}}
                   >
-                    {formatDateTime(item.createdAt)}
+                    {formatMonthDayTime(item.createdAt)}
                   </Typography>
                 </Box>
               </Box>

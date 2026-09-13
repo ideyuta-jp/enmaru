@@ -33,22 +33,24 @@ export function toMinutes(time: string): number {
   return h * 60 + m;
 }
 
-// '2026/9/1' — a calendar date with its year (registration date, terms
-// agreement, last work date).
+// The full forms carry the year; a shorter variant is named by what it shows.
+
+// '2026/9/1' — a calendar date (registration date, terms agreement, last work
+// date).
 export function formatDate(value: Date | string): string {
   return format(value, 'YYYY/M/D');
 }
 
-// '9/1 13:57' — a recent timestamp where the year is noise (chat bubbles,
-// notification rows).
+// '2026/9/1 13:57' — a timestamp where staleness has to be visible (an
+// account's last sign-in).
 export function formatDateTime(value: Date | string): string {
-  return format(value, 'M/D HH:mm');
+  return format(value, 'YYYY/M/D HH:mm');
 }
 
-// '2026/9/1 13:57' — a timestamp where staleness has to be visible, so the
-// year stays (an account's last sign-in).
-export function formatDateTimeWithYear(value: Date | string): string {
-  return format(value, 'YYYY/M/D HH:mm');
+// '9/1 13:57' — a recent timestamp where the year is noise (chat bubbles,
+// notification rows).
+export function formatMonthDayTime(value: Date | string): string {
+  return format(value, 'M/D HH:mm');
 }
 
 // Today's calendar date in JST as 'YYYY-MM-DD', the lexicographically
