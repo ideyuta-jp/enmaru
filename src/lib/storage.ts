@@ -1,9 +1,12 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 
 // Cloudflare R2 is S3-compatible. The region is always "auto" and the endpoint
 // points at the account's R2 gateway. Credentials are an R2 API token
@@ -73,4 +76,66 @@ export async function getObjectBuffer(key: string): Promise<Uint8Array> {
     new GetObjectCommand({Bucket: R2_BUCKET, Key: key}),
   );
   return res.Body!.transformToByteArray();
+}
+
+// Long enough for a slow mobile upload to actually start (the URL is only
+// used once, right after it's issued); short enough that a leaked URL stops
+// being useful quickly.
+const PRESIGNED_UPLOAD_EXPIRY_SECONDS = 5 * 60;
+
+// A short-lived URL the browser can PUT a file's bytes to directly — the
+// bytes never pass through a Server Action's request body, so they are not
+// bound by Netlify Functions' payload limit (#231's permanent fix; see
+// document-actions.ts's requestDocumentUploadUrl). The PUT must send exactly
+// this Content-Type header: R2 verifies it as part of the signature, so a
+// mismatched header is rejected outright rather than silently accepted.
+export async function createPresignedUploadUrl(
+  key: string,
+  contentType: string,
+): Promise<string> {
+  return getSignedUrl(
+    r2,
+    new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    }),
+    {expiresIn: PRESIGNED_UPLOAD_EXPIRY_SECONDS},
+  );
+}
+
+// Metadata for an object without downloading its body. Used to authoritatively
+// verify a direct-to-R2 upload (#231) actually landed and how big it really
+// is — the app never sees the bytes on that path, unlike putObject's callers.
+// Returns null if the key does not exist (e.g. the browser's PUT never
+// actually completed, or was never attempted).
+export async function getObjectMetadata(
+  key: string,
+): Promise<{size: number; contentType: string} | null> {
+  try {
+    const res = await r2.send(
+      new HeadObjectCommand({Bucket: R2_BUCKET, Key: key}),
+    );
+    return {size: res.ContentLength ?? 0, contentType: res.ContentType ?? ''};
+  } catch (e) {
+    if (e instanceof Error && e.name === 'NotFound') return null;
+    throw e;
+  }
+}
+
+// Server-side copy within the bucket, then removes the source — used to
+// promote a validated staging upload to its final, stable key (#231) without
+// ever exposing the app to the object's bytes.
+export async function moveObject(
+  fromKey: string,
+  toKey: string,
+): Promise<void> {
+  await r2.send(
+    new CopyObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: toKey,
+      CopySource: `${R2_BUCKET}/${fromKey}`,
+    }),
+  );
+  await deleteObject(fromKey);
 }

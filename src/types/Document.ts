@@ -58,8 +58,17 @@ export const DOCUMENT_STATUS_LABEL: Record<SeekerDocumentStatus, string> = {
 };
 
 // Upload constraints, shared by the client pre-check and the authoritative
-// server-side validation (single source of truth across tiers).
+// server-side validation (single source of truth across tiers). This used to
+// double as a workaround for Netlify Functions' 6 MB payload ceiling (a
+// document upload went through a Server Action, so the file's bytes had to
+// fit in that request), which forced a much smaller cap than seemed
+// reasonable for a scanned certificate/PDF. #231's permanent fix moved
+// uploads to a direct-to-R2 presigned URL (document-actions.ts's
+// requestDocumentUploadUrl/confirmDocumentUpload) — the file's bytes now go
+// straight from the browser to R2 and never touch a Server Action's body, so
+// this is a plain content-size policy again, not an infra-imposed ceiling.
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MAX_DOCUMENT_MB = MAX_DOCUMENT_BYTES / (1024 * 1024);
 // HEIC (image/heic) is deliberately omitted. iPhone photos are HEIC, but iOS
 // Safari auto-converts the picked file to JPEG when `accept` does NOT list
 // image/heic — so the common "take/pick a photo" path already arrives as a
@@ -73,6 +82,13 @@ export const ALLOWED_DOCUMENT_MIME_TYPES = [
   'image/webp',
   'application/pdf',
 ];
+
+// Result of requesting a presigned direct-to-R2 upload URL (#231). Distinct
+// from ActionResult because the success case carries a payload (the URL) —
+// ActionResult's {ok: true} has nothing to attach one to.
+export type UploadUrlResult =
+  | {ok: true; url: string}
+  | {ok: false; message: string};
 
 // A seeker's own document of a given type. Fields are null when nothing has
 // been submitted for that type yet. `id` lets the seeker view their own file.

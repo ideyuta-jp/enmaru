@@ -11,6 +11,7 @@ import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import {listMyDocuments} from '@/server/document';
 import {
+  MAX_DOCUMENT_MB,
   REQUIRED_SEEKER_DOCUMENT_TYPES,
   SeekerDocumentType,
 } from '@/types/Document';
@@ -98,7 +99,7 @@ export default async function SeekerDocumentsPage() {
           }}
         >
           <Typography variant="caption" color="text.secondary">
-            対応フォーマット: JPEG・PNG・WebP・PDF（各10MBまで）
+            対応フォーマット: JPEG・PNG・WebP・PDF（各{MAX_DOCUMENT_MB}MBまで）
           </Typography>
         </Box>
       </PageContainer>

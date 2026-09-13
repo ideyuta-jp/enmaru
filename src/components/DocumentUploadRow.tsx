@@ -10,12 +10,16 @@ import Typography from '@mui/material/Typography';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 import ErrorAlert from '@/components/ErrorAlert';
-import {uploadDocument} from '@/server/document-actions';
+import {
+  confirmDocumentUpload,
+  requestDocumentUploadUrl,
+} from '@/server/document-actions';
 import {
   ALLOWED_DOCUMENT_MIME_TYPES,
   DOCUMENT_STATUS_LABEL,
   DOCUMENT_TYPE_LABEL,
   MAX_DOCUMENT_BYTES,
+  MAX_DOCUMENT_MB,
   SeekerDocumentStatus,
   type MyDocument,
 } from '@/types/Document';
@@ -48,23 +52,46 @@ export default function DocumentUploadRow({
   const isApproved = doc.status === SeekerDocumentStatus.APPROVED;
 
   // The file picker is opened by the styled button below; uploading starts as
-  // soon as a file is chosen (no separate submit step).
+  // soon as a file is chosen (no separate submit step). Three steps (#231):
+  // ask the server for a presigned R2 URL, PUT the file straight to R2 (never
+  // through a Server Action body, so it isn't bound by Netlify Functions'
+  // payload limit), then ask the server to confirm/promote what landed.
   async function handleFileSelected(file: File) {
-    // Reject oversize files before sending, so the user gets a clear message
-    // (and we never hit the Server Action body limit). The server re-checks.
+    // Reject oversize files before even asking for a URL, so the user gets a
+    // clear message without waiting on a request that would only fail later.
+    // The server re-checks both before issuing the URL and after the upload.
     if (file.size > MAX_DOCUMENT_BYTES) {
-      setError('ファイルサイズは10MBまでにしてください。');
+      setError(`ファイルサイズは${MAX_DOCUMENT_MB}MBまでにしてください。`);
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('documentType', doc.documentType);
-      formData.append('file', file);
-      const result = await uploadDocument(formData);
-      if (!result.ok) {
-        setError(result.message);
+      const urlResult = await requestDocumentUploadUrl(
+        doc.documentType,
+        file.type,
+        file.size,
+      );
+      if (!urlResult.ok) {
+        setError(urlResult.message);
+        return;
+      }
+      // Must match the Content-Type the presigned URL was signed for exactly
+      // — R2 verifies it as part of the signature and rejects a mismatch.
+      const putRes = await fetch(urlResult.url, {
+        method: 'PUT',
+        headers: {'Content-Type': file.type},
+        body: file,
+      });
+      if (!putRes.ok) {
+        setError(
+          'アップロードに失敗しました。時間をおいて再度お試しください。',
+        );
+        return;
+      }
+      const confirmResult = await confirmDocumentUpload(doc.documentType);
+      if (!confirmResult.ok) {
+        setError(confirmResult.message);
         return;
       }
       router.refresh();
