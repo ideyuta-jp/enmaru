@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 import SectionHeading from '@/components/SectionHeading';
 import StatusChip from '@/components/StatusChip';
 import type {EngagementSummary} from '@/types/Engagement';
+import {formatDate} from '@/utils/date';
 
 // Read-only header shown above the chat: the engagement's stage and the posting
 // details, so each party can recall what the conversation is about.
@@ -66,8 +67,8 @@ export default function MatchDetailSummary({
           color="text.secondary"
           sx={{display: 'block', mb: 0.5}}
         >
-          📅 {new Date(summary.workDate).toLocaleDateString('ja-JP')}{' '}
-          {summary.workTimeStart}〜{summary.workTimeEnd}
+          📅 {formatDate(summary.workDate)} {summary.workTimeStart}〜
+          {summary.workTimeEnd}
         </Typography>
         {summary.hourlyWage !== null && (
           <Typography

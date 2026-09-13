@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import ErrorAlert from '@/components/ErrorAlert';
 import {setReviewPublication} from '@/server/review-actions';
 import {ReviewDirection, type AdminReview} from '@/types/Review';
+import {formatDate} from '@/utils/date';
 
 const DIRECTION_LABEL: Record<ReviewDirection, string> = {
   NURSERY_TO_SEEKER: '保育園 → 保育士',
@@ -74,8 +75,7 @@ export default function AdminReviewRow({review}: {review: AdminReview}) {
             {review.nurseryName} ／ {review.seekerDisplayName}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {review.jobTitle} ・{' '}
-            {new Date(review.reviewedAt).toLocaleDateString('ja-JP')}
+            {review.jobTitle} ・ {formatDate(review.reviewedAt)}
           </Typography>
         </Box>
         <FormControlLabel

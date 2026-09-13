@@ -12,6 +12,7 @@ import StatusChip from '@/components/StatusChip';
 import {listNurseryMatches} from '@/server/match';
 import {EngagementStatus} from '@/types/Engagement';
 import type {NurseryMatch} from '@/types/Match';
+import {formatDate} from '@/utils/date';
 
 export default async function NurseryApplicationsPage() {
   const matches = await listNurseryMatches();
@@ -156,8 +157,8 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
     </Box>
 
     <Typography variant="caption" color="text.secondary">
-      {match.jobTitle} / {new Date(match.workDate).toLocaleDateString('ja-JP')}{' '}
-      {match.workTimeStart}〜{match.workTimeEnd}
+      {match.jobTitle} / {formatDate(match.workDate)} {match.workTimeStart}〜
+      {match.workTimeEnd}
     </Typography>
 
     {(match.seekerBlankYears || match.seekerExperience) && (
@@ -207,7 +208,7 @@ const MatchCard = ({match}: {match: NurseryMatch}) => (
     >
       <Box sx={{display: 'flex', gap: 1.5, alignItems: 'center'}}>
         <Typography variant="caption" color="text.secondary">
-          応募日: {new Date(match.appliedAt).toLocaleDateString('ja-JP')}
+          応募日: {formatDate(match.appliedAt)}
         </Typography>
         {match.lineContactOk && (
           <Typography variant="caption" sx={{color: '#2E7D32'}}>
