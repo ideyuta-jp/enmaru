@@ -16,6 +16,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ErrorAlert from '@/components/ErrorAlert';
 import {deleteJob} from '@/server/job-actions';
 import {type Job, type JobState} from '@/types/Job';
+import {formatDate} from '@/utils/date';
 
 // Chip per derived state — OPEN keeps the existing green; MATCHED gets the
 // app's pink family so a formed match reads as an outcome, not a shutdown;
@@ -87,7 +88,7 @@ export default function NurseryJobRow({job}: Props) {
             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
               <CalendarTodayIcon sx={{fontSize: 13, color: '#AAAAAA'}} />
               <Typography variant="caption" color="text.secondary">
-                {new Date(job.workDate).toLocaleDateString('ja-JP')}
+                {formatDate(job.workDate)}
               </Typography>
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>

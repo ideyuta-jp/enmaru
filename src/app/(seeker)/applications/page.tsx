@@ -9,6 +9,7 @@ import SectionHeading from '@/components/SectionHeading';
 import SessionHeader from '@/components/SessionHeader';
 import StatusChip from '@/components/StatusChip';
 import {listSeekerApplications} from '@/server/application';
+import {formatDate} from '@/utils/date';
 
 export default async function ApplicationsPage() {
   const applications = await listSeekerApplications();
@@ -61,8 +62,8 @@ export default async function ApplicationsPage() {
                       {app.jobTitle}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(app.workDate).toLocaleDateString('ja-JP')} /{' '}
-                      {app.workTimeStart}〜{app.workTimeEnd}
+                      {formatDate(app.workDate)} / {app.workTimeStart}〜
+                      {app.workTimeEnd}
                     </Typography>
                   </Box>
                   <StatusChip
@@ -80,8 +81,7 @@ export default async function ApplicationsPage() {
                   }}
                 >
                   <Typography variant="caption" color="text.secondary">
-                    応募日:{' '}
-                    {new Date(app.appliedAt).toLocaleDateString('ja-JP')}
+                    応募日: {formatDate(app.appliedAt)}
                   </Typography>
                   <Button
                     href={`/engagements/${app.id}`}

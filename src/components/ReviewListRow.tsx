@@ -3,6 +3,8 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 
+import {formatDate} from '@/utils/date';
+
 // One row of a reviews list (seeker or nursery): the counterpart and posting
 // summary, plus a 評価する button or a 評価済み chip. Shared by both reviews
 // pages so the markup stays in one place.
@@ -46,8 +48,7 @@ export default function ReviewListRow({
           {jobTitle}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {new Date(workDate).toLocaleDateString('ja-JP')} / {workTimeStart}〜
-          {workTimeEnd}
+          {formatDate(workDate)} / {workTimeStart}〜{workTimeEnd}
         </Typography>
       </Box>
       <Box sx={{flexShrink: 0}}>

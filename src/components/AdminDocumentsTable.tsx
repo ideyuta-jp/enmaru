@@ -22,6 +22,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import ErrorAlert from '@/components/ErrorAlert';
 import {rejectDocument, verifyDocument} from '@/server/document-actions';
+import {formatDate} from '@/utils/date';
 import {
   DOCUMENT_STATUS_LABEL,
   DOCUMENT_TYPE_LABEL,
@@ -303,7 +304,7 @@ export default function AdminDocumentsTable({
                 </TableCell>
                 <TableCell>
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(doc.uploadedAt).toLocaleDateString('ja-JP')}
+                    {formatDate(doc.uploadedAt)}
                   </Typography>
                 </TableCell>
                 <TableCell sx={{minWidth: 180}}>

@@ -21,6 +21,7 @@ import SectionHeading from '@/components/SectionHeading';
 import StatusChip from '@/components/StatusChip';
 import {setEngagementMemo} from '@/server/match-actions';
 import type {AdminMatch} from '@/types/Match';
+import {formatDate} from '@/utils/date';
 
 interface Props {
   initialMatches: AdminMatch[];
@@ -143,7 +144,7 @@ export default function AdminMatchesTable({initialMatches}: Props) {
                     <TableCell>
                       <Typography variant="body2">{match.jobTitle}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(match.workDate).toLocaleDateString('ja-JP')}
+                        {formatDate(match.workDate)}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{minWidth: 140}}>
@@ -198,7 +199,7 @@ export default function AdminMatchesTable({initialMatches}: Props) {
                     </TableCell>
                     <TableCell>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(match.createdAt).toLocaleDateString('ja-JP')}
+                        {formatDate(match.createdAt)}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -265,7 +266,7 @@ const MobileMatchCard = ({
       color="text.secondary"
       sx={{display: 'block', mb: 1.5}}
     >
-      {new Date(match.workDate).toLocaleDateString('ja-JP')}
+      {formatDate(match.workDate)}
     </Typography>
 
     {isEditingMemo ? (

@@ -26,6 +26,7 @@ import {getNurseryDetailForViewer} from '@/server/nursery';
 import {formatTagsWithNote} from '@/types/Job';
 import {formatNurseryLocation} from '@/types/Nursery';
 import {isHttpUrl} from '@/utils/url';
+import {formatDate} from '@/utils/date';
 
 // Public page (no auth guard), so the header must reflect the actual session
 // rather than assume SEEKER. Reads the session, hence force-dynamic.
@@ -313,7 +314,7 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                           sx={{fontSize: 13, color: '#AAAAAA'}}
                         />
                         <Typography variant="caption" color="text.secondary">
-                          {new Date(job.workDate).toLocaleDateString('ja-JP')}
+                          {formatDate(job.workDate)}
                         </Typography>
                       </Box>
                       <Box
@@ -389,7 +390,7 @@ export default async function SeekerNurseryDetailPage({params}: Props) {
                     color="text.secondary"
                     sx={{display: 'block', mt: 0.5}}
                   >
-                    {new Date(review.reviewedAt).toLocaleDateString('ja-JP')}
+                    {formatDate(review.reviewedAt)}
                   </Typography>
                 </Box>
               ))}

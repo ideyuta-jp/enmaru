@@ -17,6 +17,7 @@ import SectionHeading from '@/components/SectionHeading';
 import {applyToJob} from '@/server/application-actions';
 import type {ApplyTarget} from '@/types/Application';
 import {DOCUMENT_TYPE_LABEL} from '@/types/Document';
+import {formatDate} from '@/utils/date';
 
 export default function ApplicationForm({target}: {target: ApplyTarget}) {
   const router = useRouter();
@@ -88,8 +89,8 @@ export default function ApplicationForm({target}: {target: ApplyTarget}) {
           {target.title}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {new Date(target.workDate).toLocaleDateString('ja-JP')} /{' '}
-          {target.workTimeStart}〜{target.workTimeEnd}
+          {formatDate(target.workDate)} / {target.workTimeStart}〜
+          {target.workTimeEnd}
         </Typography>
       </Box>
 
