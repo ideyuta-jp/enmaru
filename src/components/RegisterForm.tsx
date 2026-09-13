@@ -15,7 +15,7 @@ import ChildCareIcon from '@mui/icons-material/ChildCare';
 import NextLink from 'next/link';
 
 import ErrorAlert from '@/components/ErrorAlert';
-import {registerCurrentUser} from '@/server/user';
+import {registerCurrentUser} from '@/server/user-actions';
 import {landingPathForRole, UserRole, type RegisterRole} from '@/types/User';
 
 const TERMS_HREF: Record<RegisterRole, string> = {

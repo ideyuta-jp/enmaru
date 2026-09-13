@@ -1,4 +1,29 @@
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+
 // Shared date/time formatting. Pure, tier-neutral helpers (no I/O, no React).
+//
+// Every formatter that turns an instant into text renders it in JST, the
+// service's one locale — never in the runtime's zone. This matters because the
+// same helper may run in the browser (JST for our users) or in a Server
+// Component on Netlify (UTC), and the two must print the same thing.
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const SERVICE_TIME_ZONE = 'Asia/Tokyo';
+
+// An instant -> text in JST, using dayjs's format tokens (YYYY, M, MM, D, DD,
+// HH, mm, ...). Accepts a Date or any string `new Date` parses (ISO timestamps,
+// and date-only 'YYYY-MM-DD', which `new Date` reads as UTC midnight so its JST
+// calendar day is the same day). The single place the zone is pinned; the
+// exported formatters below are named wrappers over this, one per shape the UI
+// uses, so a call site never spells out a pattern.
+function format(value: Date | string, pattern: string): string {
+  const date = value instanceof Date ? value : new Date(value);
+  return dayjs(date).tz(SERVICE_TIME_ZONE).format(pattern);
+}
 
 // 'HH:mm' -> minutes since midnight, for duration math (a lexicographic
 // compare can order times but cannot measure a duration such as the job
@@ -8,26 +33,32 @@ export function toMinutes(time: string): number {
   return h * 60 + m;
 }
 
-// "M/D HH:mm" in Japanese locale — the timestamp shown on chat bubbles and
-// notification rows. Accepts an ISO string or a Date.
-export function formatDateTime(value: string | Date): string {
-  return new Date(value).toLocaleString('ja-JP', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+// The full forms carry the year; a shorter variant is named by what it shows.
+
+// '2026/9/1' — a calendar date (registration date, terms agreement, last work
+// date).
+export function formatDate(value: Date | string): string {
+  return format(value, 'YYYY/M/D');
 }
 
-// Today's calendar date in JST as 'YYYY-MM-DD'. Compare calendar dates in
-// the service's locale — the server clock may run in UTC, and
-// toISOString-style UTC dates lag Japan by 9 hours around midnight. The
-// 'en-CA' locale is what makes Intl emit the lexicographically comparable
-// 'YYYY-MM-DD' shape.
+// '2026/9/1 13:57' — a timestamp where staleness has to be visible (an
+// account's last sign-in).
+export function formatDateTime(value: Date | string): string {
+  return format(value, 'YYYY/M/D HH:mm');
+}
+
+// '9/1 13:57' — a recent timestamp where the year is noise (chat bubbles,
+// notification rows).
+export function formatMonthDayTime(value: Date | string): string {
+  return format(value, 'M/D HH:mm');
+}
+
+// Today's calendar date in JST as 'YYYY-MM-DD', the lexicographically
+// comparable shape the 'YYYY-MM-DD' helpers below expect. Compare calendar
+// dates in the service's locale — toISOString-style UTC dates lag Japan by 9
+// hours around midnight.
 export function todayInJst(): string {
-  return new Intl.DateTimeFormat('en-CA', {timeZone: 'Asia/Tokyo'}).format(
-    new Date(),
-  );
+  return format(new Date(), 'YYYY-MM-DD');
 }
 
 // 'YYYY-MM' format check ('' also passes — an unset date isn't a format

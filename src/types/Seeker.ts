@@ -91,6 +91,17 @@ export function formatSeekerPreferredArea(seeker: {
     .join(' ');
 }
 
+// A seeker's profile as the admin user list sees it: who they are, and whether
+// the profile is published. realName is included because admins may see it
+// always (docs/requirements.md's personal-information boundary) — this shape is
+// admin-only, like AdminDocument.
+export interface AdminSeekerProfile {
+  id: string;
+  displayName: string;
+  realName: string;
+  isPublished: boolean;
+}
+
 // Seeker dashboard summary. Counts come from engagements; they are 0 until the
 // posting/engagement verticals exist.
 export interface SeekerDashboard {

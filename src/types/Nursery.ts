@@ -119,6 +119,16 @@ export const EMPTY_NURSERY_PROFILE: NurseryProfileInput = {
   isPublished: false,
 };
 
+// A nursery's profile as the admin user list sees it: the nursery, its contact
+// person, and whether the profile is published. contactName is a contact detail
+// kept out of PublicNursery — this shape is admin-only, like AdminDocument.
+export interface AdminNurseryProfile {
+  id: string;
+  nurseryName: string;
+  contactName: string;
+  isPublished: boolean;
+}
+
 // Nursery dashboard summary. Job / application counts come from later verticals
 // and are 0 until then.
 export interface NurseryDashboard {
